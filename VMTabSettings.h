@@ -4,8 +4,9 @@
 #include <QWidget>
 #include <QCheckBox>
 #include <QVBoxLayout>
-#include <QTableView>
+#include <QTableWidget>
 #include <QDialogButtonBox>
+#include "IfacesTable.h"
 
 class VMTabSettings
 {
@@ -13,13 +14,13 @@ class VMTabSettings
 		VMTabSettings(char *_vm_name);
 		virtual ~VMTabSettings();
 		void addTo(QTabWidget *parent);
+		IfacesTable *ifaces_table;
 
 	private:
 		char *vm_name;
 		QCheckBox *vm_enabled;
 		QWidget *vm_tab;
 		QVBoxLayout *verticalLayout;
-		QTableView *ifaces_table;
 		QDialogButtonBox *buttonBox;
 };
 

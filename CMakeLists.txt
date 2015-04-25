@@ -9,7 +9,7 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 qt4_wrap_ui(ui_src MainWindow.ui info_dialog.ui)
 
-set(Reti_SRCS main.cpp MainWindow.cpp InfoDialog.cpp VMTabSettings.cpp)
+set(Reti_SRCS main.cpp MainWindow.cpp InfoDialog.cpp VMTabSettings.cpp IfacesTable.cpp Iface.cpp)
 qt4_automoc(${Reti_SRCS})
 add_executable(Reti ${Reti_SRCS} ${ui_src})
 target_link_libraries(Reti ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})

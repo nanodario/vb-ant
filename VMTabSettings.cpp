@@ -4,8 +4,9 @@
 #include <QWidget>
 #include <QCheckBox>
 #include <QVBoxLayout>
-#include <QTableView>
+#include <QTableWidget>
 #include <QDialogButtonBox>
+#include <QHeaderView>
 
 VMTabSettings::VMTabSettings(char *tabname)
 : vm_name(tabname)
@@ -23,11 +24,8 @@ VMTabSettings::VMTabSettings(char *tabname)
 	vm_enabled->setObjectName(QString::fromUtf8("vm_enabled"));
 	verticalLayout->addWidget(vm_enabled);
 
-	ifaces_table = new QTableView(vm_tab);
-	ifaces_table->setObjectName(QString::fromUtf8("tableView"));
-	
-	verticalLayout->addWidget(ifaces_table);
-	
+	ifaces_table = new IfacesTable(vm_tab, verticalLayout);
+
 	buttonBox = new QDialogButtonBox(vm_tab);
 	buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
 	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset);
