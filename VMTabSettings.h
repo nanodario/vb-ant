@@ -19,9 +19,8 @@ class VMTabSettings : public QWidget
 		IfacesTable *ifaces_table;
 
 	private slots:
+		void clickedSlot(QAbstractButton*);
 		void vm_enabledSlot(bool checked);
-		void acceptedSlot();
-		void rejectedSlot();
 		
 	private:
 		QString vm_name;

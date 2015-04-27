@@ -61,7 +61,9 @@ int IfacesTable::addIface(QString name, QString mac, QString ip, QString subnetM
 
 bool IfacesTable::setName(int iface, QString name)
 {
-	item(iface, COLUMN_IFACE_NAME)->setText(name);
+	ifaces.at(iface)->setName(name);
+	QString new_name = ifaces.at(iface)->name;
+	item(iface, COLUMN_IFACE_NAME)->setText(new_name);
 	return true;
 }
 
@@ -112,8 +114,22 @@ bool IfacesTable::setSubnetMask(int iface, QString subnetMask)
 
 bool IfacesTable::setSubnetName(int iface, QString subnetName)
 {
-	item(iface, COLUMN_SUBNETNAME)->setText(subnetName);
+	ifaces.at(iface)->setSubnetName(subnetName);
+	QString new_subnetName = ifaces.at(iface)->subnetName;
+	item(iface, COLUMN_SUBNETNAME)->setText(new_subnetName);
 	return true;
+}
+
+QStringList IfacesTable::getIfaceInfo(int iface)
+{
+	QStringList iface_info;
+	iface_info.push_back(ifaces.at(iface)->name);
+	iface_info.push_back(ifaces.at(iface)->mac);
+	iface_info.push_back(ifaces.at(iface)->ip);
+	iface_info.push_back(ifaces.at(iface)->subnetMask);
+	iface_info.push_back(ifaces.at(iface)->subnetName);
+	
+	return iface_info;
 }
 
 void IfacesTable::setItemSlot(int row, int column)

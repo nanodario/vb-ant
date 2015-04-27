@@ -30,6 +30,7 @@ class IfacesTable :  public QTableWidget
 		bool setSubnetMask(int iface, QString subnetMask);
 		bool setSubnetName(int iface, QString subnetName);
 		
+		QStringList getIfaceInfo(int iface);
 		void removeIface(int iface_index);
 		
 	private slots:
