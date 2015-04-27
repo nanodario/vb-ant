@@ -122,5 +122,21 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>clicked(QAbstractButton*)</signal>
+   <receiver>actionInfo_su</receiver>
+   <slot>hover()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>399</x>
+     <y>554</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
 </ui>

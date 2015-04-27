@@ -6,18 +6,25 @@
 #include <QVBoxLayout>
 #include <QTableWidget>
 #include <QDialogButtonBox>
+#include <QAbstractButton>
 #include "IfacesTable.h"
 
-class VMTabSettings
+class VMTabSettings : public QWidget
 {
+	Q_OBJECT
+	
 	public:
-		VMTabSettings(char *_vm_name);
+		VMTabSettings(QTabWidget *parent, QString _vm_name);
 		virtual ~VMTabSettings();
-		void addTo(QTabWidget *parent);
 		IfacesTable *ifaces_table;
 
+	private slots:
+		void vm_enabledSlot(bool checked);
+		void acceptedSlot();
+		void rejectedSlot();
+		
 	private:
-		char *vm_name;
+		QString vm_name;
 		QCheckBox *vm_enabled;
 		QWidget *vm_tab;
 		QVBoxLayout *verticalLayout;

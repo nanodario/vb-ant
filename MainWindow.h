@@ -19,27 +19,27 @@ class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 	
-public:
-	explicit MainWindow(const QString &fileToOpen = QString(), QWidget *parent = 0);
-	~MainWindow();
-	
-protected:
-	void closeEvent(QCloseEvent *event);
-	void slotOpen();
-	bool slotSave();
-	bool slotSaveAs();
-	
-private slots:
-// 	void slotAddMachine();
-	void slotInfo();
+	public:
+		explicit MainWindow(const QString &fileToOpen = QString(), QWidget *parent = 0);
+		~MainWindow();
+		
+	protected:
+		void closeEvent(QCloseEvent *event);
+		void slotOpen();
+		bool slotSave();
+		bool slotSaveAs();
+		
+	private slots:
+	// 	void slotAddMachine();
+		void slotInfo();
 
-private:
-	bool queryClose();
-	bool loadFile(const QString &path);
-	
-	Ui_MainWindow *ui;
-	std::vector<VMTabSettings*> VMTabSettings_vec;
-	InfoDialog infoDialog;
+	private:
+		bool queryClose();
+		bool loadFile(const QString &path);
+		
+		Ui_MainWindow *ui;
+		std::vector<VMTabSettings*> VMTabSettings_vec;
+		InfoDialog infoDialog;
 };
 
 #endif //MAINWINDOW_H
