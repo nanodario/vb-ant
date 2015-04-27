@@ -33,7 +33,36 @@
          </widget>
         </item>
         <item>
-         <widget class="QListWidget" name="iface_table"/>
+         <widget class="QTableWidget" name="iface_table">
+          <property name="rowCount">
+           <number>8</number>
+          </property>
+          <property name="columnCount">
+           <number>5</number>
+          </property>
+          <attribute name="horizontalHeaderVisible">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderStretchLastSection">
+           <bool>false</bool>
+          </attribute>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <column/>
+          <column/>
+          <column/>
+          <column/>
+          <column/>
+         </widget>
         </item>
         <item>
          <widget class="QDialogButtonBox" name="buttonBox">
@@ -76,5 +105,22 @@
   </action>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>iface_table</sender>
+   <signal>cellEntered(int,int)</signal>
+   <receiver>centralwidget</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>399</x>
+     <y>308</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>300</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

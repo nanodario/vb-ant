@@ -4,6 +4,10 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QTextStream>
+#include <sstream>
+#include <iostream>
+#include <bitset>
+#include "stdint.h"
 
 #include "ui_MainWindow.h"
 #include "VMTabSettings.h"
@@ -24,14 +28,26 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 		vmSettings->addTo(ui->vm_tabs);
 		VMTabSettings_vec.push_back(vmSettings);
 	}
-	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova1", "004455667788");
-	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova2", "00hh22334478");
-	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova3", "33-11-55-77-66-55");
-	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova4", "33-11-55-77-66-553");
-	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova5", "3311.5577.6655");
-	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova6", "h311.5577.6655");
-	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova7", "k3-11-55-77-66-55");
-	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova8", "h3:kk:55:77:66:55");
+// 	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova1", "00445667788");
+// 	VMTabSettings_vec.at(0)->ifaces_table->setIp(0, "192.168.0.2");
+// 	
+// 	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova2", "00hh22334478");
+// 	VMTabSettings_vec.at(0)->ifaces_table->setIp(1, "10...0");
+// 	
+// 	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova3", "33-11-55-77-66-5");
+// 	VMTabSettings_vec.at(0)->ifaces_table->setIp(2, "310.3.1.2");
+// 	
+// 	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova4", "33-11-55-77-66-553");
+// 	VMTabSettings_vec.at(0)->ifaces_table->setIp(3, "0.0.3.1");
+// 	
+// 	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova5", "3311.5577.6655");
+// 	VMTabSettings_vec.at(0)->ifaces_table->setIp(4, "255.255.255.255");
+// 	
+// 	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova6", "h311.5577.6655");
+// 	VMTabSettings_vec.at(0)->ifaces_table->setIp(5, "255.4.5.1");
+// 	
+// 	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova7", "k3-11-55-77-66-55");
+// 	VMTabSettings_vec.at(0)->ifaces_table->addIface("prova8", "h3:kk:55:77:66:55");
 	
 	connect(ui->actionInfo_su, SIGNAL(activated()), this, SLOT(slotInfo()));
 // 	connect(ui->actionOpen, SIGNAL(activated()), this, SLOT(slotOpen()));

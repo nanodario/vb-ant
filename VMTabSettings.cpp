@@ -25,7 +25,8 @@ VMTabSettings::VMTabSettings(char *tabname)
 	verticalLayout->addWidget(vm_enabled);
 
 	ifaces_table = new IfacesTable(vm_tab, verticalLayout);
-
+	verticalLayout->addWidget(ifaces_table);
+	
 	buttonBox = new QDialogButtonBox(vm_tab);
 	buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
 	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset);
