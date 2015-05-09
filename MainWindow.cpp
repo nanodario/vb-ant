@@ -9,7 +9,6 @@
 #include <bitset>
 #include "stdint.h"
 
-#include "ui_MainWindow.h"
 #include "VMTabSettings.h"
 #include "InfoDialog.h"
 

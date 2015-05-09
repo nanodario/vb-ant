@@ -64,16 +64,14 @@ static bool isValidDecNumber(std::string num, int min, int max)
 	return (x >= min && x <= max);
 }
 
-Iface::Iface(QString name)
-: name(name), mac(QString::fromUtf8("")), ip(QString::fromUtf8("")), subnetMask(QString::fromUtf8("")), subnetName(QString::fromUtf8(""))
+Iface::Iface(bool enabled, QString name, QString mac, QString ip, QString subnetMask, QString subnetName)
+: enabled(enabled)
 {
-	
-}
-
-Iface::Iface(QString name, QString _mac)
-: name(name), mac(QString::fromUtf8("")), ip(QString::fromUtf8("")), subnetMask(QString::fromUtf8("")), subnetName(QString::fromUtf8(""))
-{
-	setMac(_mac);
+	setName(name);
+	setMac(mac);
+	setIp(ip);
+	setSubnetMask(subnetMask);
+	setSubnetName(subnetName);
 }
 
 Iface::~Iface()
@@ -83,8 +81,12 @@ Iface::~Iface()
 
 bool Iface::setName(QString _name)
 {
-	name = _name;
-	return true;
+	if(isValidName(_name))
+	{
+		name = _name;
+		return true;
+	}
+	return false;
 }
 
 bool Iface::setMac(QString _mac)
@@ -124,7 +126,21 @@ bool Iface::setSubnetMask(QString _subnetMask)
 
 bool Iface::setSubnetName(QString _subnetName)
 {
-	subnetName = _subnetName;
+	if(isValidName(_subnetName))
+	{
+		subnetName = _subnetName;
+		return true;
+	}
+	return false;
+}
+
+bool Iface::isValidName(QString name)
+{
+	int i;
+	for (i = 0; i < name.length(); i++)
+		if(isspace(name.toStdString().c_str()[i]))
+			return false;
+
 	return true;
 }
 
@@ -207,8 +223,27 @@ QString Iface::formatMac(QString mac)
 
 		s_mac = mac.split(":");
 		if (s_mac.count() == 6)
-			return mac.toUpper();
-
+		{
+			std::string temp;
+			for (i = 0; i < 6; i++)
+			{
+				temp = s_mac.at(i).toStdString();
+				
+				if (temp.length() < 2)
+					ss << std::string("0");
+				
+				ss << temp;
+				
+				if(i != 5)
+					ss << ":";
+			}
+			
+			std::string mac_out;
+			ss >> mac_out;
+			
+			return (QString::fromStdString(mac_out)).toUpper();
+		}
+		
 		s_mac = mac.split("-");
 		if (s_mac.count() == 6)
 		{
@@ -216,8 +251,12 @@ QString Iface::formatMac(QString mac)
 			for (i = 0; i < 6; i++)
 			{
 				temp = s_mac.at(i).toStdString();
+				
 				if (temp.length() < 2)
-					ss << std::string("0").append(temp);
+					ss << std::string("0");
+				
+				ss << temp;
+				
 				if(i != 5)
 					ss << ":";
 			}

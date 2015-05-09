@@ -48,6 +48,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../UNI/Terzo Anno/Reti/Progetto reti/res.qrc"/>
+ </resources>
  <connections/>
 </ui>
