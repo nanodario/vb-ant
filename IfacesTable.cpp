@@ -16,7 +16,8 @@
 
 #include "Iface.h"
 
-MacWidgetField::MacWidgetField(QWidget *parent, MacWidgetFieldBridge *bridge) : QWidget(parent)
+MacWidgetField::MacWidgetField(QWidget *parent, int row, IfacesTable *destination) : QWidget(parent)
+, row(row), destination(destination)
 {
 	QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
 	horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
@@ -35,8 +36,8 @@ MacWidgetField::MacWidgetField(QWidget *parent, MacWidgetFieldBridge *bridge) : 
 	
 	setLayout(horizontalLayout);
 	
-	connect(lineEdit, SIGNAL(editingFinished()), bridge, SLOT(editingFinishedSlot()));
-	connect(button, SIGNAL(released()), bridge, SLOT(releasedSlot()));
+	connect(lineEdit, SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
+	connect(button, SIGNAL(released()), this, SLOT(releasedSlot()));
 }
 
 MacWidgetField::~MacWidgetField()
@@ -50,19 +51,40 @@ void MacWidgetField::setText(const QString &text)
 	lineEdit->setText(text);
 }
 
-MacWidgetFieldBridge::MacWidgetFieldBridge(int row, IfacesTable *destination) : QWidget()
-, row(row), destination(destination)
-{
-}
-
-void MacWidgetFieldBridge::editingFinishedSlot()
+void MacWidgetField::editingFinishedSlot()
 {
 	destination->setMac(row, ((QLineEdit *)sender())->text());
 }
 
-void MacWidgetFieldBridge::releasedSlot()
+void MacWidgetField::releasedSlot()
 {
 	destination->generateMac(row);
+}
+
+IfaceEnableCheckBox::IfaceEnableCheckBox(QWidget *parent, int row, IfacesTable *destination) : QWidget(parent)
+, row(row), destination(destination)
+{
+	QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
+	horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+	horizontalLayout->setContentsMargins(0, 0, 0, 0);
+	
+	checkbox = new QCheckBox(this);
+	horizontalLayout->addWidget(checkbox);
+	horizontalLayout->setAlignment(Qt::AlignCenter);
+	
+	setLayout(horizontalLayout);
+	
+	connect(checkbox, SIGNAL(toggled(bool)), this, SLOT(toggledSlot(bool)));
+}
+
+void IfaceEnableCheckBox::setCheckState(Qt::CheckState checked)
+{
+	checkbox->setCheckState(checked);
+}
+
+void IfaceEnableCheckBox::toggledSlot(bool checked)
+{
+	destination->setStatus(row, checked ? Qt::Checked : Qt::Unchecked);
 }
 
 IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout) : QTableWidget(parent)
@@ -77,6 +99,7 @@ IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout) : QTableWidget(par
 	QStringList verticalHeaderLabels = QString("Interfaccia 1;Interfaccia 2;Interfaccia 3;Interfaccia 4;Interfaccia 5;Interfaccia 6;Interfaccia 7;Interfaccia 8").split(";");
 	setRowCount(verticalHeaderLabels.count());
 	setVerticalHeaderLabels(verticalHeaderLabels);
+	verticalHeader()->setResizeMode(QHeaderView::ResizeToContents);
 
 	QHeaderView *headerView = new QHeaderView(Qt::Horizontal, this);
 	headerView->setResizeMode(QHeaderView::Stretch);
@@ -95,8 +118,10 @@ IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout) : QTableWidget(par
 		addIface(true, name, mac, ip, subnetMask, subnetName); //TODO
 	}
 
+	resizeRowsToContents();
+	resizeColumnsToContents();
+	
 	connect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
-	connect(this, SIGNAL(cellClicked(int,int)), this, SLOT(cellClickedSlot(int, int)));
 }
 
 IfacesTable::~IfacesTable()
@@ -109,36 +134,25 @@ int IfacesTable::addIface(bool enabled, QString name, QString mac, QString ip, Q
 	Iface *i = new Iface(enabled, name, mac, ip, subnetMask, subnetName);
 	ifaces.push_back(i);
 	int row = ifaces.size() - 1;
-	
-	QTableWidgetItem *qtablewidgetitem = new QTableWidgetItem(QString::fromUtf8(""));
-	qtablewidgetitem->setCheckState(enabled ? Qt::Checked : Qt::Unchecked);
-	qtablewidgetitem->setFlags(Qt::ItemIsUserCheckable|Qt::ItemIsEnabled);
-	qtablewidgetitem->setTextAlignment(Qt::AlignHCenter);
 
-	setItem(row, COLUMN_IFACE_ENABLED, qtablewidgetitem);
-	setItem(row, COLUMN_IFACE_NAME, new QTableWidgetItem(/*"ITEM 1"*/));
-	setCellWidget(row, COLUMN_MAC, new MacWidgetField(this/*"ITEM 2"*/, new MacWidgetFieldBridge(row, this)));
-	setItem(row, COLUMN_IP, new QTableWidgetItem(/*"ITEM 3"*/));
-	setItem(row, COLUMN_SUBNETMASK, new QTableWidgetItem(/*"ITEM 4"*/));
-	setItem(row, COLUMN_SUBNETNAME, new QTableWidgetItem(/*"ITEM 5"*/));
+	setCellWidget(row, COLUMN_IFACE_ENABLED, new IfaceEnableCheckBox(this, row, this));
+	setCellWidget(row, COLUMN_MAC, new MacWidgetField(this, row, this));
+	setItem(row, COLUMN_IFACE_NAME, new QTableWidgetItem());
+	setItem(row, COLUMN_IP, new QTableWidgetItem());
+	setItem(row, COLUMN_SUBNETMASK, new QTableWidgetItem());
+	setItem(row, COLUMN_SUBNETNAME, new QTableWidgetItem());
 
 	setStatus(row, enabled);
 
-	item(row, COLUMN_IFACE_NAME)->setText(i->name);
-
-// 	QToolButton *newMacButton = new QToolButton();
-// 	newMacButton->setIcon(QIcon(QString::fromUtf8(":/resources/refresh_16px.png")));
-// 	newMacButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-	
-// 	item(row, COLUMN_MAC);
-// 	item(row, COLUMN_MAC)->setText(i->mac);
+	((IfaceEnableCheckBox *)cellWidget(row, COLUMN_IFACE_ENABLED))->setCheckState(enabled ? Qt::Checked : Qt::Unchecked);
 	((MacWidgetField *)cellWidget(row, COLUMN_MAC))->setText(i->mac);
+	item(row, COLUMN_IFACE_NAME)->setText(i->name);
 	item(row, COLUMN_IP)->setText(i->ip);
 	item(row, COLUMN_SUBNETMASK)->setText(i->subnetMask);
 	item(row, COLUMN_SUBNETNAME)->setText(i->subnetName);
 	
 	int col;
-	for (col = 0; col < columnCount(); col++)
+	for (col = 1; col < columnCount(); col++)
 		if(col != COLUMN_MAC)
 			item(row, col)->setTextAlignment(Qt::AlignCenter);
 		else
@@ -153,7 +167,13 @@ bool IfacesTable::setStatus(int iface, bool checked)
 	for (col = 1; col < columnCount(); col++)
 	{
 		Qt::ItemFlags flags;
-		if(col != COLUMN_MAC)
+		if (col == COLUMN_MAC)
+		{
+			MacWidgetField *w = (MacWidgetField *)cellWidget(iface, col);
+			w->button->setEnabled(checked);
+			w->lineEdit->setEnabled(checked);
+		}
+		else
 		{
 			flags = item(iface, col)->flags();
 			if (checked)
@@ -161,12 +181,6 @@ bool IfacesTable::setStatus(int iface, bool checked)
 			else
 				flags &= ~Qt::ItemIsEnabled;
 			item(iface, col)->setFlags(flags);
-		}
-		else
-		{
-			MacWidgetField *w = (MacWidgetField *)cellWidget(iface, col);
-			w->button->setEnabled(checked);
-			w->lineEdit->setEnabled(checked);
 		}
 	}
 
@@ -177,6 +191,16 @@ bool IfacesTable::setStatus(int iface, bool checked)
 
 bool IfacesTable::setName(int iface, QString name)
 {
+	int i;
+	for (i = 0; i < ifaces.size(); i++)
+	{
+		if (name == ifaces.at(i)->name)
+		{
+			item(iface, COLUMN_IFACE_NAME)->setText(ifaces.at(iface)->name);
+			return false;
+		}
+	}
+	
 	ifaces.at(iface)->setName(name);
 	QString new_name = ifaces.at(iface)->name;
 	item(iface, COLUMN_IFACE_NAME)->setText(new_name);
@@ -185,6 +209,16 @@ bool IfacesTable::setName(int iface, QString name)
 
 bool IfacesTable::setMac(int iface, QString mac)
 {
+	int i;
+	for (i = 0; i < ifaces.size(); i++)
+	{
+		if (Iface::formatMac(mac) == ifaces.at(i)->mac)
+		{
+			((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(ifaces.at(iface)->mac);
+			return false;
+		}
+	}
+	
 	QString old_mac = ifaces.at(iface)->mac;
 	bool done = ifaces.at(iface)->setMac(mac);
 	if (done)
@@ -265,8 +299,7 @@ void IfacesTable::cellChangedSlot(int row, int column)
 			setName(row, item(row, COLUMN_IFACE_NAME)->text());
 			break;
 		case COLUMN_MAC:
-			std::cout << "latuma" << std::endl;
-			setMac(row, item(row, COLUMN_MAC)->text());
+// 			setMac(row, item(row, COLUMN_MAC)->text());
 			break;
 		case COLUMN_IP:
 			setIp(row, item(row, COLUMN_IP)->text());
@@ -277,13 +310,5 @@ void IfacesTable::cellChangedSlot(int row, int column)
 		case COLUMN_SUBNETNAME:
 			setSubnetName(row, item(row, COLUMN_SUBNETNAME)->text());
 			break;
-	}
-}
-
-void IfacesTable::cellClickedSlot(int row, int column)
-{
-	if (column == COLUMN_MAC)
-	{
-		std::cout << "la tuma" << std::endl;
 	}
 }

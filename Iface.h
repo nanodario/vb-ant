@@ -15,15 +15,16 @@ class Iface
 		bool setIp(QString ip);
 		bool setSubnetMask(QString subnetMask);
 		bool setSubnetName(QString subnetName);
+
+		static QString formatMac(QString mac);
+		static bool isValidName(QString name);
+		static bool isValidMac(QString mac);
+		static bool isValidIp(QString ip);
+		static bool isValidSubnetMask(QString subnetMask);
+
 		QString name, mac, ip, subnetMask, subnetName;
 		bool enabled;
-
-	private:
-		bool isValidName(QString name);
-		bool isValidMac(QString mac);
-		QString formatMac(QString mac);
-		bool isValidIp(QString ip);
-		bool isValidSubnetMask(QString subnetMask);
+// 	private:
 };
 
 #endif //IFACE_H

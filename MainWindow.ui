@@ -17,8 +17,11 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QTabWidget" name="vm_tabs">
-      <property name="currentIndex">
-       <number>-1</number>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
      </widget>
     </item>
@@ -49,7 +52,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../../UNI/Terzo Anno/Reti/Progetto reti/res.qrc"/>
+  <include location="../../../../../../media/UBDeposito/UNI/Terzo Anno/Reti/Progetto reti/res.qrc"/>
  </resources>
  <connections/>
 </ui>

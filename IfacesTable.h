@@ -2,6 +2,7 @@
 #define IFACETABLE_H
 
 #include <QBoxLayout>
+#include <QCheckBox>
 #include <QTableWidget>
 #include <QToolButton>
 #include <QLineEdit>
@@ -12,8 +13,8 @@
 #define IFACES_NUMBER 8
 
 #define COLUMN_IFACE_ENABLED	0
-#define COLUMN_IFACE_NAME	1
-#define COLUMN_MAC		2
+#define COLUMN_MAC		1
+#define COLUMN_IFACE_NAME	2
 #define COLUMN_IP		3
 #define COLUMN_SUBNETMASK	4
 #define COLUMN_SUBNETNAME	5
@@ -23,24 +24,35 @@ class MacWidgetFieldBridge;
 
 class MacWidgetField : public QWidget
 {
+	Q_OBJECT
+	
 	public:
-		MacWidgetField(QWidget *parent, MacWidgetFieldBridge *bridge);
+		MacWidgetField(QWidget *parent, int row, IfacesTable *destination);
 		virtual ~MacWidgetField();
 		void setText(const QString &text);
 		QToolButton *button;
 		QLineEdit *lineEdit;
-};
-
-class MacWidgetFieldBridge : public QWidget
-{
-	Q_OBJECT
-
-	public:
-		MacWidgetFieldBridge(int row, IfacesTable *destination);
 		
 	public slots:
 		void editingFinishedSlot();
 		void releasedSlot();
+		
+	private:
+		int row;
+		IfacesTable *destination;
+};
+
+class IfaceEnableCheckBox : public QWidget
+{
+	Q_OBJECT
+	
+	public:
+		IfaceEnableCheckBox(QWidget *parent, int row, IfacesTable *destination);
+		void setCheckState(Qt::CheckState checked);
+		QCheckBox *checkbox;
+		
+	public slots:
+		void toggledSlot(bool checked);
 		
 	private:
 		int row;
@@ -69,7 +81,6 @@ class IfacesTable : public QTableWidget
 		
 	private slots:
 		void cellChangedSlot(int row, int column);
-		void cellClickedSlot(int row, int column);
 		
 	protected:
 		std::vector<Iface*> ifaces;
