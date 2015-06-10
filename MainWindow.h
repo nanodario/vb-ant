@@ -10,6 +10,7 @@
 #include "ui_info_dialog.h"
 #include "InfoDialog.h"
 #include "VMTabSettings.h"
+#include "VirtualBoxBridge.h"
 
 class Ui_MainWindow;
 class Ui_Info_dialog;
@@ -22,6 +23,7 @@ class MainWindow : public QMainWindow
 	public:
 		explicit MainWindow(const QString &fileToOpen = QString(), QWidget *parent = 0);
 		~MainWindow();
+		VirtualBoxBridge *vboxbridge;
 		
 	protected:
 		void closeEvent(QCloseEvent *event);
@@ -39,6 +41,7 @@ class MainWindow : public QMainWindow
 		
 		Ui_MainWindow *ui;
 		std::vector<VMTabSettings*> VMTabSettings_vec;
+		std::vector<IMachine*> machines_vec;
 		InfoDialog infoDialog;
 };
 

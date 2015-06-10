@@ -8,5 +8,5 @@ InfoDialog::InfoDialog()
 
 InfoDialog::~InfoDialog()
 {
-
+	delete ui;
 }

@@ -1,4 +1,5 @@
 #include "VMTabSettings.h"
+#include "VirtualBoxBridge.h"
 #include <QTabWidget>
 
 #include <QString>
@@ -13,8 +14,8 @@
 
 #include <iostream>
 
-VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname) : QWidget(parent)
-, vm_name(tabname)
+VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBridge *vboxbridge, IMachine *machine) : QWidget(parent)
+, vm_name(tabname), vboxbridge(vboxbridge), machine(machine)
 {
 	setObjectName(tabname);
 
@@ -28,7 +29,7 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname) : QWidget(pare
 	vm_enabled->setObjectName(QString::fromUtf8("vm_enabled"));
 	verticalLayout->addWidget(vm_enabled);
 
-	ifaces_table = new IfacesTable(this, verticalLayout);
+	ifaces_table = new IfacesTable(this, verticalLayout, vboxbridge);
 	verticalLayout->addWidget(ifaces_table);
 	
 	buttonBox = new QDialogButtonBox(this);
@@ -39,6 +40,22 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname) : QWidget(pare
 	
 	connect(vm_enabled, SIGNAL(toggled(bool)), this, SLOT(vm_enabledSlot(bool)));
 	connect(buttonBox, SIGNAL(clicked(QAbstractButton*)), this, SLOT(clickedSlot(QAbstractButton*)));
+	
+	ifaces_vec = MachineBridge::getNetworkInterfaces(vboxbridge->virtualBox, machine);
+	
+	int row;
+	for(row = 0; row < ifaces_vec.size(); row++)
+	{
+		bool enabled = MachineBridge::getIfaceEnabled(ifaces_vec.at(row));
+		QString name = QString("test%1").arg(row);
+		QString mac = MachineBridge::getIfaceMac(ifaces_vec.at(row));
+		QString ip = QString("10.10.10.%1").arg(row);
+		QString subnetMask = QString("%1").arg(row);
+		QString subnetName = QString("subnet%1").arg(row);
+		ifaces_table->addIface(enabled, mac, name, ip, subnetMask, subnetName);
+	}
+	
+	
 }
 
 VMTabSettings::~VMTabSettings()

@@ -1,8 +1,6 @@
 #ifndef VIRTUALBOXBRIDGE_H
 #define VIRTUALBOXBRIDGE_H
 
-#include <QString>
-
 #define RT_OS_LINUX
 #define VBOX_WITH_XPCOM
 #define IN_RING3
@@ -11,6 +9,9 @@
 #include <nsIServiceManager.h>
 #include "VirtualBox_XPCOM.h"
 
+#include <QString>
+#include <vector>
+
 class VirtualBoxBridge
 {
 	public:
@@ -18,6 +19,8 @@ class VirtualBoxBridge
 		~VirtualBoxBridge();
 		QString getVBoxVersion();
 		QString generateMac();
+		nsCOMPtr<IVirtualBox> virtualBox;
+		std::vector<IMachine*> getMachines();
 
 	private:
 		bool initXPCOM();
@@ -26,7 +29,16 @@ class VirtualBoxBridge
 		nsCOMPtr<nsIServiceManager> nsCOM_serviceManager;
 		nsCOMPtr<nsIEventQueue> nsCOM_eventQ;
 		nsCOMPtr<nsIComponentManager> nsCOM_manager;
-		nsCOMPtr<IVirtualBox> virtualBox;
+};
+
+class MachineBridge
+{
+	public:
+		static QString getName(IMachine *machine);
+		static std::vector<INetworkAdapter*> getNetworkInterfaces(IVirtualBox *virtualbox, IMachine *machine);
+		static bool getIfaceEnabled(INetworkAdapter *iface);
+		static QString getIfaceMac(INetworkAdapter* iface);
+		static bool setIfaceMac(INetworkAdapter *iface, QString qMac);
 };
 
 #endif //VIRTUALBOXBRIDGE_H

@@ -11,32 +11,29 @@
 
 #include "VMTabSettings.h"
 #include "InfoDialog.h"
+#include "VirtualBoxBridge.h"
 
 MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
-: QMainWindow(parent), ui(new Ui_MainWindow)
+: QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge()), machines_vec(vboxbridge->getMachines())
 {
 	VMTabSettings_vec.clear();
 	ui->setupUi(this);
 	
 	int i;
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < machines_vec.size(); i++)
 	{
-		std::stringstream ss;
-		std::string tabnumber;
-		ss << std::dec << i+1;
-		ss >> tabnumber;
-		QString tabname = QString::fromUtf8("Macchina ").append(QString::fromStdString(tabnumber));
-		VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname);
+		QString tabname = MachineBridge::getName(machines_vec.at(i));
+		VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(i));
 		ui->vm_tabs->addTab(vmSettings, tabname);
 // 		vmSettings->addTo(ui->vm_tabs);
 		VMTabSettings_vec.push_back(vmSettings);
 	}
 
-	connect(ui->actionInfo_su, SIGNAL(activated()), this, SLOT(slotInfo()));
-// 	connect(ui->actionOpen, SIGNAL(activated()), this, SLOT(slotOpen()));
-// 	connect(ui->actionSave, SIGNAL(activated()), this, SLOT(slotSave()));
-// 	connect(ui->actionSaveAs, SIGNAL(activated()), this, SLOT(slotSaveAs()));
-
+	connect(ui->actionInfo_su, SIGNAL(triggered(bool)), this, SLOT(slotInfo()));
+	connect(ui->actionNew, SIGNAL(triggered(bool)), this, SLOT(slotActionNew()));
+	connect(ui->actionopen, SIGNAL(triggered(bool)), this, SLOT(slotActionOpen()));
+	connect(ui->actionSave, SIGNAL(triggered(bool)), this, SLOT(slotActionSave()));
+	connect(ui->actionSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotActionSaveAs()));
 }
 
 MainWindow::~MainWindow()
@@ -47,6 +44,13 @@ MainWindow::~MainWindow()
 		VMTabSettings_vec.pop_back();
 	}
 
+	while(!machines_vec.empty())
+	{
+		machines_vec.back() = nsnull;
+		machines_vec.pop_back();
+	}
+
+	delete vboxbridge;
 	delete ui;
 }
 

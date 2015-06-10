@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Iface.h"
+#include "VirtualBoxBridge.h"
 
 #define IFACES_NUMBER 8
 
@@ -48,6 +49,7 @@ class IfaceEnableCheckBox : public QWidget
 	
 	public:
 		IfaceEnableCheckBox(QWidget *parent, int row, IfacesTable *destination);
+		virtual ~IfaceEnableCheckBox();
 		void setCheckState(Qt::CheckState checked);
 		QCheckBox *checkbox;
 		
@@ -64,9 +66,9 @@ class IfacesTable : public QTableWidget
 	Q_OBJECT
 	
 	public:
-		IfacesTable(QWidget *parent, QBoxLayout *layout);
+		IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge);
 		~IfacesTable();
-		int addIface(bool enabled = false, QString name = "", QString mac = "", QString ip = "", QString subnetMask = "", QString subnetName = "");
+		int addIface(bool enabled = false, QString mac = "", QString name = "", QString ip = "", QString subnetMask = "", QString subnetName = "");
 		
 		bool setStatus(int iface, bool checked);
 		bool setName(int iface, QString name);
@@ -86,7 +88,9 @@ class IfacesTable : public QTableWidget
 		std::vector<Iface*> ifaces;
 		QTableWidget *ifaces_table;
 		
-// 	private:
+	private:
+		VirtualBoxBridge *vboxbridge;
+		IMachine *machine;
 };
 
 #endif

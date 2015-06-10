@@ -17,7 +17,7 @@ class Iface
 		bool setSubnetName(QString subnetName);
 
 		static QString formatMac(QString mac);
-		static bool isValidName(QString name);
+		static bool isValidName(QString name, bool blankAllowed = false);
 		static bool isValidMac(QString mac);
 		static bool isValidIp(QString ip);
 		static bool isValidSubnetMask(QString subnetMask);

@@ -64,7 +64,7 @@ static bool isValidDecNumber(std::string num, int min, int max)
 	return (x >= min && x <= max);
 }
 
-Iface::Iface(bool enabled, QString name, QString mac, QString ip, QString subnetMask, QString subnetName)
+Iface::Iface(bool enabled, QString mac, QString name, QString ip, QString subnetMask, QString subnetName)
 : enabled(enabled)
 {
 	setName(name);
@@ -81,7 +81,7 @@ Iface::~Iface()
 
 bool Iface::setName(QString _name)
 {
-	if(isValidName(_name))
+	if(isValidName(_name, true))
 	{
 		name = _name;
 		return true;
@@ -134,11 +134,14 @@ bool Iface::setSubnetName(QString _subnetName)
 	return false;
 }
 
-bool Iface::isValidName(QString name)
+bool Iface::isValidName(QString name, bool blankAllowed)
 {
+	if(blankAllowed && name.length() == 0)
+		return true;
+	
 	int i;
 	for (i = 0; i < name.length(); i++)
-		if(isspace(name.toStdString().c_str()[i]))
+		if(!isalnum(name.toStdString().c_str()[i]))
 			return false;
 
 	return true;

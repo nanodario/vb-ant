@@ -11,8 +11,7 @@
 #include <vector>
 
 #include <iostream>
-// #include "VBoxGlobal.h"
-// #include "HostImpl.h"
+#include "VMTabSettings.h"
 
 #include "Iface.h"
 
@@ -42,8 +41,11 @@ MacWidgetField::MacWidgetField(QWidget *parent, int row, IfacesTable *destinatio
 
 MacWidgetField::~MacWidgetField()
 {
-	delete(button);
-	delete(lineEdit);
+	disconnect(lineEdit, SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
+	disconnect(button, SIGNAL(released()), this, SLOT(releasedSlot()));
+	delete button;
+	delete lineEdit;
+	delete layout();
 }
 
 void MacWidgetField::setText(const QString &text)
@@ -77,6 +79,13 @@ IfaceEnableCheckBox::IfaceEnableCheckBox(QWidget *parent, int row, IfacesTable *
 	connect(checkbox, SIGNAL(toggled(bool)), this, SLOT(toggledSlot(bool)));
 }
 
+IfaceEnableCheckBox::~IfaceEnableCheckBox()
+{
+	disconnect(checkbox, SIGNAL(toggled(bool)), this, SLOT(toggledSlot(bool)));
+	delete layout();
+	delete checkbox;
+}
+
 void IfaceEnableCheckBox::setCheckState(Qt::CheckState checked)
 {
 	checkbox->setCheckState(checked);
@@ -87,11 +96,12 @@ void IfaceEnableCheckBox::toggledSlot(bool checked)
 	destination->setStatus(row, checked ? Qt::Checked : Qt::Unchecked);
 }
 
-IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout) : QTableWidget(parent)
+IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge) : QTableWidget(parent)
+, vboxbridge(vboxbridge)
 {
 	setObjectName(QString::fromUtf8("tableView"));
 
-	QStringList horizontalHeaderLabels = QString("Abilita;Nome interfaccia;Indirizzo MAC;Indirizzo IP;Maschera sottorete;Nome sottorete").split(";");
+	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Indirizzo IP;Maschera sottorete;Nome sottorete").split(";");
 
 	setColumnCount(horizontalHeaderLabels.count());
 	setHorizontalHeaderLabels(horizontalHeaderLabels);
@@ -107,17 +117,6 @@ IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout) : QTableWidget(par
 	horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
 	horizontalHeader()->setStretchLastSection(true);
 	
-	int row;
-	for(row = 0; row < IFACES_NUMBER; row++)
-	{
-		QString name = QString("test%1").arg(row);
-		QString mac = QString("0000.0000.000%1").arg(row);
-		QString ip = QString("10.10.10.%1").arg(row);
-		QString subnetMask = QString("%1").arg(row);
-		QString subnetName = QString("subnet%1").arg(row);
-		addIface(true, name, mac, ip, subnetMask, subnetName); //TODO
-	}
-
 	resizeRowsToContents();
 	resizeColumnsToContents();
 	
@@ -126,12 +125,30 @@ IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout) : QTableWidget(par
 
 IfacesTable::~IfacesTable()
 {
-	
+	int row, col;
+	for(row = 0; row < ifaces.size(); row++)
+	{
+		for(col = 0; col < columnAt(row); col++)
+		{
+			if(col == COLUMN_IFACE_ENABLED || col == COLUMN_MAC)
+				delete cellWidget(row, col);
+			else
+				delete itemAt(row, col);
+		}
+	}
+
+	while(!ifaces.empty())
+	{
+		delete ifaces.back();
+		ifaces.pop_back();
+	}
 }
 
-int IfacesTable::addIface(bool enabled, QString name, QString mac, QString ip, QString subnetMask, QString subnetName)
+int IfacesTable::addIface(bool enabled, QString mac, QString name, QString ip, QString subnetMask, QString subnetName)
 {
-	Iface *i = new Iface(enabled, name, mac, ip, subnetMask, subnetName);
+	disconnect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
+
+	Iface *i = new Iface(enabled, mac, name, ip, subnetMask, subnetName);
 	ifaces.push_back(i);
 	int row = ifaces.size() - 1;
 
@@ -143,26 +160,28 @@ int IfacesTable::addIface(bool enabled, QString name, QString mac, QString ip, Q
 	setItem(row, COLUMN_SUBNETNAME, new QTableWidgetItem());
 
 	setStatus(row, enabled);
-
-	((IfaceEnableCheckBox *)cellWidget(row, COLUMN_IFACE_ENABLED))->setCheckState(enabled ? Qt::Checked : Qt::Unchecked);
-	((MacWidgetField *)cellWidget(row, COLUMN_MAC))->setText(i->mac);
-	item(row, COLUMN_IFACE_NAME)->setText(i->name);
-	item(row, COLUMN_IP)->setText(i->ip);
-	item(row, COLUMN_SUBNETMASK)->setText(i->subnetMask);
-	item(row, COLUMN_SUBNETNAME)->setText(i->subnetName);
+	setMac(row, i->mac);
+	setName(row, i->name);
+	setIp(row, i->ip);
+	setSubnetMask(row, i->subnetMask);
+	setSubnetName(row, i->subnetName);
 	
 	int col;
 	for (col = 1; col < columnCount(); col++)
+	{
 		if(col != COLUMN_MAC)
 			item(row, col)->setTextAlignment(Qt::AlignCenter);
 		else
 			((MacWidgetField *)cellWidget(row, col))->lineEdit->setAlignment(Qt::AlignCenter);
-	
+	}
+
+	connect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
 	return row;
 }
 
 bool IfacesTable::setStatus(int iface, bool checked)
 {
+	((IfaceEnableCheckBox *)cellWidget(iface, COLUMN_IFACE_ENABLED))->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
 	int col;
 	for (col = 1; col < columnCount(); col++)
 	{
@@ -272,8 +291,7 @@ bool IfacesTable::setSubnetName(int iface, QString subnetName)
 
 void IfacesTable::generateMac(int iface)
 {
-// 	setMac(iface, vboxGlobal().host().GenerateMACAddress()); //FIXME
-	setMac(iface, QString::fromUtf8("1234567890AB"));
+	setMac(iface, vboxbridge->generateMac());
 }
 
 QStringList IfacesTable::getIfaceInfo(int iface)
@@ -284,7 +302,7 @@ QStringList IfacesTable::getIfaceInfo(int iface)
 	iface_info.push_back(ifaces.at(iface)->ip);
 	iface_info.push_back(ifaces.at(iface)->subnetMask);
 	iface_info.push_back(ifaces.at(iface)->subnetName);
-	
+
 	return iface_info;
 }
 
@@ -295,11 +313,11 @@ void IfacesTable::cellChangedSlot(int row, int column)
 		case COLUMN_IFACE_ENABLED:
 			setStatus(row, item(row, COLUMN_IFACE_ENABLED)->checkState() == Qt::Checked);
 			break;
-		case COLUMN_IFACE_NAME:
-			setName(row, item(row, COLUMN_IFACE_NAME)->text());
-			break;
 		case COLUMN_MAC:
 // 			setMac(row, item(row, COLUMN_MAC)->text());
+			break;
+		case COLUMN_IFACE_NAME:
+			setName(row, item(row, COLUMN_IFACE_NAME)->text());
 			break;
 		case COLUMN_IP:
 			setIp(row, item(row, COLUMN_IP)->text());
