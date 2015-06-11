@@ -101,7 +101,11 @@ IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *
 {
 	setObjectName(QString::fromUtf8("tableView"));
 
+#ifdef CONFIGURABLE_IP
 	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Indirizzo IP;Maschera sottorete;Nome sottorete").split(";");
+#else
+	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Nome sottorete").split(";");
+#endif
 
 	setColumnCount(horizontalHeaderLabels.count());
 	setHorizontalHeaderLabels(horizontalHeaderLabels);
@@ -144,28 +148,32 @@ IfacesTable::~IfacesTable()
 	}
 }
 
+#ifdef CONFIGURABLE_IP
 int IfacesTable::addIface(bool enabled, QString mac, QString name, QString ip, QString subnetMask, QString subnetName)
+#else
+int IfacesTable::addIface(bool enabled, QString mac, QString name, QString subnetName)
+#endif
 {
 	disconnect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
 
+#ifdef CONFIGURABLE_IP
 	Iface *i = new Iface(enabled, mac, name, ip, subnetMask, subnetName);
+#else
+	Iface *i = new Iface(enabled, mac, name, subnetName);
+#endif
+
 	ifaces.push_back(i);
 	int row = ifaces.size() - 1;
 
 	setCellWidget(row, COLUMN_IFACE_ENABLED, new IfaceEnableCheckBox(this, row, this));
 	setCellWidget(row, COLUMN_MAC, new MacWidgetField(this, row, this));
 	setItem(row, COLUMN_IFACE_NAME, new QTableWidgetItem());
+#ifdef CONFIGURABLE_IP
 	setItem(row, COLUMN_IP, new QTableWidgetItem());
 	setItem(row, COLUMN_SUBNETMASK, new QTableWidgetItem());
+#endif
 	setItem(row, COLUMN_SUBNETNAME, new QTableWidgetItem());
 
-	setStatus(row, enabled);
-	setMac(row, i->mac);
-	setName(row, i->name);
-	setIp(row, i->ip);
-	setSubnetMask(row, i->subnetMask);
-	setSubnetName(row, i->subnetName);
-	
 	int col;
 	for (col = 1; col < columnCount(); col++)
 	{
@@ -174,6 +182,15 @@ int IfacesTable::addIface(bool enabled, QString mac, QString name, QString ip, Q
 		else
 			((MacWidgetField *)cellWidget(row, col))->lineEdit->setAlignment(Qt::AlignCenter);
 	}
+
+	setStatus(row, enabled);
+	setMac(row, i->mac);
+	setName(row, i->name);
+#ifdef CONFIGURABLE_IP
+	setIp(row, i->ip);
+	setSubnetMask(row, i->subnetMask);
+#endif
+	setSubnetName(row, i->subnetName);
 
 	connect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
 	return row;
@@ -251,6 +268,7 @@ bool IfacesTable::setMac(int iface, QString mac)
 	return done;
 }
 
+#ifdef CONFIGURABLE_IP
 bool IfacesTable::setIp(int iface, QString ip)
 {
 	QString old_ip = ifaces.at(iface)->ip;
@@ -280,6 +298,7 @@ bool IfacesTable::setSubnetMask(int iface, QString subnetMask)
 	
 	return done;
 }
+#endif
 
 bool IfacesTable::setSubnetName(int iface, QString subnetName)
 {
@@ -299,8 +318,10 @@ QStringList IfacesTable::getIfaceInfo(int iface)
 	QStringList iface_info;
 	iface_info.push_back(ifaces.at(iface)->name);
 	iface_info.push_back(ifaces.at(iface)->mac);
+#ifdef CONFIGURABLE_IP
 	iface_info.push_back(ifaces.at(iface)->ip);
 	iface_info.push_back(ifaces.at(iface)->subnetMask);
+#endif
 	iface_info.push_back(ifaces.at(iface)->subnetName);
 
 	return iface_info;
@@ -319,12 +340,14 @@ void IfacesTable::cellChangedSlot(int row, int column)
 		case COLUMN_IFACE_NAME:
 			setName(row, item(row, COLUMN_IFACE_NAME)->text());
 			break;
+#ifdef CONFIGURABLE_IP
 		case COLUMN_IP:
 			setIp(row, item(row, COLUMN_IP)->text());
 			break;
 		case COLUMN_SUBNETMASK:
 			setSubnetMask(row, item(row, COLUMN_SUBNETMASK)->text());
 			break;
+#endif
 		case COLUMN_SUBNETNAME:
 			setSubnetName(row, item(row, COLUMN_SUBNETNAME)->text());
 			break;

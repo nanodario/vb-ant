@@ -51,6 +51,13 @@ set(Reti_SRCS
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVBOX_WITH_XPCOM_NAMESPACE_CLEANUP")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar")
 
+if($ENV{CONFIGURABLE_IP})
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCONFIGURABLE_IP")
+	message("-- Enabled IP configuration")
+else()
+	message("-- Disabled IP configuration")
+endif()
+
 set(VBOX_LIB "/usr/lib/virtualbox/VBoxXPCOM.so")
 
 qt4_automoc(${Reti_SRCS})

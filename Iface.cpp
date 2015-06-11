@@ -52,7 +52,7 @@ static bool isValidDecNumber(std::string num, int min, int max)
 		return false;
 	
 	for (i = 0; i < num.length(); i++)
-		if(num.c_str()[i] < '0' || num.c_str()[i] > '9')
+		if(!isdigit(num.c_str()[i]))
 			return false;
 		
 		unsigned int x;
@@ -64,13 +64,20 @@ static bool isValidDecNumber(std::string num, int min, int max)
 	return (x >= min && x <= max);
 }
 
+#ifdef CONFIGURABLE_IP
 Iface::Iface(bool enabled, QString mac, QString name, QString ip, QString subnetMask, QString subnetName)
 : enabled(enabled)
+#else
+Iface::Iface(bool enabled, QString mac, QString name, QString subnetName)
+: enabled(enabled)
+#endif
 {
 	setName(name);
 	setMac(mac);
+#ifdef CONFIGURABLE_IP
 	setIp(ip);
 	setSubnetMask(subnetMask);
+#endif
 	setSubnetName(subnetName);
 }
 
@@ -100,6 +107,7 @@ bool Iface::setMac(QString _mac)
 	return false;
 }
 
+#ifdef CONFIGURABLE_IP
 bool Iface::setIp(QString _ip)
 {
 	if(isValidIp(_ip))
@@ -123,6 +131,7 @@ bool Iface::setSubnetMask(QString _subnetMask)
 	}
 	return false;
 }
+#endif
 
 bool Iface::setSubnetName(QString _subnetName)
 {
@@ -309,9 +318,7 @@ QString Iface::formatMac(QString mac)
 	return QString::fromUtf8("");
 }
 
-/*
- * 
- */
+#ifdef CONFIGURABLE_IP
 bool Iface::isValidIp(QString ip)
 {
 	if (ip.length() == 0)
@@ -395,3 +402,4 @@ bool Iface::isValidSubnetMask(QString subnetMask)
 	}
 	return false;
 }
+#endif

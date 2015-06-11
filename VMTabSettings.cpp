@@ -49,10 +49,17 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 		bool enabled = MachineBridge::getIfaceEnabled(ifaces_vec.at(row));
 		QString name = QString("test%1").arg(row);
 		QString mac = MachineBridge::getIfaceMac(ifaces_vec.at(row));
+#ifdef CONFIGURABLE_IP
 		QString ip = QString("10.10.10.%1").arg(row);
 		QString subnetMask = QString("%1").arg(row);
+#endif
 		QString subnetName = QString("subnet%1").arg(row);
+
+#ifdef CONFIGURABLE_IP
 		ifaces_table->addIface(enabled, mac, name, ip, subnetMask, subnetName);
+#else
+		ifaces_table->addIface(enabled, mac, name, subnetName);
+#endif
 	}
 	
 	
