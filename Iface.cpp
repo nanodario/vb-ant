@@ -377,10 +377,21 @@ bool Iface::isValidSubnetMask(QString subnetMask)
 
 	if (s_smask.count() == 4)
 	{
+		uint32_t subnetMask_32 = 0;
 		for (i = 0; i < 4; i++)
+		{
 			if (!isValidDecNumber(s_smask.at(i).toStdString(), 0, 255))
 				return false;
-		return true;
+			subnetMask_32 += (uint32_t) (s_smask.at(i).toInt() << 8 * (3-i));
+		}
+
+		uint32_t checkMask = 0;
+		for (i = 31; i > 0; i--)
+		{
+			checkMask |= 1 << i;
+			if (subnetMask_32 == checkMask)
+				return true;
+		}
 	}
 	return false;
 }
