@@ -9,9 +9,9 @@ class Iface
 {
 	public:
 #ifdef CONFIGURABLE_IP
-		Iface(bool enabled = false, QString name = "", QString mac = "", QString ip = "", QString subnetMask = "", QString subnetName = "");
+		Iface(bool enabled = false, QString mac = "", QString name = "", QString ip = "", QString subnetMask = "", QString subnetName = "");
 #else
-		Iface(bool enabled = false, QString name = "", QString mac = "", QString subnetName = "");
+		Iface(bool enabled = false, QString mac = "", QString name = "", QString subnetName = "");
 #endif
 		
 		virtual ~Iface();

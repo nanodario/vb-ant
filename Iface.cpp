@@ -393,12 +393,14 @@ bool Iface::isValidSubnetMask(QString subnetMask)
 		}
 
 		uint32_t checkMask = 0;
-		for (i = 31; i > 0; i--)
+		for (i = 31; i >= 0; i--)
 		{
-			checkMask |= 1 << i;
 			if (subnetMask_32 == checkMask)
 				return true;
+			checkMask |= 1 << i;
 		}
+		if (subnetMask_32 == checkMask)
+			return true;
 	}
 	return false;
 }
