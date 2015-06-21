@@ -42,9 +42,9 @@ set(Reti_SRCS
 	InfoDialog.cpp
 	main.cpp
 	MainWindow.cpp
-	Settings.cpp
 	VirtualBoxBridge.cpp
 	VirtualMachine.cpp
+	VMSettings.cpp
 	VMTabSettings.cpp
 )
 

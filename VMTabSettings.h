@@ -17,7 +17,7 @@ class VMTabSettings : public QWidget
 	Q_OBJECT
 	
 	public:
-		VMTabSettings(QTabWidget *parent, QString _vm_name, VirtualBoxBridge *vboxbridge, IMachine *machine);
+		VMTabSettings(QTabWidget *parent, QString _vm_name, VirtualBoxBridge *vboxbridge, MachineBridge *machine);
 		virtual ~VMTabSettings();
 		IfacesTable *ifaces_table;
 		
@@ -31,10 +31,10 @@ class VMTabSettings : public QWidget
 		QWidget *vm_tab;
 		QVBoxLayout *verticalLayout;
 		QDialogButtonBox *buttonBox;
-		std::vector<VirtualMachine*> vm_vec;
-		std::vector<INetworkAdapter*> ifaces_vec;
+		VirtualMachine *vm;
+		std::vector<Iface*> ifaces_vec;
 		VirtualBoxBridge *vboxbridge;
-		IMachine *machine;
+		MachineBridge *machine;
 };
 
 #endif //VMTABSETTINGS_H

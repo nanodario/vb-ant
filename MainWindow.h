@@ -41,7 +41,7 @@ class MainWindow : public QMainWindow
 		
 		Ui_MainWindow *ui;
 		std::vector<VMTabSettings*> VMTabSettings_vec;
-		std::vector<IMachine*> machines_vec;
+		std::vector<MachineBridge*> machines_vec;
 		InfoDialog infoDialog;
 };
 

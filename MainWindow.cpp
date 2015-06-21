@@ -22,10 +22,9 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	int i;
 	for (i = 0; i < machines_vec.size(); i++)
 	{
-		QString tabname = MachineBridge::getName(machines_vec.at(i));
+		QString tabname = machines_vec.at(i)->getName();
 		VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(i));
 		ui->vm_tabs->addTab(vmSettings, tabname);
-// 		vmSettings->addTo(ui->vm_tabs);
 		VMTabSettings_vec.push_back(vmSettings);
 	}
 
@@ -46,7 +45,7 @@ MainWindow::~MainWindow()
 
 	while(!machines_vec.empty())
 	{
-		machines_vec.back() = nsnull;
+		delete machines_vec.back();
 		machines_vec.pop_back();
 	}
 

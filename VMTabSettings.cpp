@@ -14,8 +14,8 @@
 
 #include <iostream>
 
-VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBridge *vboxbridge, IMachine *machine) : QWidget(parent)
-, vm_name(tabname), vboxbridge(vboxbridge), machine(machine)
+VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBridge *vboxbridge, MachineBridge *machine) : QWidget(parent)
+, vm_name(tabname), vboxbridge(vboxbridge), machine(machine), vm(new VirtualMachine(machine))
 {
 	setObjectName(tabname);
 
@@ -34,21 +34,21 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 	
 	buttonBox = new QDialogButtonBox(this);
 	buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
-	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset);
+	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset|QDialogButtonBox::Ok);
 	
 	verticalLayout->addWidget(buttonBox);
 	
 	connect(vm_enabled, SIGNAL(toggled(bool)), this, SLOT(vm_enabledSlot(bool)));
 	connect(buttonBox, SIGNAL(clicked(QAbstractButton*)), this, SLOT(clickedSlot(QAbstractButton*)));
 	
-	ifaces_vec = MachineBridge::getNetworkInterfaces(vboxbridge->virtualBox, machine);
+	ifaces_vec = vm->getIfaces();
 	
 	int row;
 	for(row = 0; row < ifaces_vec.size(); row++)
 	{
-		bool enabled = MachineBridge::getIfaceEnabled(ifaces_vec.at(row));
+		bool enabled = ifaces_vec.at(row)->enabled;
 		QString name = QString("test%1").arg(row);
-		QString mac = MachineBridge::getIfaceMac(ifaces_vec.at(row));
+		QString mac = ifaces_vec.at(row)->mac;
 #ifdef CONFIGURABLE_IP
 		QString ip = QString("10.10.10.%1").arg(row);
 		QString subnetMask = QString("%1").arg(row);
@@ -61,38 +61,43 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 		ifaces_table->addIface(enabled, mac, name, subnetName);
 #endif
 	}
-	
-	
 }
 
 VMTabSettings::~VMTabSettings()
 {
-	delete verticalLayout;
 	delete buttonBox;
+	delete vm;
+	
 	delete ifaces_table;
+	delete vm_enabled;
+	delete verticalLayout;
 }
 
 void VMTabSettings::clickedSlot(QAbstractButton *button)
 {
-	int i;
-	for (i = 0; i < 8; i++)
-	{
-		QStringList iface_info = ifaces_table->getIfaceInfo(i);
-		std::cout <<	iface_info.at(0).toStdString() << ", " <<
-				iface_info.at(1).toStdString() << ", " <<
-				iface_info.at(2).toStdString() << ", " <<
-				iface_info.at(3).toStdString() << ", " <<
-				iface_info.at(4).toStdString() << std::endl;
-		
-	}
 	QDialogButtonBox::StandardButton standardButton = buttonBox->standardButton(button);
 	switch(standardButton)
 	{
 		case QDialogButtonBox::Apply:
 			std::cout << "apply: " << vm_name.toStdString() << std::endl;
+			int i;
+			for (i = 0; i < 8; i++)
+			{
+				QStringList iface_info = ifaces_table->getIfaceInfo(i);
+				std::cout <<	iface_info.at(0).toStdString() << ", " <<
+						iface_info.at(1).toStdString() << ", " <<
+						iface_info.at(2).toStdString() << ", " <<
+						iface_info.at(3).toStdString() << ", " <<
+						iface_info.at(4).toStdString() << std::endl;
+				
+			}
 			break;
 		case QDialogButtonBox::Reset:
 			std::cout << "reset: " << vm_name.toStdString() << std::endl;
+			break;
+		case QDialogButtonBox::Ok:
+			std::cout << "ok:    " << vm_name.toStdString() << std::endl;
+			vm->start();
 			break;
 	}
 }
