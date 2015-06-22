@@ -34,7 +34,7 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 	
 	buttonBox = new QDialogButtonBox(this);
 	buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
-	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset|QDialogButtonBox::Ok);
+	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset|QDialogButtonBox::Ok|QDialogButtonBox::Cancel);
 	
 	verticalLayout->addWidget(buttonBox);
 	
@@ -79,7 +79,7 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 	switch(standardButton)
 	{
 		case QDialogButtonBox::Apply:
-			std::cout << "apply: " << vm_name.toStdString() << std::endl;
+			std::cout << "apply: \t" << vm_name.toStdString() << std::endl;
 			int i;
 			for (i = 0; i < 8; i++)
 			{
@@ -93,11 +93,15 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 			}
 			break;
 		case QDialogButtonBox::Reset:
-			std::cout << "reset: " << vm_name.toStdString() << std::endl;
+			std::cout << "reset: \t" << vm_name.toStdString() << std::endl;
 			break;
 		case QDialogButtonBox::Ok:
-			std::cout << "ok:    " << vm_name.toStdString() << std::endl;
+			std::cout << "ok: \t" << vm_name.toStdString() << std::endl;
 			vm->start();
+			break;
+		case QDialogButtonBox::Cancel:
+			std::cout << "cancel: \t" << vm_name.toStdString() << std::endl;
+			vm->stop();
 			break;
 	}
 }

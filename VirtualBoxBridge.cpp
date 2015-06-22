@@ -344,3 +344,20 @@ bool MachineBridge::start()
 
 	return true;
 }
+
+bool MachineBridge::stop()
+{
+	nsresult rc;
+
+	nsCOMPtr<IConsole> console;
+	rc = session->GetConsole(getter_AddRefs(console));
+	if(NS_FAILED(rc))
+		return false;
+
+	nsCOMPtr<IProgress> progress;
+	rc = console->PowerDown(getter_AddRefs(progress));
+	if(NS_FAILED(rc))
+		return false;
+
+	return true;
+}

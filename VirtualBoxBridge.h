@@ -57,7 +57,7 @@ class MachineBridge
 		bool setIfaceMac(INetworkAdapter *iface, QString qMac);
 		bool setIfaceMac(int iface, QString qMac);
 		bool start();
-		void stop();
+		bool stop();
 		bool saveSettings();
 
 	private:
