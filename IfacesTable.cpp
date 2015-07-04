@@ -8,9 +8,11 @@
 #include <QToolButton>
 #include <QObject>
 #include <QLineEdit>
+#include <QComboBox>
 #include <vector>
 
 #include <iostream>
+#include <malloc.h>
 #include "VMTabSettings.h"
 
 #include "Iface.h"
@@ -29,7 +31,7 @@ MacWidgetField::MacWidgetField(QWidget *parent, int row, IfacesTable *destinatio
 	button = new QToolButton(this);
 	button->setObjectName(QString::fromUtf8("button"));
 	button->setAutoRaise(true);
-	button->setIcon(QIcon(QString::fromUtf8(":/resources/refresh_16px.png")));
+	button->setIcon(QIcon(QString::fromUtf8(":/refresh/resources/refresh_16px.png")));
 	button->setToolButtonStyle(Qt::ToolButtonIconOnly);
 	horizontalLayout->addWidget(button);
 	
@@ -43,6 +45,7 @@ MacWidgetField::~MacWidgetField()
 {
 	disconnect(lineEdit, SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
 	disconnect(button, SIGNAL(released()), this, SLOT(releasedSlot()));
+	
 	delete button;
 	delete lineEdit;
 	delete layout();
@@ -96,15 +99,88 @@ void IfaceEnableCheckBox::toggledSlot(bool checked)
 	destination->setStatus(row, checked ? Qt::Checked : Qt::Unchecked);
 }
 
-IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge) : QTableWidget(parent)
-, vboxbridge(vboxbridge)
+AttachmentComboBox::AttachmentComboBox(QWidget *parent, int row, IfacesTable *destination) : QWidget(parent)
+, row(row), destination(destination)
+{
+	QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
+	horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+	horizontalLayout->setContentsMargins(0, 0, 0, 0);
+
+	uint32_t maxIndex = std::max(
+		std::max(
+			std::max((uint32_t) NetworkAttachmentType::Null, (uint32_t) NetworkAttachmentType::Bridged),
+			 std::max((uint32_t) NetworkAttachmentType::Generic, (uint32_t) NetworkAttachmentType::Generic)
+		),
+		std::max(
+			std::max((uint32_t) NetworkAttachmentType::HostOnly, (uint32_t) NetworkAttachmentType::Internal),
+			 std::max((uint32_t) NetworkAttachmentType::NAT, (uint32_t) NetworkAttachmentType::NATNetwork)
+		)
+	);
+	
+	uint32_t minIndex = std::min(
+		std::min(
+			std::min((uint32_t) NetworkAttachmentType::Null, (uint32_t) NetworkAttachmentType::Bridged),
+			 std::min((uint32_t) NetworkAttachmentType::Generic, (uint32_t) NetworkAttachmentType::Generic)
+		),
+		std::min(
+			std::min((uint32_t) NetworkAttachmentType::HostOnly, (uint32_t) NetworkAttachmentType::Internal),
+			 std::min((uint32_t) NetworkAttachmentType::NAT, (uint32_t) NetworkAttachmentType::NATNetwork)
+		)
+	);
+	
+	comboBox = new QComboBox(this);
+	
+	for(int i = minIndex; i <= maxIndex; i++)
+	{
+		switch(i)
+		{
+			case NetworkAttachmentType::Null: comboBox->addItem(QString::fromUtf8("Null")); break;
+			case NetworkAttachmentType::Bridged: comboBox->addItem(QString::fromUtf8("Bridged")); break;
+			case NetworkAttachmentType::Generic: comboBox->addItem(QString::fromUtf8("Generic")); break;
+			case NetworkAttachmentType::HostOnly: comboBox->addItem(QString::fromUtf8("HostOnly")); break;
+			case NetworkAttachmentType::Internal: comboBox->addItem(QString::fromUtf8("Internal")); break;
+			case NetworkAttachmentType::NAT: comboBox->addItem(QString::fromUtf8("NAT")); break;
+			case NetworkAttachmentType::NATNetwork: comboBox->addItem(QString::fromUtf8("NATNetwork")); break;
+			default: std::cout << "NetworkAttachmentType::" << i << " is an unknown attachment type" << std::endl; break;
+		}
+	}
+	
+	horizontalLayout->addWidget(comboBox);
+	horizontalLayout->setAlignment(Qt::AlignCenter);
+	
+	setLayout(horizontalLayout);
+}
+
+void AttachmentComboBox::add_connection()
+{
+	comboBox->connect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChangedSlot(int)));
+}
+
+void AttachmentComboBox::remove_connection()
+{
+	comboBox->disconnect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChangedSlot(int)));
+}
+
+AttachmentComboBox::~AttachmentComboBox()
+{
+	remove_connection();
+	delete comboBox;
+}
+
+void AttachmentComboBox::currentIndexChangedSlot(int index)
+{
+	destination->setAttachmentType(row, index);
+}
+
+IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge, Iface **ifaces) : QTableWidget(parent)
+, vboxbridge(vboxbridge), ifaces(ifaces)
 {
 	setObjectName(QString::fromUtf8("tableView"));
 
 #ifdef CONFIGURABLE_IP
-	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Indirizzo IP;Maschera sottorete;Nome sottorete").split(";");
+	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Indirizzo IP;Maschera sottorete;Tipo interfaccia;Nome sottorete").split(";");
 #else
-	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Nome sottorete").split(";");
+	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Tipo interfaccia;Nome sottorete").split(";");
 #endif
 
 	setColumnCount(horizontalHeaderLabels.count());
@@ -130,70 +206,85 @@ IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *
 IfacesTable::~IfacesTable()
 {
 	int row, col;
-	for(row = 0; row < ifaces.size(); row++)
+	for(row = 0; row < rowCount(); row++)
 	{
 		for(col = 0; col < columnAt(row); col++)
 		{
-			if(col == COLUMN_IFACE_ENABLED || col == COLUMN_MAC)
-				delete cellWidget(row, col);
+			if(col == COLUMN_IFACE_ENABLED)
+				delete ((IfaceEnableCheckBox *)cellWidget(row, col));
+			else if(col == COLUMN_MAC)
+				delete ((MacWidgetField *)cellWidget(row, col));
+			else if(col == COLUMN_IFACE_TYPE)
+				delete ((AttachmentComboBox *)cellWidget(row, col));
 			else
 				delete itemAt(row, col);
 		}
 	}
-
-	while(!ifaces.empty())
-	{
-		delete ifaces.back();
-		ifaces.pop_back();
-	}
 }
 
 #ifdef CONFIGURABLE_IP
-int IfacesTable::addIface(bool enabled, QString mac, QString name, QString ip, QString subnetMask, QString subnetName)
+int IfacesTable::setIface(int iface, bool enabled, QString mac, uint32_t attachmentType, QString name, QString ip, QString subnetMask, QString subnetName)
 #else
-int IfacesTable::addIface(bool enabled, QString mac, QString name, QString subnetName)
+int IfacesTable::setIface(int iface, bool enabled, QString mac, uint32_t attachmentType, QString name, QString subnetName)
 #endif
 {
 	disconnect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
-
+	
+	if(ifaces[iface] == NULL)
+	{
 #ifdef CONFIGURABLE_IP
-	Iface *i = new Iface(enabled, mac, name, ip, subnetMask, subnetName);
+		ifaces[iface] = new Iface(enabled, mac, attachmentType, name, ip, subnetMask, subnetName);
 #else
-	Iface *i = new Iface(enabled, mac, name, subnetName);
+		ifaces[iface] = new Iface(enabled, mac, attachmentType, name, subnetName);
 #endif
-
-	ifaces.push_back(i);
-	int row = ifaces.size() - 1;
-
-	setCellWidget(row, COLUMN_IFACE_ENABLED, new IfaceEnableCheckBox(this, row, this));
-	setCellWidget(row, COLUMN_MAC, new MacWidgetField(this, row, this));
-	setItem(row, COLUMN_IFACE_NAME, new QTableWidgetItem());
+	}
+	else
+	{
+		ifaces[iface]->enabled = enabled;
+		ifaces[iface]->setMac(mac);
+		ifaces[iface]->setName(name);
 #ifdef CONFIGURABLE_IP
-	setItem(row, COLUMN_IP, new QTableWidgetItem());
-	setItem(row, COLUMN_SUBNETMASK, new QTableWidgetItem());
+		ifaces[iface]->setIp(ip);
+		ifaces[iface]->setSubnetMask(subnetMask);
 #endif
-	setItem(row, COLUMN_SUBNETNAME, new QTableWidgetItem());
+		ifaces[iface]->setAttachmentType(attachmentType);
+		ifaces[iface]->setSubnetName(subnetName);
+	}
+
+	setCellWidget(iface, COLUMN_IFACE_ENABLED, new IfaceEnableCheckBox(this, iface, this));
+	setCellWidget(iface, COLUMN_MAC, new MacWidgetField(this, iface, this));
+	setItem(iface, COLUMN_IFACE_NAME, new QTableWidgetItem());
+#ifdef CONFIGURABLE_IP
+	setItem(iface, COLUMN_IP, new QTableWidgetItem());
+	setItem(iface, COLUMN_SUBNETMASK, new QTableWidgetItem());
+#endif
+	AttachmentComboBox *attachmentComboBox = new AttachmentComboBox(this, iface, this);
+	setCellWidget(iface, COLUMN_IFACE_TYPE, attachmentComboBox);
+	setItem(iface, COLUMN_SUBNETNAME, new QTableWidgetItem());
 
 	int col;
 	for (col = 1; col < columnCount(); col++)
 	{
-		if(col != COLUMN_MAC)
-			item(row, col)->setTextAlignment(Qt::AlignCenter);
-		else
-			((MacWidgetField *)cellWidget(row, col))->lineEdit->setAlignment(Qt::AlignCenter);
+		if(col == COLUMN_MAC)
+			((MacWidgetField *)cellWidget(iface, col))->lineEdit->setAlignment(Qt::AlignCenter);
+		else if(col != COLUMN_IFACE_TYPE)
+			item(iface, col)->setTextAlignment(Qt::AlignCenter);
 	}
 
-	setStatus(row, enabled);
-	setMac(row, i->mac);
-	setName(row, i->name);
+	setStatus(iface, ifaces[iface]->enabled);
+	setMac(iface, ifaces[iface]->mac);
+	setName(iface, ifaces[iface]->name);
 #ifdef CONFIGURABLE_IP
-	setIp(row, i->ip);
-	setSubnetMask(row, i->subnetMask);
+	setIp(iface, ifaces[iface]->ip);
+	setSubnetMask(iface, ifaces[iface]->subnetMask);
 #endif
-	setSubnetName(row, i->subnetName);
-
+	setAttachmentType(iface, ifaces[iface]->attachmentType);
+	setSubnetName(iface, ifaces[iface]->subnetName);
+	
 	connect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
-	return row;
+	attachmentComboBox->add_connection();
+
+	return iface;
 }
 
 bool IfacesTable::setStatus(int iface, bool checked)
@@ -209,6 +300,20 @@ bool IfacesTable::setStatus(int iface, bool checked)
 			w->button->setEnabled(checked);
 			w->lineEdit->setEnabled(checked);
 		}
+		else if(col == COLUMN_IFACE_TYPE)
+		{
+			AttachmentComboBox *a = (AttachmentComboBox *)cellWidget(iface, col);
+			a->setEnabled(checked);
+		}
+		else if(col == COLUMN_SUBNETNAME)
+		{
+			flags = item(iface, col)->flags();
+			if(checked && ifaces[iface]->attachmentType != NetworkAttachmentType::Null)
+				flags |= Qt::ItemIsEnabled;
+			else
+				flags &= ~Qt::ItemIsEnabled;
+			item(iface, col)->setFlags(flags);
+		}
 		else
 		{
 			flags = item(iface, col)->flags();
@@ -220,7 +325,7 @@ bool IfacesTable::setStatus(int iface, bool checked)
 		}
 	}
 
-	ifaces.at(iface)->enabled = checked;
+	ifaces[iface]->enabled = checked;
 	return true;
 }
 
@@ -228,17 +333,17 @@ bool IfacesTable::setStatus(int iface, bool checked)
 bool IfacesTable::setName(int iface, QString name)
 {
 	int i;
-	for (i = 0; i < ifaces.size(); i++)
+	for (i = 0; i < rowCount(); i++)
 	{
-		if (name == ifaces.at(i)->name)
+		if (name == ifaces[i]->name)
 		{
-			item(iface, COLUMN_IFACE_NAME)->setText(ifaces.at(iface)->name);
+			item(iface, COLUMN_IFACE_NAME)->setText(ifaces[iface]->name);
 			return false;
 		}
 	}
 	
-	ifaces.at(iface)->setName(name);
-	QString new_name = ifaces.at(iface)->name;
+	ifaces[iface]->setName(name);
+	QString new_name = ifaces[iface]->name;
 	item(iface, COLUMN_IFACE_NAME)->setText(new_name);
 	return true;
 }
@@ -246,20 +351,20 @@ bool IfacesTable::setName(int iface, QString name)
 bool IfacesTable::setMac(int iface, QString mac)
 {
 	int i;
-	for (i = 0; i < ifaces.size(); i++)
+	for (i = 0; i < rowCount(); i++)
 	{
-		if (Iface::formatMac(mac) == ifaces.at(i)->mac)
+		if (Iface::formatMac(mac) == ifaces[i]->mac)
 		{
-			((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(ifaces.at(iface)->mac);
+			((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(ifaces[iface]->mac);
 			return false;
 		}
 	}
 	
-	QString old_mac = ifaces.at(iface)->mac;
-	bool done = ifaces.at(iface)->setMac(mac);
+	QString old_mac = ifaces[iface]->mac;
+	bool done = ifaces[iface]->setMac(mac);
 	if (done)
 	{
-		QString new_mac = ifaces.at(iface)->mac;
+		QString new_mac = ifaces[iface]->mac;
 		((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(new_mac);
 	}
 	else
@@ -271,11 +376,11 @@ bool IfacesTable::setMac(int iface, QString mac)
 #ifdef CONFIGURABLE_IP
 bool IfacesTable::setIp(int iface, QString ip)
 {
-	QString old_ip = ifaces.at(iface)->ip;
-	bool done = ifaces.at(iface)->setIp(ip);
+	QString old_ip = ifaces[iface]->ip;
+	bool done = ifaces[iface]->setIp(ip);
 	if (done)
 	{
-		QString new_ip = ifaces.at(iface)->ip;
+		QString new_ip = ifaces[iface]->ip;
 		item(iface, COLUMN_IP)->setText(ip);
 	}
 	else
@@ -286,11 +391,11 @@ bool IfacesTable::setIp(int iface, QString ip)
 
 bool IfacesTable::setSubnetMask(int iface, QString subnetMask)
 {
-	QString old_subnetMask = ifaces.at(iface)->subnetMask;
-	bool done = ifaces.at(iface)->setSubnetMask(subnetMask);
+	QString old_subnetMask = ifaces[iface]->subnetMask;
+	bool done = ifaces[iface]->setSubnetMask(subnetMask);
 	if (done)
 	{
-		QString new_subnetMask = ifaces.at(iface)->subnetMask;
+		QString new_subnetMask = ifaces[iface]->subnetMask;
 		item(iface, COLUMN_SUBNETMASK)->setText(new_subnetMask);
 	}
 	else
@@ -300,10 +405,33 @@ bool IfacesTable::setSubnetMask(int iface, QString subnetMask)
 }
 #endif
 
+bool IfacesTable::setAttachmentType(int iface, uint32_t attachmentType) //FIXME
+{
+	AttachmentComboBox *attachmentComboBox = (AttachmentComboBox *)cellWidget(iface, COLUMN_IFACE_TYPE);
+
+	if(ifaces[iface]->setAttachmentType(attachmentType))
+	{
+		attachmentComboBox->remove_connection();
+		attachmentComboBox->comboBox->setCurrentIndex(ifaces[iface]->attachmentType);
+		attachmentComboBox->add_connection();
+
+		Qt::ItemFlags flags = item(iface, COLUMN_SUBNETNAME)->flags();
+		if(ifaces[iface]->attachmentType != NetworkAttachmentType::Null)
+			flags |= Qt::ItemIsEnabled;
+		else
+			flags &= ~Qt::ItemIsEnabled;
+		item(iface, COLUMN_SUBNETNAME)->setFlags(flags);
+		
+		return true;
+	}
+	
+	return false;
+}
+
 bool IfacesTable::setSubnetName(int iface, QString subnetName)
 {
-	ifaces.at(iface)->setSubnetName(subnetName);
-	QString new_subnetName = ifaces.at(iface)->subnetName;
+	ifaces[iface]->setSubnetName(subnetName);
+	QString new_subnetName = ifaces[iface]->subnetName;
 	item(iface, COLUMN_SUBNETNAME)->setText(new_subnetName);
 	return true;
 }
@@ -316,13 +444,15 @@ void IfacesTable::generateMac(int iface)
 QStringList IfacesTable::getIfaceInfo(int iface)
 {
 	QStringList iface_info;
-	iface_info.push_back(ifaces.at(iface)->name);
-	iface_info.push_back(ifaces.at(iface)->mac);
+	iface_info.push_back(QString(ifaces[iface]->enabled ? "enabled" : "disabled"));
+	iface_info.push_back(ifaces[iface]->mac);
+	iface_info.push_back(ifaces[iface]->name);
 #ifdef CONFIGURABLE_IP
-	iface_info.push_back(ifaces.at(iface)->ip);
-	iface_info.push_back(ifaces.at(iface)->subnetMask);
+	iface_info.push_back(ifaces[iface]->ip);
+	iface_info.push_back(ifaces[iface]->subnetMask);
 #endif
-	iface_info.push_back(ifaces.at(iface)->subnetName);
+	iface_info.push_back(QString("%1").arg(ifaces[iface]->attachmentType));
+	iface_info.push_back(ifaces[iface]->subnetName);
 
 	return iface_info;
 }
@@ -350,6 +480,8 @@ void IfacesTable::cellChangedSlot(int row, int column)
 #endif
 		case COLUMN_SUBNETNAME:
 			setSubnetName(row, item(row, COLUMN_SUBNETNAME)->text());
+			break;
+		case COLUMN_IFACE_TYPE:
 			break;
 	}
 }

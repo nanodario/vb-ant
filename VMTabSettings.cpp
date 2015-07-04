@@ -29,48 +29,54 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 	vm_enabled->setObjectName(QString::fromUtf8("vm_enabled"));
 	verticalLayout->addWidget(vm_enabled);
 
-	ifaces_table = new IfacesTable(this, verticalLayout, vboxbridge);
+	ifaces_table = new IfacesTable(this, verticalLayout, vboxbridge, vm->getIfaces());
 	verticalLayout->addWidget(ifaces_table);
-	
+
 	buttonBox = new QDialogButtonBox(this);
 	buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
-	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset|QDialogButtonBox::Ok|QDialogButtonBox::Cancel);
-	
+	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset/*|QDialogButtonBox::Ok|QDialogButtonBox::Cancel*/);
+
 	verticalLayout->addWidget(buttonBox);
-	
+
 	connect(vm_enabled, SIGNAL(toggled(bool)), this, SLOT(vm_enabledSlot(bool)));
 	connect(buttonBox, SIGNAL(clicked(QAbstractButton*)), this, SLOT(clickedSlot(QAbstractButton*)));
-	
-	ifaces_vec = vm->getIfaces();
-	
-	int row;
-	for(row = 0; row < ifaces_vec.size(); row++)
-	{
-		bool enabled = ifaces_vec.at(row)->enabled;
-		QString name = QString("test%1").arg(row);
-		QString mac = ifaces_vec.at(row)->mac;
-#ifdef CONFIGURABLE_IP
-		QString ip = QString("10.10.10.%1").arg(row);
-		QString subnetMask = QString("%1").arg(row);
-#endif
-		QString subnetName = QString("subnet%1").arg(row);
+// 	connect(vm->machine->session, SIGNAL(sigMachineStateChange()), this, SLOT(sltMachineStateChanged()));
 
-#ifdef CONFIGURABLE_IP
-		ifaces_table->addIface(enabled, mac, name, ip, subnetMask, subnetName);
-#else
-		ifaces_table->addIface(enabled, mac, name, subnetName);
-#endif
-	}
+	refreshTable();
 }
 
 VMTabSettings::~VMTabSettings()
 {
 	delete buttonBox;
 	delete vm;
-	
+
 	delete ifaces_table;
 	delete vm_enabled;
 	delete verticalLayout;
+}
+
+void VMTabSettings::refreshTable()
+{
+// 	ifaces = vm->getIfaces();
+
+	for(int row = 0; row < ifaces_table->rowCount(); row++)
+	{
+		bool enabled = ifaces_table->operator[](row)->enabled;
+		QString name = QString("test%1").arg(row);
+		QString mac = ifaces_table->operator[](row)->mac;
+		uint32_t attachmentType = ifaces_table->operator[](row)->attachmentType;
+#ifdef CONFIGURABLE_IP
+		QString ip = QString("10.10.10.%1").arg(row);
+		QString subnetMask = QString("%1").arg(row);
+#endif
+		QString subnetName = QString("subnet%1").arg(row);
+		
+#ifdef CONFIGURABLE_IP
+		ifaces_table->setIface(row, enabled, mac, attachmentType, name, ip, subnetMask, subnetName);
+#else
+		ifaces_table->setIface(row, enabled, mac, attachmentType, name, subnetName);
+#endif
+	}
 }
 
 void VMTabSettings::clickedSlot(QAbstractButton *button)
@@ -80,15 +86,14 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 	{
 		case QDialogButtonBox::Apply:
 			std::cout << "apply: \t" << vm_name.toStdString() << std::endl;
-			int i;
-			for (i = 0; i < 8; i++)
+			std::cout << "vm->saveSettings(): " << std::string(vm->saveSettings() ? "true" : "false") << std::endl;
+			for (int i = 0; i < 8; i++)
 			{
 				QStringList iface_info = ifaces_table->getIfaceInfo(i);
-				std::cout <<	iface_info.at(0).toStdString() << ", " <<
-						iface_info.at(1).toStdString() << ", " <<
-						iface_info.at(2).toStdString() << ", " <<
-						iface_info.at(3).toStdString() << ", " <<
-						iface_info.at(4).toStdString() << std::endl;
+				int j;
+				for(j = 0; j < iface_info.size() - 1; j++)
+					std::cout << iface_info.at(j).toStdString() << ", ";
+				std::cout << iface_info.at(j).toStdString() << std::endl;
 				
 			}
 			break;

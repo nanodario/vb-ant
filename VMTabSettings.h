@@ -12,14 +12,19 @@
 #include "VirtualMachine.h"
 #include "VirtualBoxBridge.h"
 
+class MainWindow;
+
 class VMTabSettings : public QWidget
 {
+	friend class MainWindow;
+	
 	Q_OBJECT
 	
 	public:
 		VMTabSettings(QTabWidget *parent, QString _vm_name, VirtualBoxBridge *vboxbridge, MachineBridge *machine);
 		virtual ~VMTabSettings();
 		IfacesTable *ifaces_table;
+		void refreshTable();
 		
 	private slots:
 		void clickedSlot(QAbstractButton*);
@@ -32,7 +37,7 @@ class VMTabSettings : public QWidget
 		QVBoxLayout *verticalLayout;
 		QDialogButtonBox *buttonBox;
 		VirtualMachine *vm;
-		std::vector<Iface*> ifaces_vec;
+		Iface **ifaces;
 		VirtualBoxBridge *vboxbridge;
 		MachineBridge *machine;
 };

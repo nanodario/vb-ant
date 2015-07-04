@@ -34,6 +34,12 @@ class MainWindow : public QMainWindow
 	private slots:
 	// 	void slotAddMachine();
 		void slotInfo();
+		void currentChangedSlot(int tab);
+		void slotStart();
+		void slotReset();
+		void slotPause();
+		void slotStop();
+		void slotSettings();
 
 	private:
 		bool queryClose();

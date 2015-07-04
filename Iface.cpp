@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iostream>
 #include <stdint.h>
+#include "VirtualBoxBridge.h"
 
 static QString subnetMaskFromSubnetSize(int subnetSize)
 {
@@ -65,15 +66,16 @@ static bool isValidDecNumber(std::string num, int min, int max)
 }
 
 #ifdef CONFIGURABLE_IP
-Iface::Iface(bool enabled, QString mac, QString name, QString ip, QString subnetMask, QString subnetName)
+Iface::Iface(bool enabled, QString mac, uint32_t attachmentType, QString name, QString ip, QString subnetMask, QString subnetName)
 : enabled(enabled)
 #else
-Iface::Iface(bool enabled, QString mac, QString name, QString subnetName)
+Iface::Iface(bool enabled, QString mac, uint32_t attachmentType, QString name, QString subnetName)
 : enabled(enabled)
 #endif
 {
 	setName(name);
 	setMac(mac);
+	setAttachmentType(attachmentType);
 #ifdef CONFIGURABLE_IP
 	setIp(ip);
 	setSubnetMask(subnetMask);
@@ -140,6 +142,17 @@ bool Iface::setSubnetName(QString _subnetName)
 		subnetName = _subnetName;
 		return true;
 	}
+	return false;
+}
+
+bool Iface::setAttachmentType(uint32_t _attachmentType)
+{
+	if(isValidAttachmentType(_attachmentType))
+	{
+		attachmentType = _attachmentType;
+		return true;
+	}
+	
 	return false;
 }
 
@@ -405,3 +418,28 @@ bool Iface::isValidSubnetMask(QString subnetMask)
 	return false;
 }
 #endif
+
+Iface *Iface::copyIface()
+{
+#ifdef CONFIGURABLE_IP
+	return new Iface(enabled, mac, attachmentType, name, ip, subnetMask, subnetName);
+#else
+	return new Iface(enabled, mac, attachmentType, name, subnetName);
+#endif
+}
+
+bool Iface::isValidAttachmentType(uint32_t _attachmentType)
+{
+	switch(_attachmentType)
+	{
+		case NetworkAttachmentType::Null:
+		case NetworkAttachmentType::Bridged:
+		case NetworkAttachmentType::Generic:
+		case NetworkAttachmentType::HostOnly:
+		case NetworkAttachmentType::Internal:
+		case NetworkAttachmentType::NAT:
+		case NetworkAttachmentType::NATNetwork:
+			return true;
+	}
+	return false;
+}

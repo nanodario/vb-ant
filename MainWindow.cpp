@@ -18,7 +18,7 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 {
 	VMTabSettings_vec.clear();
 	ui->setupUi(this);
-	
+
 	int i;
 	for (i = 0; i < machines_vec.size(); i++)
 	{
@@ -108,31 +108,59 @@ bool MainWindow::slotSave()
 		return false;
 	}
 
-	QTextStream(&file) << ui->campo->toXmlString();
-	ui->campo->setCleanUndoHistory();
+	QTextStream(&file) << "test";
+// 	ui->campo->setCleanUndoHistory();
 	file.close();
 
 	return true;
-	*/
-	return true;
 }
 
-bool MainWindow::slotSaveAs()
+bool MainWindow::slotActionSaveAs()
 {
-	/*
-	const QString selectedFileName = QFileDialog::getSaveFileName(this,
-		"Salva documento", fileName, "Grafo (*.graph)");
+	std::cout << "[" << __func__ << "]" << std::endl;
+
+	const QString selectedFileName = QFileDialog::getSaveFileName(this, "Salva documento", fileName, "Grafo (*.graph)");
 
 	if (selectedFileName.isEmpty())
 		return false;
 
 	fileName = selectedFileName;
-	return slotSave();
-	*/
-	return true;
+	return slotActionSave();
+// 	return true;
 }
 
 void MainWindow::slotInfo()
 {
 	infoDialog.show();
+}
+
+void MainWindow::currentChangedSlot(int tab)
+{
+	std::cout << "[" << __func__ << "] tab:" << tab << std::endl;
+// 	std::cout << "Selezionata tab \"" << ui->vm_tabs->widget(tab)->objectName().toStdString() << "\"" << std::endl;
+}
+
+void MainWindow::slotStart()
+{
+	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->start();
+}
+
+void MainWindow::slotPause()
+{
+	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->pause();
+}
+
+void MainWindow::slotReset()
+{
+	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->reset();
+}
+
+void MainWindow::slotStop()
+{
+	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->stop();
+}
+
+void MainWindow::slotSettings()
+{
+	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->openSettings();
 }
