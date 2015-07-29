@@ -1,0 +1,10 @@
+Aggiungere header GPLv2 ad ogni file
+Clonazione nuova macchina da "golden copy"
+Salvataggio impostazioni IP su macchina virtuale
+Sincronizzazione impostazioni di rete con macchina virtuale avviata
+Salvataggio impostazioni della singola macchina su file
+Salvataggio impostazioni parco macchine su file
+Gestire comportamento (pausa/stop) delle macchine virtuali
+Aggiungere possibilità di collegare/scollegare cavo da ogni interfaccia a macchina virtuale avviata
+Disabilitare la modifica di impostazioni IP, MAC e nome interfaccia a macchina virtuale avviata
+Apertura impostazioni VirtualBox
