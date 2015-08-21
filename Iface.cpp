@@ -58,7 +58,7 @@ static bool isValidHexNumber(std::string hex, int min, int max)
 		if(!isxdigit(hex.c_str()[i]))
 			return false;
 		
-		unsigned int x;
+	unsigned int x;
 	std::stringstream ss;
 	
 	ss << std::hex << hex;
@@ -77,7 +77,7 @@ static bool isValidDecNumber(std::string num, int min, int max)
 		if(!isdigit(num.c_str()[i]))
 			return false;
 		
-		unsigned int x;
+	unsigned int x;
 	std::stringstream ss;
 	
 	ss << std::dec << num;
@@ -87,21 +87,21 @@ static bool isValidDecNumber(std::string num, int min, int max)
 }
 
 #ifdef CONFIGURABLE_IP
-Iface::Iface(bool enabled, QString mac, uint32_t attachmentType, QString name, QString ip, QString subnetMask, QString subnetName)
-: enabled(enabled)
+Iface::Iface(bool enabled, QString mac, bool cableConnected, uint32_t attachmentType, QString subnetName, QString name, QString ip, QString subnetMask)
+: enabled(enabled), cableConnected(cableConnected)
 #else
-Iface::Iface(bool enabled, QString mac, uint32_t attachmentType, QString name, QString subnetName)
-: enabled(enabled)
+Iface::Iface(bool enabled, QString mac, bool cableConnected, uint32_t attachmentType, QString subnetName, QString name)
+: enabled(enabled), cableConnected(cableConnected)
 #endif
 {
 	setName(name);
 	setMac(mac);
 	setAttachmentType(attachmentType);
+	setSubnetName(subnetName);
 #ifdef CONFIGURABLE_IP
 	setIp(ip);
 	setSubnetMask(subnetMask);
 #endif
-	setSubnetName(subnetName);
 }
 
 Iface::~Iface()
@@ -158,7 +158,7 @@ bool Iface::setSubnetMask(QString _subnetMask)
 
 bool Iface::setSubnetName(QString _subnetName)
 {
-	if(isValidName(_subnetName))
+	if(isValidName(_subnetName, true))
 	{
 		subnetName = _subnetName;
 		return true;
@@ -443,9 +443,9 @@ bool Iface::isValidSubnetMask(QString subnetMask)
 Iface *Iface::copyIface()
 {
 #ifdef CONFIGURABLE_IP
-	return new Iface(enabled, mac, attachmentType, name, ip, subnetMask, subnetName);
+	return new Iface(enabled, mac, cableConnected, attachmentType, subnetName, name, ip, subnetMask);
 #else
-	return new Iface(enabled, mac, attachmentType, name, subnetName);
+	return new Iface(enabled, mac, cableConnected, attachmentType, subnetName, name);
 #endif
 }
 

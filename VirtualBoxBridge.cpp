@@ -341,23 +341,40 @@ QString MachineBridge::getName()
 
 uint32_t MachineBridge::getState()
 {
-	uint32_t machineState;
-	nsCOMPtr<IConsole> console;
-
-	nsresult rc = session->GetConsole(getter_AddRefs(console));
-	if(NS_FAILED(rc))
+	if(session != nsnull)
 	{
+		uint32_t machineState;
+		nsCOMPtr<IConsole> console;
+
+		nsresult rc = session->GetConsole(getter_AddRefs(console));
+		if(NS_FAILED(rc))
+		{
+			console = nsnull;
+			return MachineState::Null;
+		}
+
+		rc = console->GetState(&machineState);
 		console = nsnull;
-		return MachineState::Null;
+
+		if(NS_SUCCEEDED(rc))
+			return machineState;
 	}
 
-	rc = console->GetState(&machineState);
-	console = nsnull;
+	return MachineState::Null;
+}
 
-	if(NS_SUCCEEDED(rc))
-		return machineState;
-	else
-		return MachineState::Null;
+uint32_t MachineBridge::getSessionState()
+{
+	if(session != nsnull)
+	{
+		uint32_t sessionState;
+
+		nsresult rc = session->GetState(&sessionState);
+		if(NS_SUCCEEDED(rc))
+			return sessionState;
+	}
+	
+	return SessionState::Null;
 }
 
 QString MachineBridge::getHardDiskFilePath()
@@ -389,6 +406,13 @@ QString MachineBridge::getIfaceMac(INetworkAdapter *iface)
 	return returnQStringValue(mac);
 }
 
+bool MachineBridge::getIfaceCableConnected(INetworkAdapter *iface)
+{
+	PRBool cableConnected;
+	iface->GetEnabled(&cableConnected);
+	return cableConnected;
+}
+
 uint32_t MachineBridge::getAttachmentType(INetworkAdapter *iface)
 {
 	nsresult rc;
@@ -404,19 +428,59 @@ uint32_t MachineBridge::getAttachmentType(INetworkAdapter *iface)
 	return attachmentType;
 }
 
+QString MachineBridge::getSubnetName(INetworkAdapter *iface)
+{
+	nsresult rc;
+	nsXPIDLString subnetName;
+	
+	NS_CHECK_AND_DEBUG_ERROR(iface, GetInternalNetwork(getter_Copies(subnetName)), rc);
+	
+	return returnQStringValue(subnetName);
+}
+
+QString MachineBridge::getBridgedIface(INetworkAdapter *iface) //TODO
+{
+// 	ComPtr<IHost> host;
+// 	
+// 	vboxbridge->virtualBox->GetHost(host.asOutParam());
+// 	host->GetNetworkInterfaces();
+
+	nsresult rc;
+	nsXPIDLString bridgedIface;
+		
+	NS_CHECK_AND_DEBUG_ERROR(iface, GetBridgedInterface(getter_Copies(bridgedIface)), rc);
+	
+	return returnQStringValue(bridgedIface);
+}
+
+bool MachineBridge::setIfaceEnabled(uint32_t iface, bool enabled)
+{
+	return setIfaceEnabled(getIface(iface), enabled);
+}
+
 bool MachineBridge::setIfaceMac(uint32_t iface, QString qMac)
 {
 	return  setIfaceMac(getIface(iface), qMac);
 }
 
-bool MachineBridge::enableIface(uint32_t iface, uint32_t attachmentType)
+bool MachineBridge::setIfaceAttachmentType(uint32_t iface, uint32_t attachmentType)
 {
-	return enableIface(getIface(iface), attachmentType);
+	return setIfaceAttachmentType(getIface(iface), attachmentType);
 }
 
-bool MachineBridge::disableIface(uint32_t iface)
+bool MachineBridge::setCableConnected(uint32_t iface, bool connected)
 {
-	return disableIface(getIface(iface));
+	return setCableConnected(getIface(iface), connected);
+}
+
+bool MachineBridge::setSubnetName(uint32_t iface, QString qSubnetName)
+{
+	return setSubnetName(getIface(iface), qSubnetName);
+}
+
+bool MachineBridge::setBridgedIface(uint32_t iface, QString bridgedIface)
+{
+	return setBridgedIface(getIface(iface), bridgedIface);
 }
 
 ComPtr<INetworkAdapter> MachineBridge::getIface(uint32_t iface)
@@ -429,6 +493,14 @@ ComPtr<INetworkAdapter> MachineBridge::getIface(uint32_t iface)
 		network_adptr = nsnull;
 
 	return network_adptr;
+}
+
+bool MachineBridge::setIfaceEnabled(ComPtr<INetworkAdapter> iface, bool enabled)
+{
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetEnabled(enabled), rc);
+	
+	return NS_SUCCEEDED(rc);
 }
 
 bool MachineBridge::setIfaceMac(ComPtr<INetworkAdapter> iface, QString qMac)
@@ -449,26 +521,40 @@ bool MachineBridge::setIfaceMac(ComPtr<INetworkAdapter> iface, QString qMac)
 	return NS_SUCCEEDED(rc);
 }
 
-bool MachineBridge::enableIface(ComPtr<INetworkAdapter> iface, uint32_t attachmentType)
+bool MachineBridge::setIfaceAttachmentType(ComPtr<INetworkAdapter> iface, uint32_t attachmentType)
 {
-	nsresult rc1, rc2, rc3;
-	
-	NS_CHECK_AND_DEBUG_ERROR(iface, SetEnabled(true), rc1);
-	NS_CHECK_AND_DEBUG_ERROR(iface, SetAttachmentType(attachmentType), rc2);
-	NS_CHECK_AND_DEBUG_ERROR(iface, SetCableConnected(true), rc3);
-	
-	return NS_SUCCEEDED(rc1) && NS_SUCCEEDED(rc2) && NS_SUCCEEDED(rc3);
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetAttachmentType(attachmentType), rc);
+
+	return NS_SUCCEEDED(rc);
 }
 
-bool MachineBridge::disableIface(ComPtr<INetworkAdapter> iface)
+bool MachineBridge::setCableConnected(ComPtr<INetworkAdapter> iface, bool connected)
 {
-	nsresult rc1, rc2, rc3;
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetCableConnected(connected), rc);
 	
-	NS_CHECK_AND_DEBUG_ERROR(iface, SetEnabled(false), rc1);
-	NS_CHECK_AND_DEBUG_ERROR(iface, SetAttachmentType(NetworkAttachmentType::Null), rc2);
-	NS_CHECK_AND_DEBUG_ERROR(iface, SetCableConnected(false), rc3);
+	return NS_SUCCEEDED(rc);
+}
+
+bool MachineBridge::setSubnetName(ComPtr<INetworkAdapter> iface, QString qSubnetName)
+{
+	nsXPIDLString subnetName; subnetName.AssignWithConversion(qSubnetName.toStdString().c_str());
+
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetInternalNetwork(subnetName), rc);
 	
-	return NS_SUCCEEDED(rc1) && NS_SUCCEEDED(rc2) && NS_SUCCEEDED(rc3);
+	return NS_SUCCEEDED(rc);
+}
+
+bool MachineBridge::setBridgedIface(ComPtr<INetworkAdapter> iface, QString qBridgedIface)
+{
+	nsXPIDLString bridgedIface; bridgedIface.AssignWithConversion(qBridgedIface.toStdString().c_str());
+	
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetBridgedInterface(bridgedIface), rc);
+	
+	return NS_SUCCEEDED(rc);
 }
 
 bool MachineBridge::getIfaceEnabled(INetworkAdapter *iface)
@@ -526,7 +612,6 @@ bool MachineBridge::start()
 		launchSucceeded = false;
 		std::cout << "[" << getName().toStdString() << "] Cannot launch VM!" << std::endl;
 		progress = nsnull;
-		return false;
 	}
 	else
 	{

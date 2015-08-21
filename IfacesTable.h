@@ -37,16 +37,17 @@
 
 #define COLUMN_IFACE_ENABLED	0
 #define COLUMN_MAC		1
-#define COLUMN_IFACE_NAME	2
+#define COLUMN_IFACE_CONNECTED	2
+#define COLUMN_IFACE_NAME	3
 
 #ifdef CONFIGURABLE_IP
-#define COLUMN_IP		3
-#define COLUMN_SUBNETMASK	4
-#define COLUMN_IFACE_TYPE	5
-#define COLUMN_SUBNETNAME	6
+#define COLUMN_IP		4
+#define COLUMN_SUBNETMASK	5
+#define COLUMN_IFACE_TYPE	6
+#define COLUMN_SUBNETNAME	7
 #else
-#define COLUMN_IFACE_TYPE	3
-#define COLUMN_SUBNETNAME	4
+#define COLUMN_IFACE_TYPE	4
+#define COLUMN_SUBNETNAME	5
 #endif
 
 class IfacesTable;
@@ -72,13 +73,13 @@ class MacWidgetField : public QWidget
 		IfacesTable *destination;
 };
 
-class IfaceEnableCheckBox : public QWidget
+class CustomCheckBox : public QWidget
 {
 	Q_OBJECT
 	
 	public:
-		IfaceEnableCheckBox(QWidget *parent, int row, IfacesTable *destination);
-		virtual ~IfaceEnableCheckBox();
+		CustomCheckBox(QWidget *parent, int row, void *destination, bool (*function_forwarder)(void*, int, bool));
+		virtual ~CustomCheckBox();
 		void setCheckState(Qt::CheckState checked);
 		QCheckBox *checkbox;
 		
@@ -87,7 +88,8 @@ class IfaceEnableCheckBox : public QWidget
 		
 	private:
 		int row;
-		IfacesTable *destination;
+		void *destination;
+		bool (*function_forwarder)(void*, int, bool);
 };
 
 class AttachmentComboBox : public QWidget
@@ -117,20 +119,21 @@ class IfacesTable : public QTableWidget
 		IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge, Iface **ifaces);
 		~IfacesTable();
 #ifdef CONFIGURABLE_IP
-		int setIface(int iface, bool enabled = false, QString mac = "", uint32_t attachmentType = NetworkAttachmentType::Null, QString name = "", QString ip = "", QString subnetMask = "", QString subnetName = "");
+		int setIface(int iface, bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString subnetName = "", QString name = "", QString ip = "", QString subnetMask = "");
 #else
-		int setIface(int iface, bool enabled = false, QString mac = "", uint32_t attachmentType = NetworkAttachmentType::Null, QString name = "", QString subnetName = "");
+		int setIface(int iface, bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString subnetName = "", QString name = "");
 #endif
 		
 		bool setStatus(int iface, bool checked);
 		bool setName(int iface, QString name);
 		bool setMac(int iface, QString mac);
+		bool setCableConnected(int iface, bool checked);
+		bool setAttachmentType(int iface, uint32_t attachmentType);
+		bool setSubnetName(int iface, QString subnetName);
 #ifdef CONFIGURABLE_IP
 		bool setIp(int iface, QString ip);
 		bool setSubnetMask(int iface, QString subnetMask);
 #endif
-		bool setAttachmentType(int iface, uint32_t attachmentType);
-		bool setSubnetName(int iface, QString subnetName);
 		void generateMac(int iface);
 		
 		QStringList getIfaceInfo(int iface);

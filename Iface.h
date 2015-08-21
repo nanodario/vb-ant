@@ -32,41 +32,40 @@ class Iface
 {
 	public:
 #ifdef CONFIGURABLE_IP
-		Iface(bool enabled = false, QString mac = "", uint32_t attachmentType = NetworkAttachmentType::Null, QString name = "", QString ip = "", QString subnetMask = "", QString subnetName = "");
+		Iface(bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString subnetName = "", QString name = "", QString ip = "", QString subnetMask = "");
 #else
-		Iface(bool enabled = false, QString mac = "", uint32_t attachmentType = NetworkAttachmentType::Null, QString name = "", QString subnetName = "");
+		Iface(bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString subnetName = "", QString name = "");
 #endif
 		
 		virtual ~Iface();
 		bool setName(QString name);
 		bool setMac(QString mac);
+		bool setAttachmentType(uint32_t attachmentType);
+		bool setSubnetName(QString subnetName);
 #ifdef CONFIGURABLE_IP
 		bool setIp(QString ip);
 		bool setSubnetMask(QString subnetMask);
 #endif
-		bool setSubnetName(QString subnetName);
-		bool setAttachmentType(uint32_t attachmentType);
 
 		static QString formatMac(QString mac);
 		static bool isValidName(QString name, bool blankAllowed = false);
 		static bool isValidMac(QString mac);
+		static bool isValidAttachmentType(uint32_t attachmentType);
 #ifdef CONFIGURABLE_IP
 		static bool isValidIp(QString ip);
 		static bool isValidSubnetMask(QString subnetMask);
 #endif
-		static bool isValidAttachmentType(uint32_t attachmentType);
 
 		inline bool operator==(const Iface *i) const { return mac == i->mac; };
 		inline bool operator!=(const Iface *i) const { return !operator==(i); };
 		Iface *copyIface();
 		
-		QString name, mac,
+		QString name, mac, subnetName;
 #ifdef CONFIGURABLE_IP
-		ip, subnetMask,
+		QString ip, subnetMask;
 #endif
-		subnetName;
 		uint32_t attachmentType;
-		bool enabled;
+		bool enabled, cableConnected;
 // 	private:
 };
 

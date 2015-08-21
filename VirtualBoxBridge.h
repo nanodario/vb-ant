@@ -159,18 +159,25 @@ class MachineBridge
 		QString getHardDiskFilePath();
 		QString getName();
 		uint32_t getState();
-
+		uint32_t getSessionState();
+		
 		//Getters
 		std::vector<nsCOMPtr<INetworkAdapter> > getNetworkInterfaces();
 		static bool getIfaceEnabled(INetworkAdapter *iface);
 		QString getIfaceMac(INetworkAdapter *iface);
+		bool getIfaceCableConnected(INetworkAdapter *iface);
 		QString getIfaceMac(int iface);
 		uint32_t getAttachmentType(INetworkAdapter *iface);
+		QString getSubnetName(INetworkAdapter *iface);
+		QString getBridgedIface(INetworkAdapter *iface);
 		
 		//Setters
+		bool setIfaceEnabled(uint32_t iface, bool enabled);
 		bool setIfaceMac(uint32_t iface, QString qMac);
-		bool enableIface(uint32_t iface, uint32_t attachmentType);
-		bool disableIface(uint32_t iface);
+		bool setIfaceAttachmentType(uint32_t iface, uint32_t attachmentType);
+		bool setCableConnected(uint32_t iface, bool connected);
+		bool setSubnetName(uint32_t iface, QString qSubnetName);
+		bool setBridgedIface(uint32_t iface, QString bridgedIface);
 		
 		bool start();
 		bool stop(bool force = false);
@@ -185,9 +192,13 @@ class MachineBridge
 		bool lockMachine();
 		bool unlockMachine();
 		ComPtr<INetworkAdapter> getIface(uint32_t iface);
+		
+		bool setIfaceEnabled(ComPtr<INetworkAdapter> iface, bool enabled);
 		bool setIfaceMac(ComPtr<INetworkAdapter> iface, QString qMac);
-		bool enableIface(ComPtr<INetworkAdapter> iface, uint32_t attachmentType);
-		bool disableIface(ComPtr<INetworkAdapter> iface);
+		bool setIfaceAttachmentType(ComPtr<INetworkAdapter> iface, uint32_t attachmentType);
+		bool setCableConnected(ComPtr<INetworkAdapter> iface, bool connected);
+		bool setSubnetName(ComPtr<INetworkAdapter> iface, QString qSubnetName);
+		bool setBridgedIface(ComPtr<INetworkAdapter> iface, QString bridgedIface);
 		
 		VirtualBoxBridge *vboxbridge;
 		IMachine *machine;

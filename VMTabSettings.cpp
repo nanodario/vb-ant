@@ -85,17 +85,18 @@ void VMTabSettings::refreshTable()
 		bool enabled = ifaces_table->operator[](row)->enabled;
 		QString name = QString("test%1").arg(row);
 		QString mac = ifaces_table->operator[](row)->mac;
+		bool cableConnected = ifaces_table->operator[](row)->cableConnected;
 		uint32_t attachmentType = ifaces_table->operator[](row)->attachmentType;
 #ifdef CONFIGURABLE_IP
-		QString ip = QString("10.10.10.%1").arg(row);
-		QString subnetMask = QString("%1").arg(row);
+		QString ip = vm->getIp(row); //QString("10.10.10.%1").arg(row);
+		QString subnetMask = vm->getSubnetMask(row); //QString("%1").arg(row);
 #endif
-		QString subnetName = QString("subnet%1").arg(row);
+		QString subnetName = ifaces_table->operator[](row)->subnetName;
 		
 #ifdef CONFIGURABLE_IP
-		ifaces_table->setIface(row, enabled, mac, attachmentType, name, ip, subnetMask, subnetName);
+		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, subnetName, name, ip, subnetMask);
 #else
-		ifaces_table->setIface(row, enabled, mac, attachmentType, name, subnetName);
+		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, subnetName, name);
 #endif
 	}
 }
@@ -113,7 +114,7 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 				QStringList iface_info = ifaces_table->getIfaceInfo(i);
 				int j;
 				for(j = 0; j < iface_info.size() - 1; j++)
-					std::cout << iface_info.at(j).toStdString() << ", ";
+					std::cout << iface_info.at(j).toStdString() << " \t";
 				std::cout << iface_info.at(j).toStdString() << std::endl;
 				
 			}
@@ -127,7 +128,7 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 			break;
 		case QDialogButtonBox::Cancel:
 			std::cout << "cancel: \t" << vm_name.toStdString() << std::endl;
-			vm->stop();
+			vm->ACPIstop();
 			break;
 	}
 }

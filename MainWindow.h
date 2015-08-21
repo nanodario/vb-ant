@@ -48,13 +48,14 @@ class MainWindow : public QMainWindow
 		
 	protected:
 		void closeEvent(QCloseEvent *event);
-		void slotOpen();
-		bool slotSave();
-		bool slotSaveAs();
 		
 	private slots:
 	// 	void slotAddMachine();
 		void slotInfo();
+		void slotActionNew();
+		void slotActionOpen();
+		bool slotActionSave();
+		bool slotActionSaveAs();
 		void currentChangedSlot(int tab);
 		void slotStart();
 		void slotReset();
@@ -70,6 +71,7 @@ class MainWindow : public QMainWindow
 		std::vector<VMTabSettings*> VMTabSettings_vec;
 		std::vector<MachineBridge*> machines_vec;
 		InfoDialog infoDialog;
+		QString fileName;
 };
 
 #endif //MAINWINDOW_H

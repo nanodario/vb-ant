@@ -54,6 +54,12 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionopen, SIGNAL(triggered(bool)), this, SLOT(slotActionOpen()));
 	connect(ui->actionSave, SIGNAL(triggered(bool)), this, SLOT(slotActionSave()));
 	connect(ui->actionSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotActionSaveAs()));
+	connect(ui->vm_tabs, SIGNAL(currentChanged(int)), this, SLOT(currentChangedSlot(int)));
+	connect(ui->actionAvvia, SIGNAL(triggered(bool)), this, SLOT(slotStart()));
+	connect(ui->actionImpostazioni, SIGNAL(triggered(bool)), this, SLOT(slotSettings()));
+	
+	connect(ui->toolbarAvvia, SIGNAL(triggered(bool)), ui->actionAvvia, SIGNAL(triggered(bool)));
+	connect(ui->toolbarImpostazioni, SIGNAL(triggered(bool)), ui->actionImpostazioni, SIGNAL(triggered(bool)));
 }
 
 MainWindow::~MainWindow()
@@ -102,8 +108,25 @@ bool MainWindow::queryClose()
 	return true;
 }
 
-void MainWindow::slotOpen()
+void MainWindow::slotActionNew()
 {
+	std::cout << "[" << __func__ << "]" << std::endl;
+	
+	/*
+	const QString selectedFileName = QFileDialog::getOpenFileName(this,
+		"Apri documento", fileName, "Grafo (*.graph)");
+ 
+	if (selectedFileName.isEmpty() || !queryClose())
+		return;
+ 
+	loadFile(selectedFileName);
+	*/
+}
+
+void MainWindow::slotActionOpen()
+{
+	std::cout << "[" << __func__ << "]" << std::endl;
+		
 	/*
 	const QString selectedFileName = QFileDialog::getOpenFileName(this,
 		"Apri documento", fileName, "Grafo (*.graph)");
@@ -115,11 +138,12 @@ void MainWindow::slotOpen()
 	*/
 }
 
-bool MainWindow::slotSave()
+bool MainWindow::slotActionSave()
 {
-	/*
+	std::cout << "[" << __func__ << "]" << std::endl;
+	
 	if (fileName.isEmpty())
-		return slotSaveAs();
+		return slotActionSaveAs();
 
 	QFile file(fileName);
 	if (!file.open(QIODevice::WriteOnly))

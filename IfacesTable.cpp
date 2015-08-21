@@ -87,8 +87,8 @@ void MacWidgetField::releasedSlot()
 	destination->generateMac(row);
 }
 
-IfaceEnableCheckBox::IfaceEnableCheckBox(QWidget *parent, int row, IfacesTable *destination) : QWidget(parent)
-, row(row), destination(destination)
+CustomCheckBox::CustomCheckBox(QWidget *parent, int row, void* destination, bool (*function_forwarder)(void*, int, bool)) : QWidget(parent)
+, row(row), function_forwarder(function_forwarder), destination(destination)
 {
 	QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
 	horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
@@ -103,21 +103,21 @@ IfaceEnableCheckBox::IfaceEnableCheckBox(QWidget *parent, int row, IfacesTable *
 	connect(checkbox, SIGNAL(toggled(bool)), this, SLOT(toggledSlot(bool)));
 }
 
-IfaceEnableCheckBox::~IfaceEnableCheckBox()
+CustomCheckBox::~CustomCheckBox()
 {
 	disconnect(checkbox, SIGNAL(toggled(bool)), this, SLOT(toggledSlot(bool)));
 	delete layout();
 	delete checkbox;
 }
 
-void IfaceEnableCheckBox::setCheckState(Qt::CheckState checked)
+void CustomCheckBox::setCheckState(Qt::CheckState checked)
 {
 	checkbox->setCheckState(checked);
 }
 
-void IfaceEnableCheckBox::toggledSlot(bool checked)
+void CustomCheckBox::toggledSlot(bool checked)
 {
-	destination->setStatus(row, checked ? Qt::Checked : Qt::Unchecked);
+	function_forwarder(destination, row, checked);
 }
 
 AttachmentComboBox::AttachmentComboBox(QWidget *parent, int row, IfacesTable *destination) : QWidget(parent)
@@ -193,15 +193,25 @@ void AttachmentComboBox::currentIndexChangedSlot(int index)
 	destination->setAttachmentType(row, index);
 }
 
+bool setStatus_forwarder(void *context, int row, bool checked)
+{
+	return static_cast<IfacesTable*>(context)->setStatus(row, checked);
+}
+
+bool setCableConnected_forwarder(void *context, int row, bool checked)
+{
+	return static_cast<IfacesTable*>(context)->setCableConnected(row, checked);
+}
+
 IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge, Iface **ifaces) : QTableWidget(parent)
 , vboxbridge(vboxbridge), ifaces(ifaces)
 {
 	setObjectName(QString::fromUtf8("tableView"));
 
 #ifdef CONFIGURABLE_IP
-	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Indirizzo IP;Maschera sottorete;Tipo interfaccia;Nome sottorete").split(";");
+	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Collegata;Nome;Indirizzo IP;Maschera sottorete;Tipo interfaccia;Nome sottorete").split(";");
 #else
-	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Nome interfaccia;Tipo interfaccia;Nome sottorete").split(";");
+	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Collegata;Nome;Tipo interfaccia;Nome sottorete").split(";");
 #endif
 
 	setColumnCount(horizontalHeaderLabels.count());
@@ -232,7 +242,7 @@ IfacesTable::~IfacesTable()
 		for(col = 0; col < columnAt(row); col++)
 		{
 			if(col == COLUMN_IFACE_ENABLED)
-				delete ((IfaceEnableCheckBox *)cellWidget(row, col));
+				delete ((CustomCheckBox *)cellWidget(row, col));
 			else if(col == COLUMN_MAC)
 				delete ((MacWidgetField *)cellWidget(row, col));
 			else if(col == COLUMN_IFACE_TYPE)
@@ -244,9 +254,9 @@ IfacesTable::~IfacesTable()
 }
 
 #ifdef CONFIGURABLE_IP
-int IfacesTable::setIface(int iface, bool enabled, QString mac, uint32_t attachmentType, QString name, QString ip, QString subnetMask, QString subnetName)
+int IfacesTable::setIface(int iface, bool enabled, QString mac, bool cableConnected, uint32_t attachmentType, QString subnetName, QString name, QString ip, QString subnetMask)
 #else
-int IfacesTable::setIface(int iface, bool enabled, QString mac, uint32_t attachmentType, QString name, QString subnetName)
+int IfacesTable::setIface(int iface, bool enabled, QString mac, bool cableConnected, uint32_t attachmentType, QString subnetName, QString name)
 #endif
 {
 	disconnect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
@@ -254,26 +264,28 @@ int IfacesTable::setIface(int iface, bool enabled, QString mac, uint32_t attachm
 	if(ifaces[iface] == NULL)
 	{
 #ifdef CONFIGURABLE_IP
-		ifaces[iface] = new Iface(enabled, mac, attachmentType, name, ip, subnetMask, subnetName);
+		ifaces[iface] = new Iface(enabled, mac, cableConnected, attachmentType, subnetName, name, ip, subnetMask);
 #else
-		ifaces[iface] = new Iface(enabled, mac, attachmentType, name, subnetName);
+		ifaces[iface] = new Iface(enabled, mac, cableConnected, attachmentType, subnetName, name);
 #endif
 	}
 	else
 	{
 		ifaces[iface]->enabled = enabled;
 		ifaces[iface]->setMac(mac);
+		ifaces[iface]->cableConnected = cableConnected;
+		ifaces[iface]->setAttachmentType(attachmentType);
 		ifaces[iface]->setName(name);
 #ifdef CONFIGURABLE_IP
 		ifaces[iface]->setIp(ip);
 		ifaces[iface]->setSubnetMask(subnetMask);
 #endif
-		ifaces[iface]->setAttachmentType(attachmentType);
 		ifaces[iface]->setSubnetName(subnetName);
 	}
 
-	setCellWidget(iface, COLUMN_IFACE_ENABLED, new IfaceEnableCheckBox(this, iface, this));
+	setCellWidget(iface, COLUMN_IFACE_ENABLED, new CustomCheckBox(this, iface, this, &setStatus_forwarder));
 	setCellWidget(iface, COLUMN_MAC, new MacWidgetField(this, iface, this));
+	setCellWidget(iface, COLUMN_IFACE_CONNECTED, new CustomCheckBox(this, iface, this, &setCableConnected_forwarder));
 	setItem(iface, COLUMN_IFACE_NAME, new QTableWidgetItem());
 #ifdef CONFIGURABLE_IP
 	setItem(iface, COLUMN_IP, new QTableWidgetItem());
@@ -288,12 +300,13 @@ int IfacesTable::setIface(int iface, bool enabled, QString mac, uint32_t attachm
 	{
 		if(col == COLUMN_MAC)
 			((MacWidgetField *)cellWidget(iface, col))->lineEdit->setAlignment(Qt::AlignCenter);
-		else if(col != COLUMN_IFACE_TYPE)
+		else if(col != COLUMN_IFACE_TYPE && col != COLUMN_IFACE_CONNECTED)
 			item(iface, col)->setTextAlignment(Qt::AlignCenter);
 	}
 
 	setStatus(iface, ifaces[iface]->enabled);
 	setMac(iface, ifaces[iface]->mac);
+	setCableConnected(iface, ifaces[iface]->cableConnected);
 	setName(iface, ifaces[iface]->name);
 #ifdef CONFIGURABLE_IP
 	setIp(iface, ifaces[iface]->ip);
@@ -310,7 +323,7 @@ int IfacesTable::setIface(int iface, bool enabled, QString mac, uint32_t attachm
 
 bool IfacesTable::setStatus(int iface, bool checked)
 {
-	((IfaceEnableCheckBox *)cellWidget(iface, COLUMN_IFACE_ENABLED))->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+	((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_ENABLED))->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
 	int col;
 	for (col = 1; col < columnCount(); col++)
 	{
@@ -320,6 +333,11 @@ bool IfacesTable::setStatus(int iface, bool checked)
 			MacWidgetField *w = (MacWidgetField *)cellWidget(iface, col);
 			w->button->setEnabled(checked);
 			w->lineEdit->setEnabled(checked);
+		}
+		else if(col == COLUMN_IFACE_CONNECTED)
+		{
+			CustomCheckBox *c = (CustomCheckBox *)cellWidget(iface, col);
+			c->checkbox->setEnabled(checked);
 		}
 		else if(col == COLUMN_IFACE_TYPE)
 		{
@@ -349,7 +367,6 @@ bool IfacesTable::setStatus(int iface, bool checked)
 	ifaces[iface]->enabled = checked;
 	return true;
 }
-
 
 bool IfacesTable::setName(int iface, QString name)
 {
@@ -392,6 +409,13 @@ bool IfacesTable::setMac(int iface, QString mac)
 		((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(old_mac);
 	
 	return done;
+}
+
+bool IfacesTable::setCableConnected(int iface, bool checked) //TODO
+{
+	((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_CONNECTED))->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+	ifaces[iface]->cableConnected = checked;
+	return true;
 }
 
 #ifdef CONFIGURABLE_IP
@@ -467,6 +491,7 @@ QStringList IfacesTable::getIfaceInfo(int iface)
 	QStringList iface_info;
 	iface_info.push_back(QString(ifaces[iface]->enabled ? "enabled" : "disabled"));
 	iface_info.push_back(ifaces[iface]->mac);
+	iface_info.push_back(QString(ifaces[iface]->cableConnected ? "connected" : "not connected"));
 	iface_info.push_back(ifaces[iface]->name);
 #ifdef CONFIGURABLE_IP
 	iface_info.push_back(ifaces[iface]->ip);
