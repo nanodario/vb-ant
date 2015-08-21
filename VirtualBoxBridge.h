@@ -31,14 +31,23 @@
 #include <nsString.h>
 
 #include "VirtualBox_XPCOM.h"
-#include <obsolete/protypes.h>
 #include "Iface.h"
-#include <VBox/com/ptr.h>
+#include "UIMainEventListener.h"
 
+#include <QObject>
 #include <QString>
 #include <vector>
+#include <pthread.h>
 
-static QString returnQStringValue(nsXPIDLString s);
+static QString returnQStringValue(nsXPIDLString s)
+{
+	const char *str = ToNewCString(s);
+	QString retVal = QString::fromAscii(str);
+	free((void*)str);
+	return retVal;
+}
+
+#define DEBUG_FLAG
 
 #ifdef DEBUG_FLAG
 	#define NS_CHECK_AND_DEBUG_ERROR(ptr, func, out_rc_value) \
@@ -95,6 +104,14 @@ static QString returnQStringValue(nsXPIDLString s);
 	} while (0)
 		
 class MachineBridge;
+class VirtualBoxBridge;
+
+typedef struct
+{
+	nsCOMPtr<IVirtualBox> virtualBox;
+} tparam_t;
+
+static void *knockAPI(void *tparam);
 
 class VirtualBoxBridge
 {
@@ -105,23 +122,36 @@ class VirtualBoxBridge
 		~VirtualBoxBridge();
 		QString getVBoxVersion();
 		QString generateMac();
-		std::vector<MachineBridge*> getMachines();
+		std::vector<MachineBridge*> getMachines(QObject *parent);
 		nsCOMPtr<ISession> newSession();
+		
 
 	private:
 		bool initXPCOM();
 		bool initVirtualBox();
+		void startAPIknocking();
 		
 		nsCOMPtr<IVirtualBox> virtualBox;
 		nsCOMPtr<nsIServiceManager> nsCOM_serviceManager;
 		nsCOMPtr<nsIEventQueue> nsCOM_eventQ;
 		nsCOMPtr<nsIComponentManager> nsCOM_manager;
+		pthread_t knockThread;
+		tparam_t tparam;
 };
+
+class VirtualMachine;
+
+/* Wrap the IListener interface around our implementation class. */
+class UIMainEventListener;
+typedef ListenerImpl<UIMainEventListener, QObject*> UIMainEventListenerImpl;
 
 class MachineBridge
 {
+	friend class VirtualMachine;
+	friend class UIMainEventListener;
+	
 	public:
-		MachineBridge(VirtualBoxBridge *vboxbridge, IMachine *machine);
+		MachineBridge(VirtualBoxBridge *vboxbridge, IMachine *machine, QObject *parent);
 		~MachineBridge();
 		
 		uint32_t getMaxNetworkAdapters();
@@ -149,10 +179,11 @@ class MachineBridge
 
 		bool openSettings();
 		bool saveSettings();
+		
+	private:
+		bool registerListener();
 		bool lockMachine();
 		bool unlockMachine();
-
-	private:
 		ComPtr<INetworkAdapter> getIface(uint32_t iface);
 		bool setIfaceMac(ComPtr<INetworkAdapter> iface, QString qMac);
 		bool enableIface(ComPtr<INetworkAdapter> iface, uint32_t attachmentType);
@@ -161,6 +192,9 @@ class MachineBridge
 		VirtualBoxBridge *vboxbridge;
 		IMachine *machine;
 		nsCOMPtr<ISession> session;
+		nsCOMPtr<IEventSource> eventSource;
+		ComObjPtr<UIMainEventListenerImpl> eventListener;
+		nsCOMPtr<IConsole> console;
 		nsXPIDLString machineUUID;
 };
 

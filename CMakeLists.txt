@@ -60,10 +60,12 @@ set(Reti_SRCS
 	VirtualMachine.cpp
 	VMSettings.cpp
 	VMTabSettings.cpp
+	UIMainEventListener.cpp
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVBOX_WITH_XPCOM_NAMESPACE_CLEANUP")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 if($ENV{CONFIGURABLE_IP})
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCONFIGURABLE_IP")

@@ -25,7 +25,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <iostream>
+#include <string>
 #include <QPointer>
 #include <QStringList>
 
@@ -48,6 +50,7 @@
 #include <VBox/com/ErrorInfo.h>
 #include <VBox/com/errorprint.h>
 #include <VBox/com/VirtualBox.h>
+#include <VBox/com/listeners.h>
 
 #include <iprt/stream.h>
 
@@ -57,13 +60,32 @@
  */
 #include "VirtualBox_XPCOM.h"
 #include "Iface.h"
+#include <QVector>
 
-QString returnQStringValue(nsXPIDLString s)
+/*
+ * HACK This code interacts with VirtualBox API every 500 ms. This is needed
+ * because the event generation freezes the VM process, so there is a thread
+ * which interacts with API to unlock situation.
+ */
+static void *knockAPI(void *_tparam)
 {
-	const char *str = ToNewCString(s);
-	QString retVal = QString::fromAscii(str);
-	free((void*)str);
-	return retVal;
+	tparam_t *tparam = (tparam_t *)_tparam;
+	nsXPIDLString vboxVersion;
+	nsCOMPtr<IVirtualBox> vbox = tparam->virtualBox;
+	
+	while(1)
+	{
+		if(vbox != nsnull)
+			vbox->GetVersion(getter_Copies(vboxVersion));
+		else
+			break;
+
+// 		std::cout << "Knock knock API, are you still here?" << std::endl;
+		usleep(500000);
+	}
+	
+	std::cout << "IVirtualBox object destructed, stopping knocking ;)" << std::endl;
+	pthread_exit(0);
 }
 
 VirtualBoxBridge::VirtualBoxBridge()
@@ -79,11 +101,13 @@ VirtualBoxBridge::VirtualBoxBridge()
 			nsXPIDLString vboxVersionNormalized;
 			virtualBox->GetVersion(getter_Copies(vboxVersion));
 			virtualBox->GetVersionNormalized(getter_Copies(vboxVersionNormalized));
-			std::cout << "VirtualBox version:     " << returnQStringValue(vboxVersion).toStdString() << " (" << returnQStringValue(vboxVersion).toStdString() << ")" << std::endl;
+			std::cout << "VirtualBox version:     " << returnQStringValue(vboxVersion).toStdString() << " (" << returnQStringValue(vboxVersionNormalized).toStdString() << ")" << std::endl;
 
 			nsXPIDLString apiVersion;
 			virtualBox->GetAPIVersion(getter_Copies(apiVersion));
 			std::cout << "VirtualBox API version: " << returnQStringValue(apiVersion).toStdString() << std::endl;
+			
+			startAPIknocking();
 		}
 	}
 }
@@ -125,7 +149,7 @@ bool VirtualBoxBridge::initXPCOM()
 	rc = NS_InitXPCOM2(getter_AddRefs(nsCOM_serviceManager), nsnull, nsnull);
 	if (NS_FAILED(rc))
 	{
-		std::cerr << "Error: XPCOM could not be initialized! rc=" << rc << std::endl;
+		std::cerr << "Error: XPCOM could not be initialized! rc=0x" << std::hex << rc << std::dec << std::endl;
 		return false;
 	}
 
@@ -140,7 +164,7 @@ bool VirtualBoxBridge::initXPCOM()
 	rc = NS_GetMainEventQ(getter_AddRefs(nsCOM_eventQ));
 	if (NS_FAILED(rc))
 	{
-		std::cerr << "Error: could not get main event queue! rc=" << rc << std::endl;
+		std::cerr << "Error: could not get main event queue! rc=0x" << std::hex << rc << std::dec << std::endl;
 		return false;
 	}
 
@@ -154,7 +178,7 @@ bool VirtualBoxBridge::initXPCOM()
 	rc = NS_GetComponentManager(getter_AddRefs(nsCOM_manager));
 	if (NS_FAILED(rc))
 	{
-		std::cerr << "Error: could not get component manager! rc=" << rc << std::endl;
+		std::cerr << "Error: could not get component manager! rc=0x" << std::hex << rc << std::dec << std::endl;
 		return false;
 	}
 
@@ -173,13 +197,25 @@ bool VirtualBoxBridge::initVirtualBox()
 						 nsnull,
 						 NS_GET_IID(IVirtualBox),
 						 getter_AddRefs(virtualBox));
+	
 	if (NS_FAILED(rc))
 	{
-		std::cerr << "Error, could not instantiate VirtualBox object! rc=" << rc << std::endl;
+		std::cerr << "Error, could not instantiate VirtualBox object! rc=0x" << std::hex << rc << std::dec << std::endl;
 		return false;
 	}
+	
 	return true;
 }
+
+void VirtualBoxBridge::startAPIknocking()
+{
+	if(virtualBox == nsnull)
+		return;
+
+	tparam.virtualBox = virtualBox;
+	pthread_create(&knockThread, NULL, knockAPI, &tparam);
+}
+
 
 nsCOMPtr<ISession> VirtualBoxBridge::newSession()
 {
@@ -192,16 +228,21 @@ nsCOMPtr<ISession> VirtualBoxBridge::newSession()
 	 * to the machine. ISession interface will be retrieved from
 	 * the XPCOM component manager.
 	 */
-	rc = nsCOM_manager->CreateInstanceByContractID(NS_SESSION_CONTRACTID,
-						       nsnull,
-						       NS_GET_IID(ISession),
-						       getter_AddRefs(s));
+	
+	NS_CHECK_AND_DEBUG_ERROR(nsCOM_manager,
+				 CreateInstanceByContractID(NS_SESSION_CONTRACTID,
+							    nsnull,
+							    NS_GET_IID(ISession),
+							    getter_AddRefs(s)),
+				 rc);
 
 	if (NS_FAILED(rc))
 	{
-		std::cerr << "Error, could not instantiate Session object! rc=" << rc << std::endl;
+// 		std::cerr << "Error, could not instantiate Session object! rc=0x" << std::hex << rc << std::dec << std::endl;
 		return nsnull;
 	}
+// 	else
+// 		std::cout << "New Session object created" << std::endl;
 
 	return s;
 }
@@ -236,7 +277,7 @@ QString VirtualBoxBridge::generateMac()
 	return returnQStringValue(new_mac);
 }
 
-std::vector<MachineBridge*> VirtualBoxBridge::getMachines()
+std::vector<MachineBridge*> VirtualBoxBridge::getMachines(QObject *parent)
 {
 	std::vector<MachineBridge*> machines_vec;
 	if(virtualBox != nsnull)
@@ -249,15 +290,18 @@ std::vector<MachineBridge*> VirtualBoxBridge::getMachines()
 		{
 			int i;
 			for(i = 0; i < machineCnt; i++)
-				machines_vec.push_back(new MachineBridge(this, machines[i]));
+				machines_vec.push_back(new MachineBridge(this, machines[i], parent));
 		}
 	}
 	return machines_vec;
 }
 
-MachineBridge::MachineBridge(VirtualBoxBridge *vboxbridge, IMachine *machine)
+MachineBridge::MachineBridge(VirtualBoxBridge *vboxbridge, IMachine *machine, QObject *parent)
 : vboxbridge(vboxbridge), machine(machine), session(nsnull)
 {
+	eventListener.createObject();
+	eventListener->init(new UIMainEventListener(this), parent);
+
 	machine->GetId(getter_Copies(machineUUID));
 }
 
@@ -437,6 +481,7 @@ bool MachineBridge::getIfaceEnabled(INetworkAdapter *iface)
 bool MachineBridge::start()
 {
 	nsresult rc;
+	bool launchSucceeded;
 	uint32_t sessionState, machineState;
 	
 	/*
@@ -452,13 +497,13 @@ bool MachineBridge::start()
 		}
 
 		// Try to unlock session, then check if this action succeeded
-		session->UnlockMachine();
-		
 		uint32_t state;
-		session->GetState(&state);
-		
+		NS_CHECK_AND_DEBUG_ERROR(session, UnlockMachine(), rc); //FIXME
+
+		NS_CHECK_AND_DEBUG_ERROR(session, GetState(&state), rc);
+
 		// If Session is not unlocked, VM is still running
-		if(state != SessionState::Unlocked)
+		if(NS_FAILED(rc) || state != SessionState::Unlocked)
 		{
 			std::cout << "[" << getName().toStdString() << "] Session locked!" << std::endl;
 			return false;
@@ -478,23 +523,27 @@ bool MachineBridge::start()
 	NS_CHECK_AND_DEBUG_ERROR(machine, LaunchVMProcess(session, type, environment, getter_AddRefs(progress)), rc);
 	if(NS_FAILED(rc))
 	{
+		launchSucceeded = false;
 		std::cout << "[" << getName().toStdString() << "] Cannot launch VM!" << std::endl;
 		progress = nsnull;
 		return false;
 	}
-
-	PRInt32 resultCode;
-	progress->WaitForCompletion(-1);
-	progress->GetResultCode(&resultCode);
-	progress = nsnull;
-	
-	if (resultCode != 0) // check success
+	else
 	{
-		std::cout << "[" << getName().toStdString() << "] Cannot launch VM! Result code: 0x" << std::hex << resultCode << std::dec << std::endl;
-		return false;
-	}
+		launchSucceeded = true;
+		PRInt32 resultCode;
+		progress->WaitForCompletion(-1);
+		progress->GetResultCode(&resultCode);
 
-	return true;
+		if (resultCode != 0) // check success
+		{
+			std::cout << "[" << getName().toStdString() << "] Cannot launch VM! Result code: 0x" << std::hex << resultCode << std::dec << std::endl;
+			return false;
+		}
+		registerListener();
+	}	
+
+	return launchSucceeded;
 }
 
 bool MachineBridge::stop(bool force)
@@ -572,6 +621,32 @@ bool MachineBridge::saveSettings()
 		return NS_SUCCEEDED(rc);
 
 	return NS_SUCCEEDED(rc);
+}
+
+bool MachineBridge::registerListener() //TODO select only events that I'm interested to
+{
+	nsresult rc;
+
+	if(session == nsnull)
+		return false;
+	
+	NS_CHECK_AND_DEBUG_ERROR(session, GetConsole(getter_AddRefs(console)), rc);
+	if(NS_FAILED(rc))
+		return false;
+
+	NS_CHECK_AND_DEBUG_ERROR(console, GetEventSource(getter_AddRefs(eventSource)), rc);
+	if(NS_FAILED(rc))
+		return false;
+	
+// 	QVector<VBoxEventType> events;
+	uint32_t events[1];
+// 	events << VBoxEventType::Any;
+	events[0] = VBoxEventType::Any;
+	NS_CHECK_AND_DEBUG_ERROR(eventSource, RegisterListener(eventListener, /*events.count()*/ 1, events, (PRBool) true), rc);
+	if(NS_FAILED(rc))
+		return false;
+
+	return true;
 }
 
 bool MachineBridge::lockMachine()

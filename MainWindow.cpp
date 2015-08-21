@@ -35,7 +35,7 @@
 #include "VirtualBoxBridge.h"
 
 MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
-: QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge()), machines_vec(vboxbridge->getMachines())
+: QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge()), machines_vec(vboxbridge->getMachines(this))
 {
 	VMTabSettings_vec.clear();
 	ui->setupUi(this);
