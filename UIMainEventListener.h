@@ -1,19 +1,23 @@
-/** @file
- *
- * VBox frontends: Qt GUI ("VirtualBox"):
- * UIMainEventListener class declaration
- */
-
 /*
- * Copyright (C) 2010-2013 Oracle Corporation
+ * VBANT - VirtualBox Advanced Network Tool
+ * Copyright (C) 2015  Dario Messina
+ * based on code by VirtualBox Open Source Edition (OSE) copyright (C) 2010-2013 Oracle Corporation
+ * 
+ * This file is part of VBANT
  *
- * This file is part of VirtualBox Open Source Edition (OSE), as
- * available from http://www.virtualbox.org. This file is free software;
- * you can redistribute it and/or modify it under the terms of the GNU
- * General Public License (GPL) as published by the Free Software
- * Foundation, in version 2 as it comes in the "COPYING" file of the
- * VirtualBox OSE distribution. VirtualBox OSE is distributed in the
- * hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+ * VBANT is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * VBANT is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
 #ifndef UIMAINEVENTLISTENER_H
@@ -29,19 +33,23 @@
 #include <VBox/com/listeners.h>
 #include "VirtualBoxBridge.h"
 
-#define QUERY_INTERFACE_AND_DEBUG_ERROR(srcIface, dstIface, srcPtr, dstPtr, rc)	\
-do {										\
-	rc = CallQueryInterface<srcIface, dstIface>(srcPtr, &dstPtr);		\
-	if(NS_FAILED(rc))							\
-	{									\
-		std::cerr << "[" << __FILE__ << ":" << __LINE__ << " -> " << __func__ << "] " \
-		<< "CallQueryInterface<"					\
-		<< #srcIface << ", " << #dstIface				\
-		<< ">(" << #srcPtr << ", &" << #dstPtr				\
-		<< "): 0x" << std::hex << rc << std::dec << std::endl;		\
-	}									\
-} while(0);
-
+#ifdef DEBUG_FLAG
+	#define QUERY_INTERFACE_AND_DEBUG_ERROR(srcIface, dstIface, srcPtr, dstPtr, rc)	\
+	do {										\
+		rc = CallQueryInterface<srcIface, dstIface>(srcPtr, &dstPtr);		\
+		if(NS_FAILED(rc))							\
+		{									\
+			std::cerr << "[" << __FILE__ << ":" << __LINE__ << " -> " << __func__ << "] " \
+			<< "CallQueryInterface<"					\
+			<< #srcIface << ", " << #dstIface				\
+			<< ">(" << #srcPtr << ", &" << #dstPtr				\
+			<< "): 0x" << std::hex << rc << std::dec << std::endl;		\
+		}									\
+	} while(0);
+#else
+	#define QUERY_INTERFACE_AND_DEBUG_ERROR(srcIface, dstIface, srcPtr, dstPtr, rc)	\
+	do { rc = CallQueryInterface<srcIface, dstIface>(srcPtr, &dstPtr); } while(0);
+#endif
 /* Note: On a first look this may seems a little bit complicated.
  * There are two reasons to use a separate class here which handles the events
  * and forward them to the public class as signals. The first one is that on
@@ -70,12 +78,12 @@ class UIMainEventListener: public QObject
 
 	signals:
 		/* All VirtualBox Signals */
-		void sigMachineStateChange(QString strId, uint32_t state);
+		void sigMachineStateChange(MachineBridge *machine, uint32_t state);
 //     void sigMachineDataChange(QString strId);
 //     void sigExtraDataCanChange(QString strId, QString strKey, QString strValue, bool &fVeto, QString &strVetoReason); /* use Qt::DirectConnection */
 //     void sigExtraDataChange(QString strId, QString strKey, QString strValue);
 //     void sigMachineRegistered(QString strId, bool fRegistered);
-		void sigSessionStateChange(QString strId, uint32_t state);
+		void sigSessionStateChange(MachineBridge *machine, uint32_t state);
 //     void sigSnapshotTake(QString strId, QString strSnapshotId);
 //     void sigSnapshotDelete(QString strId, QString strSnapshotId);
 //     void sigSnapshotChange(QString strId, QString strSnapshotId);
@@ -86,14 +94,14 @@ class UIMainEventListener: public QObject
 //     void sigKeyboardLedsChangeEvent(bool fNumLock, bool fCapsLock, bool fScrollLock);
 		void sigStateChange(MachineBridge *machine, uint32_t state);
 //     void sigAdditionsChange();
-		void sigNetworkAdapterChange(INetworkAdapter *nic);
+		void sigNetworkAdapterChange(MachineBridge *machine, INetworkAdapter *nic);
 //     void sigMediumChange(MediumAttachment attachment);
 //     void sigVRDEChange();
 //     void sigVideoCaptureChange();
 //     void sigUSBControllerChange();
 //     void sigUSBDeviceStateChange(CUSBDevice device, bool fAttached, CVirtualBoxErrorInfo error);
 //     void sigSharedFolderChange();
-		void sigRuntimeError(bool fFatal, QString strId, QString strMessage);
+		void sigRuntimeError(MachineBridge *machine, bool fFatal, QString strMessage);
 //     void sigCanShowWindow(bool &fVeto, QString &strReason); /* use Qt::DirectConnection */
 //     void sigShowWindow(LONG64 &winId); /* use Qt::DirectConnection */
 //     void sigCPUExecutionCapChange();

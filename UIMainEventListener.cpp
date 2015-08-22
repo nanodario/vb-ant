@@ -1,20 +1,23 @@
-/* $Id: UIMainEventListener.cpp $ */
-/** @file
- *
- * VBox frontends: Qt GUI ("VirtualBox"):
- * UIMainEventListener class implementation
- */
-
 /*
- * Copyright (C) 2010-2013 Oracle Corporation
+ * VBANT - VirtualBox Advanced Network Tool
+ * Copyright (C) 2015  Dario Messina
+ * based on code by VirtualBox Open Source Edition (OSE) copyright (C) 2010-2013 Oracle Corporation
+ * 
+ * This file is part of VBANT
  *
- * This file is part of VirtualBox Open Source Edition (OSE), as
- * available from http://www.virtualbox.org. This file is free software;
- * you can redistribute it and/or modify it under the terms of the GNU
- * General Public License (GPL) as published by the Free Software
- * Foundation, in version 2 as it comes in the "COPYING" file of the
- * VirtualBox OSE distribution. VirtualBox OSE is distributed in the
- * hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+ * VBANT is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * VBANT is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
 /* GUI includes: */
@@ -59,92 +62,64 @@ void    UIMainEventListener::uninit()
  */
 STDMETHODIMP UIMainEventListener::HandleEvent(uint32_t aType, IEvent *pEvent)
 {
-// 	CEvent event(pEvent);
-// 	printf("Event received: %d\n", event.GetType());
-// 	uint32_t eventType;
-// 	pEvent->GetType(&eventType);
-	
-	std::cout << "Evento: " << aType << std::endl;
-	switch (/*event.GetType()*/ aType)
+	switch (aType)
 	{
 		/*
 		 * All VirtualBox Events
 		 */
 		case VBoxEventType::OnStateChanged:
 		{
-// 			nsXPIDLString machineID;
 			uint32_t machineState = 0;
 			
 			IStateChangedEvent *es;
 			nsresult rc;
 			QUERY_INTERFACE_AND_DEBUG_ERROR(IEvent, IStateChangedEvent, pEvent, es, rc);
 			if(NS_SUCCEEDED(rc))
-			{
-// 				es->GetMachineId(&machineID);
-// 				std::cout << "machineID: " << machineID << std::endl;
 				es->GetState(&machineState);
-				std::cout << "machineState: " << machineState << std::endl;
-			}
-			
-// 			emit sigMachineStateChange(pEvent->GetIID(), machineState);
+
 			emit sigStateChange(machine, machineState);
 			break;
 		}
 
 		case VBoxEventType::OnMachineStateChanged:
 		{
-// 			MachineStateChangedEvent es(pEvent);
-// 			emit sigMachineStateChange(es.GetMachineId(), es.GetState());
-
-			uint32_t machineID;
 			uint32_t machineState = 0;
 
 			IMachineStateChangedEvent *es;
 			nsresult rc;
 			QUERY_INTERFACE_AND_DEBUG_ERROR(IEvent, IMachineStateChangedEvent, pEvent, es, rc);
 			if(NS_SUCCEEDED(rc))
-			{
-// 				es->GetMachineId(&machineID);
-// 				std::cout << "machineID: " << machineID << std::endl;
 				es->GetState(&machineState);
-				std::cout << "machineState: " << machineState << std::endl;
-			}
-			
-// 			emit sigMachineStateChange(pEvent->GetIID(), machineState);
-			emit sigMachineStateChange(QString("strId"), machineState);
+
+			emit sigMachineStateChange(machine, machineState);
 			break;
 		}
 
 		case VBoxEventType::OnSessionStateChanged:
 		{
-			uint32_t machineID;
-			uint32_t sessionState;
+			uint32_t sessionState = 0;
 
 			ISessionStateChangedEvent *es;
 			nsresult rc;
 			QUERY_INTERFACE_AND_DEBUG_ERROR(IEvent, ISessionStateChangedEvent, pEvent, es, rc);
 			if(NS_SUCCEEDED(rc))
-			{
-// 				es->GetMachineId(&machineID);
-// 				std::cout << "machineID: " << machineID << std::endl;
 				es->GetState(&sessionState);
-				std::cout << "machineState: " << sessionState << std::endl;
-			}
-						
-			emit sigSessionStateChange(QString("strId"), sessionState);
+
+			emit sigSessionStateChange(machine, sessionState);
 			break;
 		}
 
 		case VBoxEventType::OnNetworkAdapterChanged:
 		{
-			INetworkAdapterChangedEvent *es;
 			INetworkAdapter *nic;
+
+			INetworkAdapterChangedEvent *es;
 			nsresult rc;
 			QUERY_INTERFACE_AND_DEBUG_ERROR(IEvent, INetworkAdapterChangedEvent, pEvent, es, rc);
 			if(NS_SUCCEEDED(rc))
 				es->GetNetworkAdapter(&nic);
 
-			emit sigNetworkAdapterChange(nic);
+			emit sigNetworkAdapterChange(machine, nic);
 			break;
 		}
 
@@ -161,15 +136,13 @@ STDMETHODIMP UIMainEventListener::HandleEvent(uint32_t aType, IEvent *pEvent)
 				es->GetFatal(&fatal);
 				es->GetMessage(getter_Copies(strMessage));
 			}
-			
-			emit sigRuntimeError(fatal, QString("strId"), returnQStringValue(strMessage));
+
+			emit sigRuntimeError(machine, fatal, returnQStringValue(strMessage));
 			break;
 		}
 
 		default: break;
 	}
-	
-// 	machine->vboxbridge->knockAPI(); //HACK
 	
 	return NS_OK;
 }
