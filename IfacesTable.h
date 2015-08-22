@@ -140,6 +140,9 @@ class IfacesTable : public QTableWidget
 		void removeIface(int iface);
 		Iface *operator[](int iface) const { return ifaces[iface]; };
 		
+		void lockSettings();
+		void unlockSettings();
+
 	private slots:
 		void cellChangedSlot(int row, int column);
 		

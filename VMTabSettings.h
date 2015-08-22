@@ -46,6 +46,9 @@ class VMTabSettings : public QWidget
 		virtual ~VMTabSettings();
 		IfacesTable *ifaces_table;
 		void refreshTable();
+		void lockSettings();
+		void unlockSettings();
+		bool hasThisMachine(MachineBridge *_machine);
 		
 	private slots:
 		void clickedSlot(QAbstractButton*);

@@ -62,10 +62,12 @@ class MainWindow : public QMainWindow
 		void slotPause();
 		void slotStop();
 		void slotSettings();
+		void slotStateChange(MachineBridge *machine, uint32_t state);
 
 	private:
 		bool queryClose();
 		bool loadFile(const QString &path);
+		void refreshUI(int tab);
 		
 		Ui_MainWindow *ui;
 		std::vector<VMTabSettings*> VMTabSettings_vec;

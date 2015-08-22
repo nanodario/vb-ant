@@ -137,3 +137,20 @@ void VMTabSettings::vm_enabledSlot(bool checked)
 {
 	ifaces_table->setDisabled(!checked);
 }
+
+void VMTabSettings::lockSettings()
+{
+	ifaces_table->lockSettings();
+	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
+}
+
+void VMTabSettings::unlockSettings()
+{
+	ifaces_table->unlockSettings();
+	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
+}
+
+bool VMTabSettings::hasThisMachine(MachineBridge *_machine)
+{
+	return machine == _machine;
+}

@@ -56,14 +56,19 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotActionSaveAs()));
 	connect(ui->vm_tabs, SIGNAL(currentChanged(int)), this, SLOT(currentChangedSlot(int)));
 	connect(ui->actionAvvia, SIGNAL(triggered(bool)), this, SLOT(slotStart()));
+	connect(ui->actionPausa, SIGNAL(triggered(bool)), this, SLOT(slotPause()));
+	connect(ui->actionReset, SIGNAL(triggered(bool)), this, SLOT(slotReset()));
+	connect(ui->actionInterrompi, SIGNAL(triggered(bool)), this, SLOT(slotStop()));
 	connect(ui->actionImpostazioni, SIGNAL(triggered(bool)), this, SLOT(slotSettings()));
 	
 	connect(ui->toolbarAvvia, SIGNAL(triggered(bool)), ui->actionAvvia, SIGNAL(triggered(bool)));
+	connect(ui->toolbarPausa, SIGNAL(triggered(bool)), ui->actionPausa, SIGNAL(triggered(bool)));
 	connect(ui->toolbarImpostazioni, SIGNAL(triggered(bool)), ui->actionImpostazioni, SIGNAL(triggered(bool)));
 }
 
 MainWindow::~MainWindow()
 {
+	disconnect(ui->vm_tabs, SIGNAL(currentChanged(int)), this, SLOT(currentChangedSlot(int)));
 	while(!VMTabSettings_vec.empty())
 	{
 		delete VMTabSettings_vec.back();
@@ -181,18 +186,23 @@ void MainWindow::slotInfo()
 
 void MainWindow::currentChangedSlot(int tab)
 {
-	std::cout << "[" << __func__ << "] tab:" << tab << std::endl;
-// 	std::cout << "Selezionata tab \"" << ui->vm_tabs->widget(tab)->objectName().toStdString() << "\"" << std::endl;
+	refreshUI(tab);
 }
 
 void MainWindow::slotStart()
 {
+	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->lockSettings();
 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->start();
+	refreshUI(ui->vm_tabs->currentIndex());
 }
 
 void MainWindow::slotPause()
 {
-	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->pause();
+	uint32_t machineState = ((VMTabSettings *)VMTabSettings_vec.at(ui->vm_tabs->currentIndex()))->machine->getState();
+	if(machineState == MachineState::Paused)
+		VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->exitPause();
+	else
+		VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->enterPause();
 }
 
 void MainWindow::slotReset()
@@ -202,10 +212,108 @@ void MainWindow::slotReset()
 
 void MainWindow::slotStop()
 {
-	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->stop();
+	uint32_t machineState = ((VMTabSettings *)VMTabSettings_vec.at(ui->vm_tabs->currentIndex()))->machine->getState();
+
+	if(machineState != MachineState::Paused)
+		slotPause();
+
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::question(this, "Chiudi la macchina virtuale", "Arrestare la macchina virtuale?", QMessageBox::Yes|QMessageBox::No);
+
+	if (reply == QMessageBox::Yes)
+		VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->stop();
+	else
+	{
+		machineState = ((VMTabSettings *)VMTabSettings_vec.at(ui->vm_tabs->currentIndex()))->machine->getState();
+		if(machineState == MachineState::Paused)
+			slotPause();
+	}
 }
 
 void MainWindow::slotSettings()
 {
 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->openSettings();
+}
+
+void MainWindow::slotStateChange(MachineBridge *machine, uint32_t state)
+{
+	int tabIndex;
+	for(int i = 0; i < VMTabSettings_vec.size(); i++)
+		if(VMTabSettings_vec.at(i)->hasThisMachine(machine))
+		{
+			tabIndex = i;
+			break;
+		}
+
+	switch(state)
+	{
+		case MachineState::Running:
+			VMTabSettings_vec.at(tabIndex)->lockSettings();
+			break;
+
+		case MachineState::Paused:
+			break;
+
+		case MachineState::PoweredOff:
+			VMTabSettings_vec.at(tabIndex)->unlockSettings();
+			break;
+
+		default: break;
+	}
+
+	refreshUI(tabIndex);
+}
+
+void MainWindow::refreshUI(int tab)
+{
+	uint32_t machineState = ((VMTabSettings *)VMTabSettings_vec.at(tab))->machine->getState();
+
+	switch(machineState)
+	{
+		case MachineState::Running:
+		{
+			ui->actionElimina->setEnabled(false);
+			ui->actionAvvia->setEnabled(false);
+			ui->actionPausa->setEnabled(true);
+			ui->actionPausa->setChecked(false);
+			ui->actionReset->setEnabled(true);
+			ui->actionInterrompi->setEnabled(true);
+
+			ui->toolbarAvvia->setEnabled(false);
+			ui->toolbarPausa->setEnabled(true);
+			ui->toolbarPausa->setChecked(false);
+			break;
+		}
+
+		case MachineState::Paused:
+		{
+			ui->actionElimina->setEnabled(false);
+			ui->actionAvvia->setEnabled(false);
+			ui->actionPausa->setEnabled(true);
+			ui->actionPausa->setChecked(true);
+			ui->actionReset->setEnabled(false);
+			ui->actionInterrompi->setEnabled(true);
+
+			ui->toolbarAvvia->setEnabled(false);
+			ui->toolbarPausa->setEnabled(true);
+			ui->toolbarPausa->setChecked(true);
+			break;
+		}
+
+		case MachineState::PoweredOff:
+		default:
+		{
+			ui->actionElimina->setEnabled(true);
+			ui->actionAvvia->setEnabled(true);
+			ui->actionPausa->setEnabled(false);
+			ui->actionPausa->setChecked(false);
+			ui->actionReset->setEnabled(false);
+			ui->actionInterrompi->setEnabled(false);
+
+			ui->toolbarAvvia->setEnabled(true);
+			ui->toolbarPausa->setEnabled(false);
+			ui->toolbarPausa->setChecked(false);
+			break;
+		}
+	}
 }

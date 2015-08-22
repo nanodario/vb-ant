@@ -181,7 +181,7 @@ class MachineBridge
 		
 		bool start();
 		bool stop(bool force = false);
-		bool pause();
+		bool pause(bool pauseEnabled);
 		bool reset();
 
 		bool openSettings();

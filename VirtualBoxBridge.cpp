@@ -634,13 +634,15 @@ bool MachineBridge::start()
 bool MachineBridge::stop(bool force)
 {
 	nsresult rc;
-
-	nsCOMPtr<IConsole> console;
-	rc = session->GetConsole(getter_AddRefs(console));
-	if(NS_FAILED(rc))
+	
+	if(console == nsnull)
 	{
-		console = nsnull;
-		return false;
+		rc = session->GetConsole(getter_AddRefs(console));
+		if(NS_FAILED(rc))
+		{
+			console = nsnull;
+			return false;
+		}
 	}
 
 	nsCOMPtr<IProgress> progress;
@@ -650,7 +652,7 @@ bool MachineBridge::stop(bool force)
 		rc = console->PowerButton();
 
 	progress = nsnull;
-	console = nsnull;
+
 	if(NS_FAILED(rc))
 		return false;
 
@@ -658,14 +660,45 @@ bool MachineBridge::stop(bool force)
 	return true;
 }
 
-bool MachineBridge::pause()
+bool MachineBridge::pause(bool pauseEnabled)
 {
-	return false;
+	nsresult rc;
+
+	if(console == nsnull)
+	{
+		rc = session->GetConsole(getter_AddRefs(console));
+		if(NS_FAILED(rc))
+		{
+			console = nsnull;
+			return false;
+		}
+	}
+	
+	if(pauseEnabled)
+		rc = console->Pause();
+	else
+		rc = console->Resume();
+	
+	return NS_SUCCEEDED(rc);
 }
 
 bool MachineBridge::reset()
 {
-	return false;
+	nsresult rc;
+	
+	if(console == nsnull)
+	{
+		rc = session->GetConsole(getter_AddRefs(console));
+		if(NS_FAILED(rc))
+		{
+			console = nsnull;
+			return false;
+		}
+	}
+	
+	rc = console->Reset();
+	
+	return NS_SUCCEEDED(rc);
 }
 
 bool MachineBridge::openSettings()

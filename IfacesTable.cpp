@@ -503,6 +503,60 @@ QStringList IfacesTable::getIfaceInfo(int iface)
 	return iface_info;
 }
 
+void IfacesTable::lockSettings()
+{
+	for(int iface = 0; iface < rowCount(); iface++)
+	{
+		for (int col = 0; col < columnCount(); col++)
+		{
+			Qt::ItemFlags flags;
+			switch(col)
+			{
+				case COLUMN_IFACE_ENABLED:
+				{
+					CustomCheckBox *c = (CustomCheckBox *)cellWidget(iface, col);
+					c->checkbox->setEnabled(false);
+					break;
+				}
+
+				case COLUMN_MAC:
+				{
+					MacWidgetField *w = (MacWidgetField *)cellWidget(iface, col);
+					w->button->setEnabled(false);
+					w->lineEdit->setEnabled(false);
+					break;
+				}
+
+				case COLUMN_IFACE_NAME:
+#ifdef CONFIGURABLE_IP
+				case COLUMN_IP:
+				case COLUMN_SUBNETMASK:
+#endif
+				{
+					flags = item(iface, col)->flags();
+					flags &= ~Qt::ItemIsEnabled;
+					item(iface, col)->setFlags(flags);
+					break;
+				}
+
+				case COLUMN_IFACE_CONNECTED:
+				case COLUMN_IFACE_TYPE:
+				case COLUMN_SUBNETNAME:
+					break;
+			}
+		}
+	}
+}
+
+void IfacesTable::unlockSettings()
+{
+	for(int iface = 0; iface < rowCount(); iface++)
+	{
+		((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_ENABLED))->checkbox->setEnabled(true);
+		setStatus(iface, ((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_ENABLED))->checkbox->isChecked());
+	}
+}
+
 void IfacesTable::cellChangedSlot(int row, int column)
 {
 	switch(column)
