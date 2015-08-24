@@ -167,6 +167,8 @@ class MachineBridge
 		QString getIfaceMac(INetworkAdapter *iface);
 		bool getIfaceCableConnected(INetworkAdapter *iface);
 		QString getIfaceMac(int iface);
+		QString getIfaceFormattedMac(int iface);
+		QString getIfaceFormattedMac(INetworkAdapter *iface);
 		uint32_t getAttachmentType(INetworkAdapter *iface);
 		QString getSubnetName(INetworkAdapter *iface);
 		QString getBridgedIface(INetworkAdapter *iface);
@@ -176,6 +178,7 @@ class MachineBridge
 		bool setIfaceMac(uint32_t iface, QString qMac);
 		bool setIfaceAttachmentType(uint32_t iface, uint32_t attachmentType);
 		bool setCableConnected(uint32_t iface, bool connected);
+		bool setCableConnectedRunTime(uint32_t iface, bool connected);
 		bool setSubnetName(uint32_t iface, QString qSubnetName);
 		bool setBridgedIface(uint32_t iface, QString bridgedIface);
 		

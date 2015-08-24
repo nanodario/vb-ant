@@ -46,13 +46,10 @@ class VMTabSettings : public QWidget
 		virtual ~VMTabSettings();
 		IfacesTable *ifaces_table;
 		void refreshTable();
+		void refreshTableUI();
 		void lockSettings();
 		void unlockSettings();
 		bool hasThisMachine(MachineBridge *_machine);
-		
-	private slots:
-		void clickedSlot(QAbstractButton*);
-		void vm_enabledSlot(bool checked);
 		
 	private:
 		QString vm_name;
@@ -64,6 +61,11 @@ class VMTabSettings : public QWidget
 		Iface **ifaces;
 		VirtualBoxBridge *vboxbridge;
 		MachineBridge *machine;
+		
+	private slots:
+		void clickedSlot(QAbstractButton*);
+		void vm_enabledSlot(bool checked);
+		void slotIfaceChange(int iface, ifacekey_t key, void *value_ptr);
 };
 
 #endif //VMTABSETTINGS_H

@@ -64,6 +64,7 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 // 	connect(vm->machine->session, SIGNAL(sigMachineStateChange()), this, SLOT(sltMachineStateChanged()));
 
 	refreshTable();
+	connect(ifaces_table, SIGNAL(sigIfaceChange(int, ifacekey_t, void*)), this, SLOT(slotIfaceChange(int, ifacekey_t, void*)));
 }
 
 VMTabSettings::~VMTabSettings()
@@ -98,6 +99,23 @@ void VMTabSettings::refreshTable()
 #else
 		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, subnetName, name);
 #endif
+	}
+}
+
+void VMTabSettings::refreshTableUI()
+{
+	for(int row = 0; row < ifaces_table->rowCount(); row++)
+	{
+		ifaces_table->setIfaceEnabled(row, ifaces_table->operator[](row)->enabled);
+		ifaces_table->setName(row, ifaces_table->operator[](row)->name);
+		ifaces_table->setMac(row, ifaces_table->operator[](row)->mac);
+		ifaces_table->setCableConnected(row, ifaces_table->operator[](row)->cableConnected);
+		ifaces_table->setAttachmentType(row, ifaces_table->operator[](row)->attachmentType);
+#ifdef CONFIGURABLE_IP
+		ifaces_table->setIp(row, vm->getIp(row));
+		ifaces_table->setSubnetMask(row, vm->getSubnetMask(row));
+#endif
+		ifaces_table->setSubnetName(row, ifaces_table->operator[](row)->subnetName);
 	}
 }
 
@@ -136,6 +154,11 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 void VMTabSettings::vm_enabledSlot(bool checked)
 {
 	ifaces_table->setDisabled(!checked);
+}
+
+void VMTabSettings::slotIfaceChange(int iface, ifacekey_t key, void *value_ptr)
+{
+	vm->setNetworkAdapterData(iface, key, value_ptr);
 }
 
 void VMTabSettings::lockSettings()

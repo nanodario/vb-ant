@@ -32,6 +32,7 @@
 
 #include "Iface.h"
 #include "VirtualBoxBridge.h"
+#include "VirtualMachine.h"
 
 #define IFACES_NUMBER 8
 
@@ -125,6 +126,7 @@ class IfacesTable : public QTableWidget
 #endif
 		
 		bool setStatus(int iface, bool checked);
+		bool setIfaceEnabled(int iface, bool enabled);
 		bool setName(int iface, QString name);
 		bool setMac(int iface, QString mac);
 		bool setCableConnected(int iface, bool checked);
@@ -142,6 +144,9 @@ class IfacesTable : public QTableWidget
 		
 		void lockSettings();
 		void unlockSettings();
+		
+	signals:
+		void sigIfaceChange(int iface, ifacekey_t key, void *value_ptr);
 
 	private slots:
 		void cellChangedSlot(int row, int column);

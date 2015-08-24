@@ -34,6 +34,7 @@
 
 #include <iostream>
 #include <malloc.h>
+#include "VirtualMachine.h"
 #include "VMTabSettings.h"
 
 #include "Iface.h"
@@ -368,6 +369,13 @@ bool IfacesTable::setStatus(int iface, bool checked)
 	return true;
 }
 
+bool IfacesTable::setIfaceEnabled(int iface, bool enabled)
+{
+	((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_ENABLED))->setCheckState(enabled ? Qt::Checked : Qt::Unchecked);
+// 	emit sigIfaceChange(iface, IFACE_ENABLED, &enabled);
+	return true;
+}
+
 bool IfacesTable::setName(int iface, QString name)
 {
 	int i;
@@ -383,6 +391,8 @@ bool IfacesTable::setName(int iface, QString name)
 	ifaces[iface]->setName(name);
 	QString new_name = ifaces[iface]->name;
 	item(iface, COLUMN_IFACE_NAME)->setText(new_name);
+// 	emit sigIfaceChange(iface, IFACE_NAME, &new_name);
+	
 	return true;
 }
 
@@ -404,6 +414,7 @@ bool IfacesTable::setMac(int iface, QString mac)
 	{
 		QString new_mac = ifaces[iface]->mac;
 		((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(new_mac);
+// 		emit sigIfaceChange(iface, IFACE_MAC, &new_mac);
 	}
 	else
 		((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(old_mac);
@@ -411,10 +422,11 @@ bool IfacesTable::setMac(int iface, QString mac)
 	return done;
 }
 
-bool IfacesTable::setCableConnected(int iface, bool checked) //TODO
+bool IfacesTable::setCableConnected(int iface, bool checked)
 {
-	((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_CONNECTED))->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+	((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_CONNECTED))->checkbox->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
 	ifaces[iface]->cableConnected = checked;
+	emit sigIfaceChange(iface, IFACE_CONNECTED, &checked);
 	return true;
 }
 
@@ -426,7 +438,8 @@ bool IfacesTable::setIp(int iface, QString ip)
 	if (done)
 	{
 		QString new_ip = ifaces[iface]->ip;
-		item(iface, COLUMN_IP)->setText(ip);
+		item(iface, COLUMN_IP)->setText(new_ip);
+// 		emit sigIfaceChange(iface, IFACE_IP, &new_ip);
 	}
 	else
 		item(iface, COLUMN_IP)->setText(old_ip);
@@ -442,6 +455,7 @@ bool IfacesTable::setSubnetMask(int iface, QString subnetMask)
 	{
 		QString new_subnetMask = ifaces[iface]->subnetMask;
 		item(iface, COLUMN_SUBNETMASK)->setText(new_subnetMask);
+// 		emit sigIfaceChange(iface, IFACE_SUBNETMASK, &new_subnetMask);
 	}
 	else
 		item(iface, COLUMN_SUBNETMASK)->setText(old_subnetMask);
@@ -467,6 +481,7 @@ bool IfacesTable::setAttachmentType(int iface, uint32_t attachmentType) //FIXME
 			flags &= ~Qt::ItemIsEnabled;
 		item(iface, COLUMN_SUBNETNAME)->setFlags(flags);
 		
+// 		emit sigIfaceChange(iface, IFACE_ATTACHMENT_TYPE, &attachmentType);
 		return true;
 	}
 	
@@ -478,6 +493,8 @@ bool IfacesTable::setSubnetName(int iface, QString subnetName)
 	ifaces[iface]->setSubnetName(subnetName);
 	QString new_subnetName = ifaces[iface]->subnetName;
 	item(iface, COLUMN_SUBNETNAME)->setText(new_subnetName);
+// 	emit sigIfaceChange(iface, IFACE_SUBNETNAME, &new_subnetName);
+	
 	return true;
 }
 

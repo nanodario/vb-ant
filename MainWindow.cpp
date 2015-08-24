@@ -245,22 +245,41 @@ void MainWindow::slotStateChange(MachineBridge *machine, uint32_t state)
 			break;
 		}
 
+	setSettingsPolicy(tabIndex, state);
+	refreshUI(tabIndex);
+}
+
+void MainWindow::setSettingsPolicy(int tab, uint32_t state)
+{
 	switch(state)
 	{
 		case MachineState::Running:
-			VMTabSettings_vec.at(tabIndex)->lockSettings();
-			break;
-
 		case MachineState::Paused:
+			VMTabSettings_vec.at(tab)->lockSettings();
 			break;
-
+			
 		case MachineState::PoweredOff:
-			VMTabSettings_vec.at(tabIndex)->unlockSettings();
+			VMTabSettings_vec.at(tab)->unlockSettings();
 			break;
-
+			
 		default: break;
 	}
+}
 
+void MainWindow::slotNetworkAdapterChange(MachineBridge *machine, INetworkAdapter *nic)
+{
+	int tabIndex;
+	for(int i = 0; i < VMTabSettings_vec.size(); i++)
+		if(VMTabSettings_vec.at(i)->hasThisMachine(machine))
+		{
+			tabIndex = i;
+			break;
+		}
+
+	VMTabSettings_vec.at(tabIndex)->vm->refreshIface(nic);
+	VMTabSettings_vec.at(tabIndex)->refreshTableUI();
+
+	setSettingsPolicy(tabIndex, VMTabSettings_vec.at(tabIndex)->machine->getState());
 	refreshUI(tabIndex);
 }
 

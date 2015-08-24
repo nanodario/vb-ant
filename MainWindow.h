@@ -63,10 +63,12 @@ class MainWindow : public QMainWindow
 		void slotStop();
 		void slotSettings();
 		void slotStateChange(MachineBridge *machine, uint32_t state);
+		void slotNetworkAdapterChange(MachineBridge *machine, INetworkAdapter *nic);
 
 	private:
 		bool queryClose();
 		bool loadFile(const QString &path);
+		void setSettingsPolicy(int tab, uint32_t state);
 		void refreshUI(int tab);
 		
 		Ui_MainWindow *ui;

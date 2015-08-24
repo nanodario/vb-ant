@@ -409,7 +409,7 @@ QString MachineBridge::getIfaceMac(INetworkAdapter *iface)
 bool MachineBridge::getIfaceCableConnected(INetworkAdapter *iface)
 {
 	PRBool cableConnected;
-	iface->GetEnabled(&cableConnected);
+	iface->GetCableConnected(&cableConnected);
 	return cableConnected;
 }
 
@@ -535,6 +535,23 @@ bool MachineBridge::setCableConnected(ComPtr<INetworkAdapter> iface, bool connec
 	NS_CHECK_AND_DEBUG_ERROR(iface, SetCableConnected(connected), rc);
 	
 	return NS_SUCCEEDED(rc);
+}
+
+bool MachineBridge::setCableConnectedRunTime(uint32_t iface, bool connected)
+{
+	nsresult rc;
+	ComPtr<IMachine> tmp_machine;
+	ComPtr<INetworkAdapter> nic;
+	
+	NS_CHECK_AND_DEBUG_ERROR(machine, LockMachine(session, LockType::Write), rc);
+	NS_CHECK_AND_DEBUG_ERROR(session, GetMachine(tmp_machine.asOutParam()), rc);
+
+	NS_CHECK_AND_DEBUG_ERROR(machine, GetNetworkAdapter(iface, nic.asOutParam()), rc);
+	
+	bool done = setCableConnected(nic, connected);
+	NS_CHECK_AND_DEBUG_ERROR(session, UnlockMachine(), rc);
+	
+	return done && NS_SUCCEEDED(rc);
 }
 
 bool MachineBridge::setSubnetName(ComPtr<INetworkAdapter> iface, QString qSubnetName)
@@ -724,6 +741,26 @@ bool MachineBridge::openSettings()
 QString MachineBridge::getIfaceMac(int iface)
 {
 	return getIfaceMac(getIface(iface));
+}
+
+QString MachineBridge::getIfaceFormattedMac(int iface)
+{
+	return getIfaceFormattedMac(getIface(iface));
+}
+
+QString MachineBridge::getIfaceFormattedMac(INetworkAdapter *iface)
+{
+	std::string unformattedMac = getIfaceMac(iface).toStdString();
+	std::string formattedMac("");
+	
+	formattedMac.append(unformattedMac.substr(0, 2)).append(":");
+	formattedMac.append(unformattedMac.substr(2, 2)).append(":");
+	formattedMac.append(unformattedMac.substr(4, 2)).append(":");
+	formattedMac.append(unformattedMac.substr(6, 2)).append(":");
+	formattedMac.append(unformattedMac.substr(8, 2)).append(":");
+	formattedMac.append(unformattedMac.substr(10, 2));
+	
+	return QString::fromStdString(formattedMac);
 }
 
 bool MachineBridge::saveSettings()

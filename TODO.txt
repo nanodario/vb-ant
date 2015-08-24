@@ -5,7 +5,7 @@ OK	Aggiungere header GPLv2 ad ogni file
 	Salvataggio impostazioni parco macchine su file
 
 OK	Gestire comportamento (pausa/stop) delle macchine virtuali
-	Sincronizzazione impostazioni di rete con macchina virtuale avviata
+OK	Sincronizzazione impostazioni di rete con macchina virtuale avviata
 OK	Disabilitare la modifica di impostazioni IP, MAC e nome interfaccia a macchina virtuale avviata
 	Aggiungere possibilità di collegare/scollegare cavo da ogni interfaccia a macchina virtuale avviata
 	Apertura impostazioni VirtualBox
