@@ -51,7 +51,7 @@ class VirtualMachine
 
 		bool mountVM(bool readonly = false);
 		bool umountVM();
-		bool start() const { return machine->start(); };
+		bool start();
 		bool ACPIstop() const { return machine->stop(); };
 		bool stop() const { return machine->stop(true); };
 		bool enterPause() const { return machine->pause(true); };

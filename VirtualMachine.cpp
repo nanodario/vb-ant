@@ -79,6 +79,33 @@ bool VirtualMachine::umountVM()
 	return true;
 }
 
+bool VirtualMachine::start()
+{
+	bool succeeded = true;
+
+	if(!machine->lockMachine())
+	{
+		std::cerr << "[" << machine->getName().toStdString() <<  "] Cannot lock machine" << std::endl;
+		return false;
+	}
+
+	for(int i = 0; i < ifaces_size; i++)
+		if(ifaces[i]->enabled)
+			if(!machine->setCableConnected(i, ifaces[i]->cableConnected))
+				succeeded = false;
+
+	if(!machine->saveSettings())
+	{
+		std::cout << "saveCableConnectedSettings(): false" << std::endl;
+		succeeded = false;
+	}
+
+	if(!machine->unlockMachine())
+		return false;
+
+	return machine->start() && succeeded;
+}
+
 Iface *VirtualMachine::getIfaceByMAC(QString mac)
 {
 	for (int i = 0; i < ifaces_size; i++)
