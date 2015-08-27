@@ -191,6 +191,7 @@ class MachineBridge
 		bool saveSettings();
 		
 	private:
+		bool shutdownVMProcess();
 		bool registerListener();
 		bool lockMachine();
 		bool unlockMachine();

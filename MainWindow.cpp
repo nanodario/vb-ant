@@ -245,6 +245,9 @@ void MainWindow::slotStateChange(MachineBridge *machine, uint32_t state)
 			break;
 		}
 
+	if(state == MachineState::PoweredOff)
+		VMTabSettings_vec.at(tabIndex)->vm->shutdownVMProcess();
+
 	setSettingsPolicy(tabIndex, state);
 	refreshUI(tabIndex);
 }

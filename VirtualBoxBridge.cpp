@@ -531,6 +531,9 @@ bool MachineBridge::setIfaceAttachmentType(ComPtr<INetworkAdapter> iface, uint32
 
 bool MachineBridge::setCableConnected(ComPtr<INetworkAdapter> iface, bool connected)
 {
+	if(iface == nsnull)
+		return false;
+
 	nsresult rc;
 	NS_CHECK_AND_DEBUG_ERROR(iface, SetCableConnected(connected), rc);
 	
@@ -542,15 +545,15 @@ bool MachineBridge::setCableConnectedRunTime(uint32_t iface, bool connected)
 	nsresult rc;
 	ComPtr<IMachine> tmp_machine;
 	ComPtr<INetworkAdapter> nic;
-	
-	NS_CHECK_AND_DEBUG_ERROR(machine, LockMachine(session, LockType::Write), rc);
-	NS_CHECK_AND_DEBUG_ERROR(session, GetMachine(tmp_machine.asOutParam()), rc);
 
-	NS_CHECK_AND_DEBUG_ERROR(machine, GetNetworkAdapter(iface, nic.asOutParam()), rc);
+	NS_CHECK_AND_DEBUG_ERROR(session, GetMachine(tmp_machine.asOutParam()), rc);
+// 	NS_CHECK_AND_DEBUG_ERROR(tmp_machine, LockMachine(session, LockType::Write), rc);
+	if(NS_SUCCEEDED(rc))
+		NS_CHECK_AND_DEBUG_ERROR(tmp_machine, GetNetworkAdapter(iface, nic.asOutParam()), rc);
 	
 	bool done = setCableConnected(nic, connected);
-	NS_CHECK_AND_DEBUG_ERROR(session, UnlockMachine(), rc);
-	
+// 	NS_CHECK_AND_DEBUG_ERROR(session, UnlockMachine(), rc);
+
 	return done && NS_SUCCEEDED(rc);
 }
 
@@ -593,9 +596,11 @@ bool MachineBridge::start()
 	if(session != nsnull)
 	{
 		machineState = getState();
-		if(machineState == MachineState::Starting || machineState == MachineState::Running)
+		if(machineState == MachineState::Starting
+			|| machineState == MachineState::Running
+			|| machineState == MachineState::Paused)
 		{
-			std::cout << "[" << getName().toStdString() << "] VM is starting/running" << std::endl;
+			std::cout << "[" << getName().toStdString() << "] VM is starting/running/paused" << std::endl;
 			return false;
 		}
 
@@ -603,7 +608,8 @@ bool MachineBridge::start()
 		uint32_t state;
 		NS_CHECK_AND_DEBUG_ERROR(session, UnlockMachine(), rc); //FIXME
 
-		NS_CHECK_AND_DEBUG_ERROR(session, GetState(&state), rc);
+		nsresult rc_tmp;
+		NS_CHECK_AND_DEBUG_ERROR(session, GetState(&state), rc_tmp);
 
 		// If Session is not unlocked, VM is still running
 		if(NS_FAILED(rc) || state != SessionState::Unlocked)
@@ -623,6 +629,19 @@ bool MachineBridge::start()
 	nsXPIDLString environment; environment.AssignWithConversion("", 0);
 	nsCOMPtr<IProgress> progress;
 
+/*
+	NS_CHECK_AND_DEBUG_ERROR(machine, LockMachine(session, LockType::Shared), rc);
+	uint32_t state;
+
+	nsresult rc_tmp;
+	NS_CHECK_AND_DEBUG_ERROR(session, GetState(&state), rc_tmp);
+
+	if(NS_FAILED(rc) || state != SessionState::Locked)
+	{
+		std::cout << "[" << getName().toStdString() << "] Can't lock Session!" << std::endl;
+		return false;
+	}
+*/
 	NS_CHECK_AND_DEBUG_ERROR(machine, LaunchVMProcess(session, type, environment, getter_AddRefs(progress)), rc);
 	if(NS_FAILED(rc))
 	{
@@ -778,6 +797,40 @@ bool MachineBridge::saveSettings()
 	return NS_SUCCEEDED(rc);
 }
 
+bool MachineBridge::shutdownVMProcess()
+{
+	nsresult rc;
+
+	if(session != nsnull)
+	{
+		uint32_t machineState = getState();
+		if(machineState == MachineState::Starting
+			|| machineState == MachineState::Running
+			|| machineState == MachineState::Paused)
+		{
+			std::cout << "[" << getName().toStdString() << "] VM is starting/running/paused" << std::endl;
+			return false;
+		}
+
+		// Try to unlock session, then check if this action succeeded
+		uint32_t state;
+		NS_CHECK_AND_DEBUG_ERROR(session, UnlockMachine(), rc); //FIXME
+
+		nsresult rc_tmp;
+		NS_CHECK_AND_DEBUG_ERROR(session, GetState(&state), rc_tmp);
+
+		// If Session is not unlocked, VM is still running
+		if(NS_FAILED(rc) || state != SessionState::Unlocked)
+		{
+			std::cout << "[" << getName().toStdString() << "] Session locked!" << std::endl;
+			return false;
+		}
+	}
+
+	session = nsnull;
+	return true;
+}
+
 bool MachineBridge::registerListener() //TODO select only events that I'm interested to
 {
 	nsresult rc;
@@ -810,25 +863,32 @@ bool MachineBridge::lockMachine()
 	nsresult rc;
 	uint32_t state;
 
+	uint32_t machineState = getState();
+
+	if(machineState == MachineState::Starting
+		|| machineState == MachineState::Running
+		|| machineState == MachineState::Paused)
+		return false;
+
 	if(session != nsnull)
 	{
 		// Try to unlock session, then check if this action succeeded
-		session->UnlockMachine();
+		NS_CHECK_AND_DEBUG_ERROR(session, UnlockMachine(), rc);
 		
-		GET_AND_DEBUG_MACHINE_STATE(session, state, rc);
+		nsresult rc_tmp;
+		GET_AND_DEBUG_MACHINE_STATE(session, state, rc_tmp);
 		
 		// If Session is not unlocked, VM is still running
 		
-		if(state != SessionState::Unlocked)
+		if(NS_FAILED(rc) || state != SessionState::Unlocked)
 		{
 // 			std::cout << "[" << getName().toStdString() << "] Session already locked!" << std::endl;
 			return false;
 		}
 	}
-	
-	// Create new session
+
 	session = vboxbridge->newSession();
-	
+
 	GET_AND_DEBUG_MACHINE_STATE(session, state, rc);
 
 	if(state == SessionState::Unlocked)

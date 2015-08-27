@@ -137,7 +137,7 @@ bool VirtualMachine::saveSettings()
 	
 	for(int i = 0; i < ifaces_size; i++)
 	{
-		//Abilita
+		//Interfaccia abilitata
 		if(!machine->setIfaceEnabled(i, ifaces[i]->enabled))
 		{
 			std::cout << (ifaces[i]->enabled ? "enableIface" : "disableIface") << "(" << i << ")" << std::endl;
@@ -283,7 +283,9 @@ bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *valu
 		case IFACE_CONNECTED:
 		{
 			bool *cableConnected = (bool *)value_ptr;
-			return machine->setCableConnectedRunTime(iface, *cableConnected);
+			uint32_t machineState = machine->getState();
+			if(machineState == MachineState::Running || machineState == MachineState::Paused)
+				return machine->setCableConnectedRunTime(iface, *cableConnected);
 		}
 		case IFACE_NAME:
 		{

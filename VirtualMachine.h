@@ -57,6 +57,7 @@ class VirtualMachine
 		bool enterPause() const { return machine->pause(true); };
 		bool exitPause() const { return machine->pause(false); };
 		bool reset() const { return machine->reset(); };
+		bool shutdownVMProcess() const { return machine->shutdownVMProcess(); };
 		bool openSettings() const { return machine->openSettings(); };
 		bool saveSettings();
 		bool loadSettings(QString filename);

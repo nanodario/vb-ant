@@ -104,6 +104,7 @@ void VMTabSettings::refreshTable()
 
 void VMTabSettings::refreshTableUI()
 {
+	ifaces_table->blockSignals(true);
 	for(int row = 0; row < ifaces_table->rowCount(); row++)
 	{
 		ifaces_table->setIfaceEnabled(row, ifaces_table->operator[](row)->enabled);
@@ -117,6 +118,7 @@ void VMTabSettings::refreshTableUI()
 #endif
 		ifaces_table->setSubnetName(row, ifaces_table->operator[](row)->subnetName);
 	}
+	ifaces_table->blockSignals(false);
 }
 
 void VMTabSettings::clickedSlot(QAbstractButton *button)
