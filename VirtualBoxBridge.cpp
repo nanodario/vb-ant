@@ -247,6 +247,179 @@ nsCOMPtr<ISession> VirtualBoxBridge::newSession()
 	return s;
 }
 
+nsCOMPtr<IHost> VirtualBoxBridge::getHost()
+{
+	nsresult rc;
+	nsCOMPtr<IHost> host;
+
+	NS_CHECK_AND_DEBUG_ERROR(virtualBox, GetHost(getter_AddRefs(host)), rc);
+	
+	if(NS_SUCCEEDED(rc))
+		return host;
+
+	return nsnull;
+}
+
+std::vector<nsCOMPtr<IHostNetworkInterface> > VirtualBoxBridge::getHostNetworkInterfaces()
+{
+	std::vector<nsCOMPtr<IHostNetworkInterface> > host_ifaces_vec;
+
+	uint32_t host_ifaces_size;
+	IHostNetworkInterface **host_ifaces;
+
+	getHost()->GetNetworkInterfaces(&host_ifaces_size, &host_ifaces);
+
+	int i;
+	for(i = 0; i < host_ifaces_size; i++)
+	{
+		uint32_t iface_type;
+		nsXPIDLString iface_name;
+
+		host_ifaces[i]->GetInterfaceType(&iface_type);
+		host_ifaces[i]->GetName(getter_Copies(iface_name));
+		if(iface_type == HostNetworkInterfaceType::Bridged)
+		{
+			bool new_iface = true;
+			for(int j = 0; j < i; j++)
+			{
+				nsXPIDLString name;
+				host_ifaces[j]->GetName(getter_Copies(name));
+				if(returnQStringValue(name) == returnQStringValue(iface_name))
+					new_iface = false;
+			}
+			if(new_iface)
+				host_ifaces_vec.push_back(host_ifaces[i]);
+		}
+	}
+
+	return host_ifaces_vec;
+}
+
+std::vector<QString> VirtualBoxBridge::getInternalNetworkList()
+{
+	std::vector<QString> internalNetworks_vec;
+	short unsigned int **internalNetworks;
+	uint32_t internalNetworks_size;
+	
+	virtualBox->GetInternalNetworks(&internalNetworks_size, &internalNetworks);
+	
+	for(int i = 0; i < internalNetworks_size; i++)
+	{
+		int j;
+		for(j = 0; internalNetworks[i][j] != '\0'; j++);
+		char *str = (char *)malloc(sizeof(char) * (j + 1));
+
+		for(j = 0; internalNetworks[i][j] != '\0'; j++)
+			str[j] = internalNetworks[i][j];
+		str[j] = '\0';
+
+		QString qstr = QString::fromUtf8(str);
+		internalNetworks_vec.push_back(qstr);
+		
+		free(str);
+	}
+	return internalNetworks_vec;
+}
+
+std::vector<nsCOMPtr<INATNetwork> > VirtualBoxBridge::getNatNetworks()
+{
+	std::vector<nsCOMPtr<INATNetwork> > natNetworks_vec;
+	uint32_t natNetworks_size;
+	INATNetwork **natNetworks;
+	
+	virtualBox->GetNATNetworks(&natNetworks_size, &natNetworks);
+	
+	for (int i = 0; i < natNetworks_size; ++i)
+		natNetworks_vec.push_back(natNetworks[i]);
+
+	return natNetworks_vec;
+}
+
+#if 0
+void UIMachineSettingsNetworkPage::refreshInternalNetworkList(bool fFullRefresh /* = false */)
+{
+/* Reload internal network list: */
+m_internalNetworkList.clear();
+/* Get internal network names from other VMs: */
+if (fFullRefresh)
+	m_internalNetworkList << otherInternalNetworkList();
+/* Append internal network list with names from all the tabs: */
+for (int iTab = 0; iTab < m_pTwAdapters->count(); ++iTab)
+{
+UIMachineSettingsNetwork *pTab = qobject_cast<UIMachineSettingsNetwork*>(m_pTwAdapters->widget(iTab));
+if (pTab)
+{
+QString strName = pTab->alternativeName(KNetworkAttachmentType_Internal);
+if (!strName.isEmpty() && !m_internalNetworkList.contains(strName))
+	m_internalNetworkList << strName;
+}
+}
+}
+
+void UIMachineSettingsNetworkPage::refreshHostInterfaceList()
+{
+/* Reload host-only interface list: */
+m_hostInterfaceList.clear();
+const CHostNetworkInterfaceVector &ifaces = vboxGlobal().host().GetNetworkInterfaces();
+for (int i = 0; i < ifaces.size(); ++i)
+{
+const CHostNetworkInterface &iface = ifaces[i];
+if (iface.GetInterfaceType() == KHostNetworkInterfaceType_HostOnly && !m_hostInterfaceList.contains(iface.GetName()))
+	m_hostInterfaceList << iface.GetName();
+}
+}
+
+void UIMachineSettingsNetworkPage::refreshGenericDriverList(bool fFullRefresh /* = false */)
+{
+/* Load generic driver list: */
+m_genericDriverList.clear();
+/* Get generic driver names from other VMs: */
+if (fFullRefresh)
+	m_genericDriverList << otherGenericDriverList();
+/* Append generic driver list with names from all the tabs: */
+for (int iTab = 0; iTab < m_pTwAdapters->count(); ++iTab)
+{
+UIMachineSettingsNetwork *pTab = qobject_cast<UIMachineSettingsNetwork*>(m_pTwAdapters->widget(iTab));
+if (pTab)
+{
+QString strName = pTab->alternativeName(KNetworkAttachmentType_Generic);
+if (!strName.isEmpty() && !m_genericDriverList.contains(strName))
+	m_genericDriverList << strName;
+}
+}
+}
+
+void UIMachineSettingsNetworkPage::refreshNATNetworkList()
+{
+/* Reload NAT network list: */
+m_natNetworkList.clear();
+const CNATNetworkVector &nws = vboxGlobal().virtualBox().GetNATNetworks();
+for (int i = 0; i < nws.size(); ++i)
+{
+const CNATNetwork &nw = nws[i];
+m_natNetworkList << nw.GetNetworkName();
+}
+}
+
+/* static */
+QStringList UIMachineSettingsNetworkPage::otherInternalNetworkList()
+{
+/* Load total internal network list of all VMs: */
+CVirtualBox vbox = vboxGlobal().virtualBox();
+QStringList otherInternalNetworks(QList<QString>::fromVector(vbox.GetInternalNetworks()));
+return otherInternalNetworks;
+}
+
+/* static */
+QStringList UIMachineSettingsNetworkPage::otherGenericDriverList()
+{
+/* Load total generic driver list of all VMs: */
+CVirtualBox vbox = vboxGlobal().virtualBox();
+QStringList otherGenericDrivers(QList<QString>::fromVector(vbox.GetGenericNetworkDrivers()));
+return otherGenericDrivers;
+}
+#endif
+
 QString VirtualBoxBridge::getVBoxVersion()
 {
 	QString retVal = QString::fromUtf8("ERROR: Object virtualBox not initialized");

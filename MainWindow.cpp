@@ -191,8 +191,12 @@ void MainWindow::currentChangedSlot(int tab)
 
 void MainWindow::slotStart()
 {
-	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->lockSettings();
+// 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->lockSettings();
 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->start();
+
+	uint32_t machineState = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->getState();
+	setSettingsPolicy(ui->vm_tabs->currentIndex(), machineState);
+
 	refreshUI(ui->vm_tabs->currentIndex());
 }
 
@@ -256,6 +260,7 @@ void MainWindow::setSettingsPolicy(int tab, uint32_t state)
 {
 	switch(state)
 	{
+		case MachineState::Starting:
 		case MachineState::Running:
 		case MachineState::Paused:
 			VMTabSettings_vec.at(tab)->lockSettings();
@@ -292,6 +297,7 @@ void MainWindow::refreshUI(int tab)
 
 	switch(machineState)
 	{
+		case MachineState::Starting:
 		case MachineState::Running:
 		{
 			ui->actionElimina->setEnabled(false);

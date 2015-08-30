@@ -8,4 +8,7 @@ OK	Gestire comportamento (pausa/stop) delle macchine virtuali
 OK	Sincronizzazione impostazioni di rete con macchina virtuale avviata
 OK	Disabilitare la modifica di impostazioni IP, MAC e nome interfaccia a macchina virtuale avviata
 OK	Aggiungere possibilità di collegare/scollegare cavo da ogni interfaccia a macchina virtuale avviata
+	Aggiungere configurazione per configurare le interfacce in modalità Bridged
+	Aggiungere validazione IFACE_TYPE_DATA
+OK	Modificare campo IFACE_TYPE_DATA in funzione della modalità dell'interfaccia
 	Apertura impostazioni VirtualBox

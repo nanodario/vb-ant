@@ -45,10 +45,10 @@
 #define COLUMN_IP		4
 #define COLUMN_SUBNETMASK	5
 #define COLUMN_IFACE_TYPE	6
-#define COLUMN_SUBNETNAME	7
+#define COLUMN_IFACE_TYPE_DATA	7
 #else
 #define COLUMN_IFACE_TYPE	4
-#define COLUMN_SUBNETNAME	5
+#define COLUMN_IFACE_TYPE_DATA	5
 #endif
 
 class IfacesTable;
@@ -156,6 +156,9 @@ class IfacesTable : public QTableWidget
 		QTableWidget *ifaces_table;
 		
 	private:
+		void setIfaceDataCellWidget(int iface);
+		void setIfaceDataWidgetEnabled(int iface, bool status);
+		
 		VirtualBoxBridge *vboxbridge;
 		IMachine *machine;
 };

@@ -26,6 +26,7 @@
 #define VBOX_WITH_XPCOM
 #define IN_RING3
 
+#include <stdlib.h>
 #include <nsEventQueueUtils.h>
 #include <nsIServiceManager.h>
 #include <nsString.h>
@@ -124,7 +125,10 @@ class VirtualBoxBridge
 		QString generateMac();
 		std::vector<MachineBridge*> getMachines(QObject *parent);
 		nsCOMPtr<ISession> newSession();
-		
+		nsCOMPtr<IHost> getHost();
+		std::vector<nsCOMPtr<IHostNetworkInterface> > getHostNetworkInterfaces();
+		std::vector<QString> getInternalNetworkList();
+		std::vector<nsCOMPtr<INATNetwork> > getNatNetworks();
 
 	private:
 		bool initXPCOM();
