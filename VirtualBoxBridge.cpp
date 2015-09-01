@@ -295,6 +295,67 @@ std::vector<nsCOMPtr<IHostNetworkInterface> > VirtualBoxBridge::getHostNetworkIn
 	return host_ifaces_vec;
 }
 
+std::vector<nsCOMPtr<IHostNetworkInterface> > VirtualBoxBridge::getHostOnlyInterfaces()
+{
+	std::vector<nsCOMPtr<IHostNetworkInterface> > hostOnly_ifaces_vec;
+
+	uint32_t hostOnly_ifaces_size;
+	IHostNetworkInterface **hostOnly_ifaces;
+
+	getHost()->GetNetworkInterfaces(&hostOnly_ifaces_size, &hostOnly_ifaces);
+
+	int i;
+	for(i = 0; i < hostOnly_ifaces_size; i++)
+	{
+		uint32_t iface_type;
+		nsXPIDLString iface_name;
+		
+		hostOnly_ifaces[i]->GetInterfaceType(&iface_type);
+		hostOnly_ifaces[i]->GetName(getter_Copies(iface_name));
+		if(iface_type == HostNetworkInterfaceType::HostOnly)
+		{
+			bool new_iface = true;
+			for(int j = 0; j < i; j++)
+			{
+				nsXPIDLString name;
+				hostOnly_ifaces[j]->GetName(getter_Copies(name));
+				if(returnQStringValue(name) == returnQStringValue(iface_name))
+					new_iface = false;
+			}
+			if(new_iface)
+				hostOnly_ifaces_vec.push_back(hostOnly_ifaces[i]);
+		}
+	}
+
+	return hostOnly_ifaces_vec;
+}
+
+std::vector<QString> VirtualBoxBridge::getGenericDriversList()
+{
+	std::vector<QString> genericDrivers_vec;
+	short unsigned int **genericDrivers;
+	uint32_t genericDrivers_size;
+
+	virtualBox->GetGenericNetworkDrivers(&genericDrivers_size, &genericDrivers);
+
+	for(int i = 0; i < genericDrivers_size; i++)
+	{
+		int j;
+		for(j = 0; genericDrivers[i][j] != '\0'; j++);
+		char *str = (char *)malloc(sizeof(char) * (j + 1));
+
+		for(j = 0; genericDrivers[i][j] != '\0'; j++)
+			str[j] = genericDrivers[i][j];
+		str[j] = '\0';
+
+		QString qstr = QString::fromUtf8(str);
+		genericDrivers_vec.push_back(qstr);
+
+		free(str);
+	}
+	return genericDrivers_vec;
+}
+
 std::vector<QString> VirtualBoxBridge::getInternalNetworkList()
 {
 	std::vector<QString> internalNetworks_vec;
@@ -601,29 +662,100 @@ uint32_t MachineBridge::getAttachmentType(INetworkAdapter *iface)
 	return attachmentType;
 }
 
-QString MachineBridge::getSubnetName(INetworkAdapter *iface)
+QString MachineBridge::getAttachmentData(uint32_t iface, uint32_t attachmentType)
 {
-	nsresult rc;
-	nsXPIDLString subnetName;
-	
-	NS_CHECK_AND_DEBUG_ERROR(iface, GetInternalNetwork(getter_Copies(subnetName)), rc);
-	
-	return returnQStringValue(subnetName);
+	return getAttachmentData(getIface(iface), getAttachmentType(getIface(iface)));
 }
 
-QString MachineBridge::getBridgedIface(INetworkAdapter *iface) //TODO
+QString MachineBridge::getAttachmentData(INetworkAdapter *iface, uint32_t attachmentType)
 {
-// 	ComPtr<IHost> host;
-// 	
-// 	vboxbridge->virtualBox->GetHost(host.asOutParam());
-// 	host->GetNetworkInterfaces();
+	switch(attachmentType)
+	{
+		case NetworkAttachmentType::NATNetwork:	return getNatNetwork(iface);
+		case NetworkAttachmentType::Bridged:	return getBridgedIface(iface);
+		case NetworkAttachmentType::Internal:	return getInternalName(iface);
+		case NetworkAttachmentType::HostOnly:	return getHostIface(iface);
+		case NetworkAttachmentType::Generic:	return getGenericDriver(iface);
+		case NetworkAttachmentType::Null:
+		case NetworkAttachmentType::NAT:
+		default:
+			return QString::fromUtf8("");
+	}
+}
 
+QString MachineBridge::getNatNetwork(uint32_t iface)
+{
+	return getNatNetwork(getIface(iface));
+}
+
+QString MachineBridge::getBridgedIface(uint32_t iface)
+{
+	return getBridgedIface(getIface(iface));
+}
+
+QString MachineBridge::getInternalName(uint32_t iface)
+{
+	return getInternalName(getIface(iface));
+}
+
+QString MachineBridge::getHostIface(uint32_t iface)
+{
+	return getHostIface(getIface(iface));
+}
+
+QString MachineBridge::getGenericDriver(uint32_t iface)
+{
+	return getGenericDriver(getIface(iface));
+}
+
+QString MachineBridge::getNatNetwork(INetworkAdapter *iface)
+{
+	nsresult rc;
+	nsXPIDLString natNetwork;
+
+	NS_CHECK_AND_DEBUG_ERROR(iface, GetNATNetwork(getter_Copies(natNetwork)), rc);
+
+	return returnQStringValue(natNetwork);
+}
+
+QString MachineBridge::getBridgedIface(INetworkAdapter *iface)
+{
 	nsresult rc;
 	nsXPIDLString bridgedIface;
-		
+
 	NS_CHECK_AND_DEBUG_ERROR(iface, GetBridgedInterface(getter_Copies(bridgedIface)), rc);
-	
+
 	return returnQStringValue(bridgedIface);
+}
+
+QString MachineBridge::getInternalName(INetworkAdapter *iface)
+{
+	nsresult rc;
+	nsXPIDLString internalName;
+
+	NS_CHECK_AND_DEBUG_ERROR(iface, GetInternalNetwork(getter_Copies(internalName)), rc);
+
+	return returnQStringValue(internalName);
+}
+
+QString MachineBridge::getHostIface(INetworkAdapter *iface)
+{
+	nsresult rc;
+	nsXPIDLString host_iface;
+
+	NS_CHECK_AND_DEBUG_ERROR(iface, GetHostOnlyInterface(getter_Copies(host_iface)), rc);
+
+	return returnQStringValue(host_iface);
+}
+
+QString MachineBridge::getGenericDriver(INetworkAdapter *iface)
+{
+	nsresult rc;
+	nsXPIDLString genericDriver;
+
+	NS_CHECK_AND_DEBUG_ERROR(iface, GetGenericDriver(getter_Copies(genericDriver)), rc);
+
+	return returnQStringValue(genericDriver);
 }
 
 bool MachineBridge::setIfaceEnabled(uint32_t iface, bool enabled)
@@ -660,8 +792,9 @@ ComPtr<INetworkAdapter> MachineBridge::getIface(uint32_t iface)
 {
 	ComPtr<INetworkAdapter> network_adptr;
 	nsresult rc;
+
 	NS_CHECK_AND_DEBUG_ERROR(machine, GetNetworkAdapter(iface, network_adptr.asOutParam()), rc);
-	
+
 	if(NS_FAILED(rc))
 		network_adptr = nsnull;
 

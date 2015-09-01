@@ -127,6 +127,8 @@ class VirtualBoxBridge
 		nsCOMPtr<ISession> newSession();
 		nsCOMPtr<IHost> getHost();
 		std::vector<nsCOMPtr<IHostNetworkInterface> > getHostNetworkInterfaces();
+		std::vector<nsCOMPtr<IHostNetworkInterface> > getHostOnlyInterfaces();
+		std::vector<QString> getGenericDriversList();
 		std::vector<QString> getInternalNetworkList();
 		std::vector<nsCOMPtr<INATNetwork> > getNatNetworks();
 
@@ -174,8 +176,14 @@ class MachineBridge
 		QString getIfaceFormattedMac(int iface);
 		QString getIfaceFormattedMac(INetworkAdapter *iface);
 		uint32_t getAttachmentType(INetworkAdapter *iface);
-		QString getSubnetName(INetworkAdapter *iface);
-		QString getBridgedIface(INetworkAdapter *iface);
+		QString getAttachmentData(INetworkAdapter *iface, uint32_t attachmentType = -1);
+		QString getAttachmentData(uint32_t iface, uint32_t attachmentType);
+		
+		QString getNatNetwork(uint32_t iface);
+		QString getBridgedIface(uint32_t iface);
+		QString getInternalName(uint32_t iface);
+		QString getHostIface(uint32_t iface);
+		QString getGenericDriver(uint32_t iface);
 		
 		//Setters
 		bool setIfaceEnabled(uint32_t iface, bool enabled);
@@ -200,6 +208,12 @@ class MachineBridge
 		bool lockMachine();
 		bool unlockMachine();
 		ComPtr<INetworkAdapter> getIface(uint32_t iface);
+		
+		QString getNatNetwork(INetworkAdapter *iface);
+		QString getBridgedIface(INetworkAdapter *iface);
+		QString getInternalName(INetworkAdapter *iface);
+		QString getHostIface(INetworkAdapter *iface);
+		QString getGenericDriver(INetworkAdapter *iface);
 		
 		bool setIfaceEnabled(ComPtr<INetworkAdapter> iface, bool enabled);
 		bool setIfaceMac(ComPtr<INetworkAdapter> iface, QString qMac);

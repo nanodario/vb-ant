@@ -38,7 +38,9 @@ class MainWindow;
 class VMTabSettings : public QWidget
 {
 	friend class MainWindow;
-	
+	friend class IfacesTable;
+	friend class AttachmentDataWidget;
+
 	Q_OBJECT
 	
 	public:

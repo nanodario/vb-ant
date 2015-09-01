@@ -34,31 +34,9 @@
 #include "VirtualBoxBridge.h"
 
 VirtualMachine::VirtualMachine(MachineBridge *machine)
-: machine(machine), ifaces_size(0)
+: machine(machine), ifaces_size(0), ifaces(NULL)
 {
-	std::vector<nsCOMPtr<INetworkAdapter> > networkAdapter_vec = machine->getNetworkInterfaces();
-	ifaces_size = networkAdapter_vec.size();
-	ifaces = (Iface **)malloc(sizeof(Iface*) * ifaces_size);
-
-	for(int i = 0; i < ifaces_size; i++)
-	{
-// 		Iface(enabled, mac, cableConnected, attachmentType, subnetName, name, ip, subnetMask);
-		Iface *iface = new Iface(
-			machine->getIfaceEnabled(networkAdapter_vec.at(i)),
-			machine->getIfaceMac(networkAdapter_vec.at(i)),
-			machine->getIfaceCableConnected(networkAdapter_vec.at(i)),
-			machine->getAttachmentType(networkAdapter_vec.at(i)),
-			machine->getSubnetName(networkAdapter_vec.at(i))
-		);
-
-		ifaces[i] = iface;
-	}
-
-	while(networkAdapter_vec.size() > 0)
-	{
-		networkAdapter_vec.back() = nsnull;
-		networkAdapter_vec.pop_back();
-	}
+	populateIfaces();
 }
 
 VirtualMachine::~VirtualMachine()
@@ -139,7 +117,7 @@ void VirtualMachine::refreshIface(INetworkAdapter *iface)
 	i->setMac(machine->getIfaceMac(iface));
 	i->cableConnected = machine->getIfaceCableConnected(iface);
 	i->setAttachmentType(machine->getAttachmentType(iface));
-	i->setSubnetName(machine->getSubnetName(iface));
+	i->setAttachmentData(machine->getAttachmentData(iface, machine->getAttachmentType(iface)));
 }
 
 QString VirtualMachine::getIp(uint32_t iface)
@@ -291,6 +269,40 @@ int VirtualMachine::setIface(int iface, QString name, QString mac)
 #endif
 {
 	return 0;
+}
+
+void VirtualMachine::populateIfaces()
+{
+	std::vector<nsCOMPtr<INetworkAdapter> > networkAdapter_vec = machine->getNetworkInterfaces();
+
+	uint8_t old_ifaces_size = ifaces_size;
+	ifaces_size = networkAdapter_vec.size();
+	if(old_ifaces_size != ifaces_size || ifaces == NULL)
+	{
+		ifaces = (Iface **)realloc(ifaces, sizeof(Iface*) * ifaces_size);
+		for(int i = 0; i < old_ifaces_size; i++)
+			delete ifaces[i];
+	}
+
+	for(int i = 0; i < ifaces_size; i++)
+	{
+// 		Iface(enabled, mac, cableConnected, attachmentType, attachmentData, name, ip, subnetMask);
+		Iface *iface = new Iface(
+			machine->getIfaceEnabled(networkAdapter_vec.at(i)),
+			machine->getIfaceMac(networkAdapter_vec.at(i)),
+			machine->getIfaceCableConnected(networkAdapter_vec.at(i)),
+			machine->getAttachmentType(networkAdapter_vec.at(i)),
+			machine->getAttachmentData(networkAdapter_vec.at(i), machine->getAttachmentType(networkAdapter_vec.at(i)))
+		);
+
+		ifaces[i] = iface;
+	}
+
+	while(networkAdapter_vec.size() > 0)
+	{
+		networkAdapter_vec.back() = nsnull;
+		networkAdapter_vec.pop_back();
+	}
 }
 
 bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *value_ptr)

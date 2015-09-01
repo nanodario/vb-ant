@@ -112,17 +112,37 @@ class AttachmentComboBox : public QWidget
 		IfacesTable *destination;
 };
 
+class AttachmentDataWidget : public QWidget
+{
+	Q_OBJECT
+	public:
+		AttachmentDataWidget(QWidget *parent, int row, IfacesTable *destination);
+		virtual ~AttachmentDataWidget();
+		void add_connection();
+		void remove_connection();
+		void refreshWidget();
+		void refreshData();
+
+	public slots:
+		void currentIndexChangedSlot(int index);
+
+	private:
+		int row;
+		IfacesTable *destination;
+};
+
 class IfacesTable : public QTableWidget
 {
+	friend class AttachmentDataWidget;
 	Q_OBJECT
 	
 	public:
-		IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge, Iface **ifaces);
+		IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge, MachineBridge *machine, Iface **ifaces);
 		~IfacesTable();
 #ifdef CONFIGURABLE_IP
-		int setIface(int iface, bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString subnetName = "", QString name = "", QString ip = "", QString subnetMask = "");
+		int setIface(int iface, bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString attachmentData = "", QString name = "", QString ip = "", QString subnetMask = "");
 #else
-		int setIface(int iface, bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString subnetName = "", QString name = "");
+		int setIface(int iface, bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString attachmentData = "", QString name = "");
 #endif
 		
 		bool setStatus(int iface, bool checked);
@@ -131,7 +151,7 @@ class IfacesTable : public QTableWidget
 		bool setMac(int iface, QString mac);
 		bool setCableConnected(int iface, bool checked);
 		bool setAttachmentType(int iface, uint32_t attachmentType);
-		bool setSubnetName(int iface, QString subnetName);
+		bool setAttachmentData(int iface, QString attachmentData);
 #ifdef CONFIGURABLE_IP
 		bool setIp(int iface, QString ip);
 		bool setSubnetMask(int iface, QString subnetMask);
@@ -156,11 +176,9 @@ class IfacesTable : public QTableWidget
 		QTableWidget *ifaces_table;
 		
 	private:
-		void setIfaceDataCellWidget(int iface);
-		void setIfaceDataWidgetEnabled(int iface, bool status);
-		
 		VirtualBoxBridge *vboxbridge;
-		IMachine *machine;
+		MachineBridge *machine;
+		std::vector<AttachmentDataWidget*> attachmentDataWidget_vec;
 };
 
 #endif

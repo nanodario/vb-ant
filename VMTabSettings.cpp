@@ -50,7 +50,7 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 	vm_enabled->setObjectName(QString::fromUtf8("vm_enabled"));
 	verticalLayout->addWidget(vm_enabled);
 
-	ifaces_table = new IfacesTable(this, verticalLayout, vboxbridge, vm->getIfaces());
+	ifaces_table = new IfacesTable(this, verticalLayout, vboxbridge, machine, vm->getIfaces());
 	verticalLayout->addWidget(ifaces_table);
 
 	buttonBox = new QDialogButtonBox(this);
@@ -92,12 +92,12 @@ void VMTabSettings::refreshTable()
 		QString ip = vm->getIp(row); //QString("10.10.10.%1").arg(row);
 		QString subnetMask = vm->getSubnetMask(row); //QString("%1").arg(row);
 #endif
-		QString subnetName = ifaces_table->operator[](row)->subnetName;
+		QString attachmentData = ifaces_table->operator[](row)->attachmentData;
 		
 #ifdef CONFIGURABLE_IP
-		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, subnetName, name, ip, subnetMask);
+		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, attachmentData, name, ip, subnetMask);
 #else
-		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, subnetName, name);
+		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, attachmentData, name);
 #endif
 	}
 }
@@ -116,7 +116,7 @@ void VMTabSettings::refreshTableUI()
 		ifaces_table->setIp(row, vm->getIp(row));
 		ifaces_table->setSubnetMask(row, vm->getSubnetMask(row));
 #endif
-		ifaces_table->setSubnetName(row, ifaces_table->operator[](row)->subnetName);
+		ifaces_table->setAttachmentData(row, ifaces_table->operator[](row)->attachmentData);
 	}
 	ifaces_table->blockSignals(false);
 }
@@ -140,6 +140,8 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 			}
 			break;
 		case QDialogButtonBox::Reset:
+			vm->populateIfaces();
+			refreshTableUI();
 			std::cout << "reset: \t" << vm_name.toStdString() << std::endl;
 			break;
 		case QDialogButtonBox::Ok:

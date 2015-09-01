@@ -32,16 +32,16 @@ class Iface
 {
 	public:
 #ifdef CONFIGURABLE_IP
-		Iface(bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString subnetName = "", QString name = "", QString ip = "", QString subnetMask = "");
+		Iface(bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString attachmentData = "", QString name = "", QString ip = "", QString subnetMask = "");
 #else
-		Iface(bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString subnetName = "", QString name = "");
+		Iface(bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString attachmentData = "", QString name = "");
 #endif
 		
 		virtual ~Iface();
 		bool setName(QString name);
 		bool setMac(QString mac);
 		bool setAttachmentType(uint32_t attachmentType);
-		bool setSubnetName(QString subnetName);
+		bool setAttachmentData(QString attachmentData);
 #ifdef CONFIGURABLE_IP
 		bool setIp(QString ip);
 		bool setSubnetMask(QString subnetMask);
@@ -60,7 +60,7 @@ class Iface
 		inline bool operator!=(const Iface *i) const { return !operator==(i); };
 		Iface *copyIface();
 		
-		QString name, mac, subnetName;
+		QString name, mac, attachmentData;
 #ifdef CONFIGURABLE_IP
 		QString ip, subnetMask;
 #endif
