@@ -122,9 +122,11 @@ class AttachmentDataWidget : public QWidget
 		void remove_connection();
 		void refreshWidget();
 		void refreshData();
+		QComboBox *comboBox;
 
 	public slots:
 		void currentIndexChangedSlot(int index);
+		void editingFinishedSlot();
 
 	private:
 		int row;

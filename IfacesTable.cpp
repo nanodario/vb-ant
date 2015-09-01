@@ -205,9 +205,9 @@ bool setCableConnected_forwarder(void *context, int row, bool checked)
 }
 
 AttachmentDataWidget::AttachmentDataWidget(QWidget *parent, int row, IfacesTable *destination) : QWidget(parent)
-, row(row), destination(destination)
+, comboBox(new QComboBox(this)), row(row), destination(destination)
 {
-	destination->setCellWidget(row, COLUMN_IFACE_TYPE_DATA, new QComboBox(this));
+	destination->setCellWidget(row, COLUMN_IFACE_TYPE_DATA, comboBox);
 	refreshWidget();
 }
 
@@ -219,24 +219,23 @@ AttachmentDataWidget::~AttachmentDataWidget()
 
 void AttachmentDataWidget::add_connection()
 {
-	QComboBox *c = ((QComboBox *)destination->cellWidget(row, COLUMN_IFACE_TYPE_DATA));
-	connect(c, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChangedSlot(int)));
+	connect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChangedSlot(int)));
 }
 
 void AttachmentDataWidget::remove_connection()
 {
-	QComboBox *c = ((QComboBox *)destination->cellWidget(row, COLUMN_IFACE_TYPE_DATA));
-	disconnect(c, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChangedSlot(int)));
+	disconnect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChangedSlot(int)));
 }
 
 void AttachmentDataWidget::refreshWidget()
 {
-	QComboBox *comboBox = ((QComboBox *)destination->cellWidget(row, COLUMN_IFACE_TYPE_DATA));
-
 	switch(destination->ifaces[row]->attachmentType)
 	{
 		case NetworkAttachmentType::NATNetwork:
 		{
+			if(comboBox->isEditable())
+				comboBox->lineEdit()->disconnect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
+
 			std::vector<nsCOMPtr<INATNetwork> > natNetworks_vec = destination->vboxbridge->getNatNetworks();
 			comboBox->clear();
 
@@ -252,6 +251,9 @@ void AttachmentDataWidget::refreshWidget()
 		}
 		case NetworkAttachmentType::Bridged:
 		{
+			if(comboBox->isEditable())
+				comboBox->lineEdit()->disconnect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
+
 			std::vector<nsCOMPtr<IHostNetworkInterface> > host_ifaces_vec = destination->vboxbridge->getHostNetworkInterfaces();
 			comboBox->clear();
 
@@ -274,10 +276,14 @@ void AttachmentDataWidget::refreshWidget()
 				comboBox->addItem(host_ifaces_vec.at(i));
 
 			comboBox->setEditable(true);
+			comboBox->lineEdit()->connect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
 			break;
 		}
 		case NetworkAttachmentType::HostOnly:
 		{
+			if(comboBox->isEditable())
+				comboBox->lineEdit()->disconnect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
+
 			std::vector<nsCOMPtr<IHostNetworkInterface> > hostOnly_ifaces_vec = destination->vboxbridge->getHostOnlyInterfaces();
 			comboBox->clear();
 
@@ -300,6 +306,7 @@ void AttachmentDataWidget::refreshWidget()
 				comboBox->addItem(generic_drivers_vec.at(i));
 			
 			comboBox->setEditable(true);
+			comboBox->lineEdit()->connect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
 			break;
 		}
 		default:
@@ -319,8 +326,6 @@ void AttachmentDataWidget::refreshWidget()
 
 void AttachmentDataWidget::refreshData()
 {
-	QComboBox *comboBox = (QComboBox *)destination->cellWidget(row, COLUMN_IFACE_TYPE_DATA);
-
 	switch(destination->ifaces[row]->attachmentType)
 	{
 		case NetworkAttachmentType::NATNetwork:
@@ -378,7 +383,14 @@ void AttachmentDataWidget::refreshData()
 
 void AttachmentDataWidget::currentIndexChangedSlot(int index)
 {
-// 	refreshData();
+	QString str = comboBox->currentText();
+	destination->setAttachmentData(row, str);
+}
+
+void AttachmentDataWidget::editingFinishedSlot()
+{
+	QString str = comboBox->lineEdit()->text();
+	destination->setAttachmentData(row, str);
 }
 
 IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *vboxbridge, MachineBridge *machine, Iface **ifaces) : QTableWidget(parent)
@@ -387,9 +399,9 @@ IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *
 	setObjectName(QString::fromUtf8("tableView"));
 
 #ifdef CONFIGURABLE_IP
-	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Collegata;Nome;Indirizzo IP;Maschera sottorete;Tipo interfaccia;Nome sottorete").split(";");
+	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Collegata;Nome;Indirizzo IP;Maschera sottorete;Connessa a;Nome").split(";");
 #else
-	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Collegata;Nome;Tipo interfaccia;Nome sottorete").split(";");
+	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Collegata;Nome;Connessa a;Nome").split(";");
 #endif
 
 	setColumnCount(horizontalHeaderLabels.count());
@@ -665,29 +677,18 @@ bool IfacesTable::setSubnetMask(int iface, QString subnetMask)
 }
 #endif
 
-bool IfacesTable::setAttachmentType(int iface, uint32_t attachmentType) //FIXME
+bool IfacesTable::setAttachmentType(int iface, uint32_t attachmentType)
 {
 	AttachmentComboBox *attachmentComboBox = (AttachmentComboBox *)cellWidget(iface, COLUMN_IFACE_TYPE);
 
 	if(ifaces[iface]->setAttachmentType(attachmentType))
 	{
 		attachmentComboBox->remove_connection();
+		attachmentDataWidget_vec.at(iface)->remove_connection();
 		attachmentComboBox->comboBox->setCurrentIndex(ifaces[iface]->attachmentType);
-		attachmentComboBox->add_connection();
-
 		attachmentDataWidget_vec.at(iface)->refreshWidget();
-
-// 		Qt::ItemFlags flags = item(iface, COLUMN_IFACE_TYPE_DATA)->flags();
-/*
-		if(ifaces[iface]->attachmentType != NetworkAttachmentType::Null
-		|| ifaces[iface]->attachmentType != NetworkAttachmentType::NAT)
-			setIfaceDataWidgetEnabled(iface, true);
-		else
-			setIfaceDataWidgetEnabled(iface, false);
-*/
-// 		item(iface, COLUMN_IFACE_TYPE_DATA)->setFlags(flags);
-		
-// 		emit sigIfaceChange(iface, IFACE_ATTACHMENT_TYPE, &attachmentType);
+		attachmentDataWidget_vec.at(iface)->add_connection();
+		attachmentComboBox->add_connection();
 		return true;
 	}
 	
@@ -698,9 +699,15 @@ bool IfacesTable::setAttachmentData(int iface, QString attachmentData)
 {
 	ifaces[iface]->setAttachmentData(attachmentData);
 	QString new_attachmentData = ifaces[iface]->attachmentData;
-// 	item(iface, COLUMN_IFACE_TYPE_DATA)->setText(new_subnetName);
-// 	emit sigIfaceChange(iface, IFACE_SUBNETNAME, &new_subnetName);
 	
+	AttachmentComboBox *attachmentComboBox = (AttachmentComboBox *)cellWidget(iface, COLUMN_IFACE_TYPE);
+	uint32_t attachmentType = attachmentComboBox->comboBox->currentIndex();
+
+	if(attachmentType == NetworkAttachmentType::Internal ||
+	   attachmentType == NetworkAttachmentType::Generic)
+		attachmentDataWidget_vec.at(iface)->comboBox->lineEdit()->setText(new_attachmentData);
+// 	emit sigIfaceChange(iface, IFACE_ATTACHMENT_DATA, &new_attachmentData);
+
 	return true;
 }
 

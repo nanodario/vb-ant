@@ -191,8 +191,8 @@ class MachineBridge
 		bool setIfaceAttachmentType(uint32_t iface, uint32_t attachmentType);
 		bool setCableConnected(uint32_t iface, bool connected);
 		bool setCableConnectedRunTime(uint32_t iface, bool connected);
-		bool setSubnetName(uint32_t iface, QString qSubnetName);
-		bool setBridgedIface(uint32_t iface, QString bridgedIface);
+		bool setAttachmentData(uint32_t iface, QString qAttachmentData);
+		bool setAttachmentData(uint32_t iface, uint32_t AttachmentType, QString qAttachmentData);
 		
 		bool start();
 		bool stop(bool force = false);
@@ -219,9 +219,14 @@ class MachineBridge
 		bool setIfaceMac(ComPtr<INetworkAdapter> iface, QString qMac);
 		bool setIfaceAttachmentType(ComPtr<INetworkAdapter> iface, uint32_t attachmentType);
 		bool setCableConnected(ComPtr<INetworkAdapter> iface, bool connected);
-		bool setSubnetName(ComPtr<INetworkAdapter> iface, QString qSubnetName);
-		bool setBridgedIface(ComPtr<INetworkAdapter> iface, QString bridgedIface);
-		
+
+		bool setAttachmentData(INetworkAdapter *iface, uint32_t AttachmentType, QString qAttachmentData);
+		bool setNatNetwork(ComPtr<INetworkAdapter> iface, QString qNatNetwork);
+		bool setBridgedIface(ComPtr<INetworkAdapter> iface, QString qBridgedIface);
+		bool setInternalName(ComPtr<INetworkAdapter> iface, QString qInternalName);
+		bool setHostIface(ComPtr<INetworkAdapter> iface, QString qHostIface);
+		bool setGenericDriver(ComPtr<INetworkAdapter> iface, QString qGenericDriver);
+				
 		VirtualBoxBridge *vboxbridge;
 		IMachine *machine;
 		nsCOMPtr<ISession> session;

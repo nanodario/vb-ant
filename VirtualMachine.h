@@ -40,7 +40,7 @@ typedef enum
 	IFACE_SUBNETMASK,
 #endif
 	IFACE_ATTACHMENT_TYPE,
-	IFACE_SUBNETNAME
+	IFACE_ATTACHMENT_DATA
 } ifacekey_t;
 
 class VirtualMachine

@@ -172,41 +172,11 @@ bool VirtualMachine::saveSettings()
 				succeeded = false;
 			}
 			
-			switch(ifaces[i]->attachmentType)
+			//Parametro in base al tipo di interfaccia
+			if(!machine->setAttachmentData(i, ifaces[i]->attachmentType, ifaces[i]->attachmentData))
 			{
-				//Nome sottorete
-				/* TODO il subnetname deve essere utilizzato solamente nel caso 
-				* in cui il metodo di attach sia NetworkAttachmentType::Internal
-				*/
-				case NetworkAttachmentType::Internal:
-				{
-					if(!machine->setSubnetName(i, ifaces[i]->subnetName))
-					{
-						std::cout << "setSubnetName(" << i << ", " << ifaces[i]->subnetName.toStdString() << ")" << std::endl;
-						succeeded = false;
-					}
-					break;
-				}
-				case NetworkAttachmentType::Bridged:
-				{
-					if(!machine->setBridgedIface(i, ifaces[i]->subnetName))
-					{
-						std::cout << "setSubnetName(" << i << ", " << ifaces[i]->subnetName.toStdString() << ")" << std::endl;
-						succeeded = false;
-					}
-					break;
-				}	
-				case NetworkAttachmentType::Null:
-// 				case NetworkAttachmentType::Bridged:
-				case NetworkAttachmentType::Generic:
-				case NetworkAttachmentType::HostOnly:
-// 				case NetworkAttachmentType::Internal:
-				case NetworkAttachmentType::NAT:
-				case NetworkAttachmentType::NATNetwork:
-					break;
-				default:
-					succeeded = false;
-					break;
+				std::cout << "setAttachmentData(" << i << ", " << ifaces[i]->attachmentData.toStdString() << ")" << std::endl;
+				succeeded = false;
 			}
 		}
 	}
@@ -351,10 +321,10 @@ bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *valu
 			uint32_t *attachmentType = (uint32_t *)value_ptr;
 			return machine->setIfaceAttachmentType(iface, *attachmentType);
 		}
-		case IFACE_SUBNETNAME:
+		case IFACE_ATTACHMENT_DATA:
 		{
-			QString *subnetName = (QString *)value_ptr;
-			return machine->setSubnetName(iface, *subnetName);
+			QString *attachmentData = (QString *)value_ptr;
+			return machine->setAttachmentData(iface, *attachmentData);
 		}
 		default:
 			break;

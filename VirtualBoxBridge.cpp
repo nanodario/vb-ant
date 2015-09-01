@@ -778,14 +778,31 @@ bool MachineBridge::setCableConnected(uint32_t iface, bool connected)
 	return setCableConnected(getIface(iface), connected);
 }
 
-bool MachineBridge::setSubnetName(uint32_t iface, QString qSubnetName)
+bool MachineBridge::setAttachmentData(uint32_t iface, QString qAttachmentData)
 {
-	return setSubnetName(getIface(iface), qSubnetName);
+	return setAttachmentData(getIface(iface), getAttachmentType(getIface(iface)), qAttachmentData);
 }
 
-bool MachineBridge::setBridgedIface(uint32_t iface, QString bridgedIface)
+bool MachineBridge::setAttachmentData(uint32_t iface, uint32_t attachmentType, QString qAttachmentData)
 {
-	return setBridgedIface(getIface(iface), bridgedIface);
+	return setAttachmentData(getIface(iface), attachmentType, qAttachmentData);
+}
+
+bool MachineBridge::setAttachmentData(INetworkAdapter *iface, uint32_t attachmentType, QString qAttachmentData)
+{
+	switch(attachmentType)
+	{
+		case NetworkAttachmentType::NATNetwork:	return setNatNetwork(iface, qAttachmentData);
+		case NetworkAttachmentType::Bridged:	return setBridgedIface(iface, qAttachmentData);
+		case NetworkAttachmentType::Internal:	return setInternalName(iface, qAttachmentData);
+		case NetworkAttachmentType::HostOnly:	return setHostIface(iface, qAttachmentData);
+		case NetworkAttachmentType::Generic:	return setGenericDriver(iface, qAttachmentData);
+		case NetworkAttachmentType::Null:
+		case NetworkAttachmentType::NAT:
+		default:
+			return true;
+	}
+	return false;
 }
 
 ComPtr<INetworkAdapter> MachineBridge::getIface(uint32_t iface)
@@ -863,23 +880,53 @@ bool MachineBridge::setCableConnectedRunTime(uint32_t iface, bool connected)
 	return done && NS_SUCCEEDED(rc);
 }
 
-bool MachineBridge::setSubnetName(ComPtr<INetworkAdapter> iface, QString qSubnetName)
+bool MachineBridge::setNatNetwork(ComPtr<INetworkAdapter> iface, QString qNatNetwork)
 {
-	nsXPIDLString subnetName; subnetName.AssignWithConversion(qSubnetName.toStdString().c_str());
+	nsXPIDLString natNetwork; natNetwork.AssignWithConversion(qNatNetwork.toStdString().c_str());
 
 	nsresult rc;
-	NS_CHECK_AND_DEBUG_ERROR(iface, SetInternalNetwork(subnetName), rc);
-	
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetNATNetwork(natNetwork), rc);
+
 	return NS_SUCCEEDED(rc);
 }
 
 bool MachineBridge::setBridgedIface(ComPtr<INetworkAdapter> iface, QString qBridgedIface)
 {
 	nsXPIDLString bridgedIface; bridgedIface.AssignWithConversion(qBridgedIface.toStdString().c_str());
-	
+
 	nsresult rc;
 	NS_CHECK_AND_DEBUG_ERROR(iface, SetBridgedInterface(bridgedIface), rc);
+
+	return NS_SUCCEEDED(rc);
+}
+
+bool MachineBridge::setInternalName(ComPtr<INetworkAdapter> iface, QString qInternalName)
+{
+	nsXPIDLString internalName; internalName.AssignWithConversion(qInternalName.toStdString().c_str());
 	
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetInternalNetwork(internalName), rc);
+	
+	return NS_SUCCEEDED(rc);
+}
+
+bool MachineBridge::setHostIface(ComPtr<INetworkAdapter> iface, QString qHostIface)
+{
+	nsXPIDLString hostIface; hostIface.AssignWithConversion(qHostIface.toStdString().c_str());
+
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetHostOnlyInterface(hostIface), rc);
+
+	return NS_SUCCEEDED(rc);
+}
+
+bool MachineBridge::setGenericDriver(ComPtr<INetworkAdapter> iface, QString qGenericDriver)
+{
+	nsXPIDLString genericDriver; genericDriver.AssignWithConversion(qGenericDriver.toStdString().c_str());
+
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(iface, SetGenericDriver(genericDriver), rc);
+
 	return NS_SUCCEEDED(rc);
 }
 
