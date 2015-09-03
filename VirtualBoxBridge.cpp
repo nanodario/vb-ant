@@ -805,6 +805,16 @@ bool MachineBridge::setAttachmentData(INetworkAdapter *iface, uint32_t attachmen
 	return false;
 }
 
+bool MachineBridge::setAttachmentDataRunTime(uint32_t iface, QString qAttachmentData)
+{
+	ComPtr<INetworkAdapter> nic = getIfaceRunTimeEditable(iface);
+
+	if(nic != NULL)
+		return setAttachmentData(nic, getAttachmentType(nic), qAttachmentData);
+
+	return false;
+}
+
 ComPtr<INetworkAdapter> MachineBridge::getIface(uint32_t iface)
 {
 	ComPtr<INetworkAdapter> network_adptr;
@@ -816,6 +826,23 @@ ComPtr<INetworkAdapter> MachineBridge::getIface(uint32_t iface)
 		network_adptr = nsnull;
 
 	return network_adptr;
+}
+
+ComPtr<INetworkAdapter> MachineBridge::getIfaceRunTimeEditable(uint32_t iface)
+{
+	nsresult rc;
+	ComPtr<IMachine> tmp_machine;
+	ComPtr<INetworkAdapter> nic;
+
+	NS_CHECK_AND_DEBUG_ERROR(session, GetMachine(tmp_machine.asOutParam()), rc);
+// 	NS_CHECK_AND_DEBUG_ERROR(tmp_machine, LockMachine(session, LockType::Write), rc);
+	if(NS_SUCCEEDED(rc))
+		NS_CHECK_AND_DEBUG_ERROR(tmp_machine, GetNetworkAdapter(iface, nic.asOutParam()), rc);
+
+	if(NS_SUCCEEDED(rc))
+		return nic;
+
+	return NULL;
 }
 
 bool MachineBridge::setIfaceEnabled(ComPtr<INetworkAdapter> iface, bool enabled)
@@ -852,6 +879,16 @@ bool MachineBridge::setIfaceAttachmentType(ComPtr<INetworkAdapter> iface, uint32
 	return NS_SUCCEEDED(rc);
 }
 
+bool MachineBridge::setIfaceAttachmentTypeRunTime(uint32_t iface, uint32_t attachmentType)
+{
+	ComPtr<INetworkAdapter> nic = getIfaceRunTimeEditable(iface);
+
+	if(nic != NULL)
+		return setIfaceAttachmentType(nic, attachmentType);
+
+	return false;
+}
+
 bool MachineBridge::setCableConnected(ComPtr<INetworkAdapter> iface, bool connected)
 {
 	if(iface == nsnull)
@@ -865,19 +902,12 @@ bool MachineBridge::setCableConnected(ComPtr<INetworkAdapter> iface, bool connec
 
 bool MachineBridge::setCableConnectedRunTime(uint32_t iface, bool connected)
 {
-	nsresult rc;
-	ComPtr<IMachine> tmp_machine;
-	ComPtr<INetworkAdapter> nic;
+	ComPtr<INetworkAdapter> nic = getIfaceRunTimeEditable(iface);
 
-	NS_CHECK_AND_DEBUG_ERROR(session, GetMachine(tmp_machine.asOutParam()), rc);
-// 	NS_CHECK_AND_DEBUG_ERROR(tmp_machine, LockMachine(session, LockType::Write), rc);
-	if(NS_SUCCEEDED(rc))
-		NS_CHECK_AND_DEBUG_ERROR(tmp_machine, GetNetworkAdapter(iface, nic.asOutParam()), rc);
-	
-	bool done = setCableConnected(nic, connected);
-// 	NS_CHECK_AND_DEBUG_ERROR(session, UnlockMachine(), rc);
+	if(nic != NULL)
+		return setCableConnected(nic, connected);
 
-	return done && NS_SUCCEEDED(rc);
+	return false;
 }
 
 bool MachineBridge::setNatNetwork(ComPtr<INetworkAdapter> iface, QString qNatNetwork)

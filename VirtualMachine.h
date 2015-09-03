@@ -60,6 +60,7 @@ class VirtualMachine
 		bool shutdownVMProcess() const { return machine->shutdownVMProcess(); };
 		bool openSettings() const { return machine->openSettings(); };
 		bool saveSettings();
+		bool saveSettingsRunTime();
 		bool loadSettings(QString filename);
 
 #ifdef CONFIGURABLE_IP

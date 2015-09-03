@@ -189,9 +189,11 @@ class MachineBridge
 		bool setIfaceEnabled(uint32_t iface, bool enabled);
 		bool setIfaceMac(uint32_t iface, QString qMac);
 		bool setIfaceAttachmentType(uint32_t iface, uint32_t attachmentType);
+		bool setIfaceAttachmentTypeRunTime(uint32_t iface, uint32_t attachmentType);
 		bool setCableConnected(uint32_t iface, bool connected);
 		bool setCableConnectedRunTime(uint32_t iface, bool connected);
 		bool setAttachmentData(uint32_t iface, QString qAttachmentData);
+		bool setAttachmentDataRunTime(uint32_t iface, QString qAttachmentData);
 		bool setAttachmentData(uint32_t iface, uint32_t AttachmentType, QString qAttachmentData);
 		
 		bool start();
@@ -208,6 +210,7 @@ class MachineBridge
 		bool lockMachine();
 		bool unlockMachine();
 		ComPtr<INetworkAdapter> getIface(uint32_t iface);
+		ComPtr<INetworkAdapter> getIfaceRunTimeEditable(uint32_t iface);
 		
 		QString getNatNetwork(INetworkAdapter *iface);
 		QString getBridgedIface(INetworkAdapter *iface);

@@ -227,6 +227,30 @@ bool VirtualMachine::saveSettings()
 	return succeeded;
 }
 
+bool VirtualMachine::saveSettingsRunTime()
+{
+	bool succeeded = true;
+
+	for(int i = 0; i < ifaces_size; i++)
+	{
+		//Tipo interfaccia
+		if(!machine->setIfaceAttachmentTypeRunTime(i, ifaces[i]->attachmentType))
+		{
+			std::cout << "setIfaceAttachmentType(" << i << ", " << ifaces[i]->attachmentType << ")" << std::endl;
+			succeeded = false;
+		}
+
+		//Parametro in base al tipo di interfaccia
+		if(!machine->setAttachmentDataRunTime(i, ifaces[i]->attachmentData))
+		{
+			std::cout << "setAttachmentData(" << i << ", " << ifaces[i]->attachmentData.toStdString() << ")" << std::endl;
+			succeeded = false;
+		}
+	}
+
+	return succeeded;
+}
+
 bool VirtualMachine::loadSettings(QString filename)
 {
 	return true;
@@ -295,6 +319,7 @@ bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *valu
 			uint32_t machineState = machine->getState();
 			if(machineState == MachineState::Running || machineState == MachineState::Paused)
 				return machine->setCableConnectedRunTime(iface, *cableConnected);
+			break;
 		}
 		case IFACE_NAME:
 		{
@@ -307,13 +332,11 @@ bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *valu
 		{
 			QString *ip = (QString *)value_ptr;
 			return ifaces[iface]->setIp(*ip);
-			break;
 		}
 		case IFACE_SUBNETMASK:
 		{
 			QString *subnetMask = (QString *)value_ptr;
 			return ifaces[iface]->setSubnetMask(*subnetMask);
-			break;
 		}
 #endif
 		case IFACE_ATTACHMENT_TYPE:

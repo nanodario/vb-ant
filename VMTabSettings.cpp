@@ -127,8 +127,16 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 	switch(standardButton)
 	{
 		case QDialogButtonBox::Apply:
+		{
 			std::cout << "apply: \t" << vm_name.toStdString() << std::endl;
-			std::cout << "vm->saveSettings(): " << std::string(vm->saveSettings() ? "true" : "false") << std::endl;
+			uint32_t machineState = machine->getState();
+			if(machineState == MachineState::Starting ||
+			   machineState == MachineState::Running ||
+			   machineState == MachineState::Paused)
+				std::cout << "vm->saveSettings(): " << std::string(vm->saveSettingsRunTime() ? "true" : "false") << std::endl;
+			else
+				std::cout << "vm->saveSettings(): " << std::string(vm->saveSettings() ? "true" : "false") << std::endl;
+
 			for (int i = 0; i < 8; i++)
 			{
 				QStringList iface_info = ifaces_table->getIfaceInfo(i);
@@ -136,9 +144,10 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 				for(j = 0; j < iface_info.size() - 1; j++)
 					std::cout << iface_info.at(j).toStdString() << " \t";
 				std::cout << iface_info.at(j).toStdString() << std::endl;
-				
 			}
+			refreshTable();
 			break;
+		}
 		case QDialogButtonBox::Reset:
 			vm->populateIfaces();
 			refreshTableUI();
@@ -168,13 +177,13 @@ void VMTabSettings::slotIfaceChange(int iface, ifacekey_t key, void *value_ptr)
 void VMTabSettings::lockSettings()
 {
 	ifaces_table->lockSettings();
-	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
+// 	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
 }
 
 void VMTabSettings::unlockSettings()
 {
 	ifaces_table->unlockSettings();
-	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
+// 	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
 }
 
 bool VMTabSettings::hasThisMachine(MachineBridge *_machine)
