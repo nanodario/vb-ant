@@ -56,6 +56,7 @@ set(Reti_SRCS
 	InfoDialog.cpp
 	main.cpp
 	MainWindow.cpp
+	OSBridge.cpp
 	VirtualBoxBridge.cpp
 	VirtualMachine.cpp
 	VMSettings.cpp
@@ -63,9 +64,14 @@ set(Reti_SRCS
 	UIMainEventListener.cpp
 )
 
+set(nbdtool_SRCS nbdtool.cpp)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVBOX_WITH_XPCOM_NAMESPACE_CLEANUP")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+set(SYSTEM_LIBS
+	"pthread"
+	"kmod"
+)
 
 if($ENV{CONFIGURABLE_IP})
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCONFIGURABLE_IP")
@@ -77,10 +83,18 @@ endif()
 set(VBOX_LIB "/usr/lib/virtualbox/VBoxXPCOM.so")
 
 qt4_automoc(${Reti_SRCS})
+
 add_executable(Reti ${Reti_SRCS} ${ui_src} ${ui_res})
+add_executable(nbdtool ${nbdtool_SRCS})
+
 target_link_libraries(Reti
+			${SYSTEM_LIBS}
 			${QT_QTCORE_LIBRARY}
 			${QT_QTGUI_LIBRARY}
 			${VBOX_LIB}
 )
+
+target_link_libraries(nbdtool
+			"kmod")
 install(TARGETS Reti RUNTIME DESTINATION bin)
+install(TARGETS nbdtool RUNTIME DESTINATION bin)

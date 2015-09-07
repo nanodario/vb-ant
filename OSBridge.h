@@ -19,32 +19,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// VBANT - VirtualBox Advanced Network Tool, Un tool per la didattica nel corso di reti di calcolatori
+#ifndef OSBRIDGE_H
+#define OSBRIDGE_H
 
-#include <QtGui/QApplication>
-#include "MainWindow.h"
-#include "OSBridge.h"
+#include <libkmod.h>
+#include <string>
 
-int main(int argc, char** argv)
+class OSBridge
 {
-	QApplication app(argc, argv);
-	QStringList args = QApplication::arguments();
+	public:
+		static bool loadNbdModule(int devices = 16, int partitions = 0);
+		static bool unloadNbdModule();
+		static bool checkNbdModule();
+		static bool mountVHD(std::string source, std::string target);
+		static bool umountVHD(std::string target);
+		static bool mountVpartition(std::string source, std::string target, bool readonly = false);
+		static bool umountVpartition(std::string target);
 
-	/* TODO verificare che il modulo nbd sia caricato
-	 * prima dell'avvio dell'interfaccia grafica
-	 */
-	
-	if(OSBridge::checkNbdModule())
-		std::cout << "Module nbd loaded" << std::endl;
-	else
-		std::cout << "Module nbd not loaded" << std::endl;
-	
-	MainWindow mw((args.count() < 2) ? QString() : args[1]);
-	mw.show();
+	private:
+		static int execute_cmd(int argc, char **argv, bool from_path = false);
+};
 
-	int retval = app.exec();
-
-	std::cout << "All done." << std::endl;
-
-	return retval;
-}
+#endif //OSBRIDGE_H

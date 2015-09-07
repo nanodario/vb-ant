@@ -44,7 +44,7 @@ class VMTabSettings : public QWidget
 	Q_OBJECT
 	
 	public:
-		VMTabSettings(QTabWidget *parent, QString _vm_name, VirtualBoxBridge *vboxbridge, MachineBridge *machine);
+		VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBridge *vboxbridge, MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix);
 		virtual ~VMTabSettings();
 		IfacesTable *ifaces_table;
 		void refreshTable();

@@ -613,6 +613,26 @@ uint32_t MachineBridge::getSessionState()
 
 QString MachineBridge::getHardDiskFilePath()
 {
+	nsresult rc;
+	uint32_t mediumAttachments_size;
+	IMediumAttachment **mediumAttachments;
+	
+	NS_CHECK_AND_DEBUG_ERROR(machine, GetMediumAttachments(&mediumAttachments_size, &mediumAttachments), rc);
+
+	for(int i = 0; i < mediumAttachments_size; i++)
+	{
+		nsXPIDLString path;
+		nsCOMPtr<IMedium> medium;
+
+		NS_CHECK_AND_DEBUG_ERROR(mediumAttachments[i], GetMedium(getter_AddRefs(medium)), rc);
+		if(medium != NULL)
+		{
+			NS_CHECK_AND_DEBUG_ERROR(medium, GetLocation(getter_Copies(path)), rc);
+			std::cout << "[" << getName().toStdString() << "] -> medium[" << i << "] path: " << returnQStringValue(path).toStdString() << std::endl;
+			return returnQStringValue(path);
+		}
+	}
+
 	return QString::fromUtf8("");
 }
 

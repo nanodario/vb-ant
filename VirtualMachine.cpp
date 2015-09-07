@@ -26,15 +26,18 @@
 #include <QString>
 #include <QStringList>
 
-#include <sys/mount.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <malloc.h>
+#include <string>
+#include <sstream>
 
 #include "VirtualBoxBridge.h"
+#include "OSBridge.h"
 
-VirtualMachine::VirtualMachine(MachineBridge *machine)
-: machine(machine), ifaces_size(0), ifaces(NULL)
+VirtualMachine::VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix)
+: machine(machine), ifaces_size(0), ifaces(NULL), vhd_mountpoint(vhd_mountpoint)
+, partition_mountpoint_prefix(partition_mountpoint_prefix), vhd_mounted(false)
 {
 	populateIfaces();
 }
@@ -47,14 +50,45 @@ VirtualMachine::~VirtualMachine()
 	free(ifaces);
 }
 
-bool VirtualMachine::mountVM(bool readonly)
+bool VirtualMachine::mountVHD()
 {
-	return true;
+	if(!vhd_mounted)
+		vhd_mounted = OSBridge::mountVHD(machine->getHardDiskFilePath().toStdString(), vhd_mountpoint);
+
+	return vhd_mounted;
 }
 
-bool VirtualMachine::umountVM()
+bool VirtualMachine::umountVHD()
 {
-	return true;
+	if(vhd_mounted)
+		vhd_mounted = !OSBridge::umountVHD(vhd_mountpoint);
+
+	return !vhd_mounted;
+}
+
+bool VirtualMachine::mountVpartition(int index, bool readonly)
+{
+	if(!vhd_mounted)
+		mountVHD();
+
+	if(!vhd_mounted)
+		return false;
+
+	std::stringstream partition;		partition << vhd_mountpoint << "p" << index;
+	std::stringstream partition_mountpoint;	partition_mountpoint << partition_mountpoint_prefix << "p" << index;
+
+	return OSBridge::mountVpartition(partition.str(), partition_mountpoint.str());
+}
+
+bool VirtualMachine::umountVpartition(int index)
+{
+	if(!vhd_mounted)
+		return true;
+
+	int device_num = vhd_mountpoint.find_first_of("nbd");
+	std::stringstream partition_mountpoint;	partition_mountpoint << partition_mountpoint_prefix << "p" << index;
+
+	return OSBridge::umountVpartition(partition_mountpoint.str());
 }
 
 bool VirtualMachine::start()

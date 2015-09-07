@@ -28,11 +28,16 @@
 #include <sstream>
 #include <iostream>
 #include <bitset>
-#include "stdint.h"
+#include <stdint.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "VMTabSettings.h"
 #include "InfoDialog.h"
 #include "VirtualBoxBridge.h"
+#include "OSBridge.h"
 
 MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 : QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge()), machines_vec(vboxbridge->getMachines(this))
@@ -40,11 +45,29 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	VMTabSettings_vec.clear();
 	ui->setupUi(this);
 
-	int i;
-	for (i = 0; i < machines_vec.size(); i++)
+	if(OSBridge::checkNbdModule())
+		OSBridge::unloadNbdModule();
+
+	OSBridge::loadNbdModule(machines_vec.size());
+
+	const char *tmpdir = getenv("TMPDIR");
+	if(tmpdir == NULL)
+		tmpdir = "/tmp";
+
+	std::stringstream tmpdir_prefix; tmpdir_prefix << tmpdir << "/" << PROGRAM_NAME;
+
+	struct stat s;
+	if(stat(tmpdir_prefix.str().c_str(), &s) < 0 && errno == ENOENT)
+		mkdir(tmpdir_prefix.str().c_str(), 0777);
+
+	for (int i = 0; i < machines_vec.size(); i++)
 	{
+		std::stringstream mountpoint_ss; mountpoint_ss << "/dev/nbd" << i;
+		std::stringstream partition_mountpoint_prefix_ss; partition_mountpoint_prefix_ss << tmpdir_prefix.str() << "/nbd" << i;
+
 		QString tabname = machines_vec.at(i)->getName();
-		VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(i));
+		VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(i), mountpoint_ss.str(), partition_mountpoint_prefix_ss.str());
+
 		ui->vm_tabs->addTab(vmSettings, tabname);
 		VMTabSettings_vec.push_back(vmSettings);
 	}
@@ -69,8 +92,10 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 MainWindow::~MainWindow()
 {
 	disconnect(ui->vm_tabs, SIGNAL(currentChanged(int)), this, SLOT(currentChangedSlot(int)));
+
 	while(!VMTabSettings_vec.empty())
 	{
+		VMTabSettings_vec.back()->vm->umountVHD();
 		delete VMTabSettings_vec.back();
 		VMTabSettings_vec.pop_back();
 	}
@@ -80,6 +105,16 @@ MainWindow::~MainWindow()
 		delete machines_vec.back();
 		machines_vec.pop_back();
 	}
+
+	const char *tmpdir = getenv("TMPDIR");
+	if(tmpdir == NULL)
+		tmpdir = "/tmp";
+
+	std::stringstream tmpdir_prefix; tmpdir_prefix << tmpdir << "/" << PROGRAM_NAME;
+
+	struct stat s;
+	if(stat(tmpdir_prefix.str().c_str(), &s) >= 0 && ((s.st_mode & S_IFMT) == S_IFDIR))
+		rmdir(tmpdir_prefix.str().c_str());
 
 	delete vboxbridge;
 	delete ui;

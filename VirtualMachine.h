@@ -46,11 +46,13 @@ typedef enum
 class VirtualMachine
 {
 	public:
-		VirtualMachine(MachineBridge *machine);
+		VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix);
 		~VirtualMachine();
 
-		bool mountVM(bool readonly = false);
-		bool umountVM();
+		bool mountVHD();
+		bool umountVHD();
+		bool mountVpartition(int index, bool readonly = false);
+		bool umountVpartition(int index);
 		bool start();
 		bool ACPIstop() const { return machine->stop(); };
 		bool stop() const { return machine->stop(true); };
@@ -85,6 +87,9 @@ class VirtualMachine
 		MachineBridge *machine;
 		uint8_t ifaces_size;
 		Iface **ifaces;
+		std::string vhd_mountpoint;
+		std::string partition_mountpoint_prefix;
+		bool vhd_mounted;
 };
 
 #endif //VIRTUALMACHINE_H
