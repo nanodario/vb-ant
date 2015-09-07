@@ -207,14 +207,29 @@ bool setCableConnected_forwarder(void *context, int row, bool checked)
 AttachmentDataWidget::AttachmentDataWidget(QWidget *parent, int row, IfacesTable *destination) : QWidget(parent)
 , comboBox(new QComboBox(this)), row(row), destination(destination)
 {
-	destination->setCellWidget(row, COLUMN_IFACE_TYPE_DATA, comboBox);
+	QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
+	horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+	horizontalLayout->setContentsMargins(0, 0, 0, 0);
+
+	QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	sizePolicy.setHorizontalStretch(0);
+	sizePolicy.setVerticalStretch(0);
+	setSizePolicy(sizePolicy);
+
+	comboBox->setSizePolicy(sizePolicy);
+
 	refreshWidget();
+
+	horizontalLayout->addWidget(comboBox);
+	horizontalLayout->setAlignment(Qt::AlignCenter);
+	
+	setLayout(horizontalLayout);
 }
 
 AttachmentDataWidget::~AttachmentDataWidget()
 {
 	remove_connection();
-	delete destination->cellWidget(row, COLUMN_IFACE_TYPE_DATA);
+	delete comboBox;
 }
 
 void AttachmentDataWidget::add_connection()
@@ -437,16 +452,11 @@ IfacesTable::~IfacesTable()
 				delete ((MacWidgetField *)cellWidget(row, col));
 			else if(col == COLUMN_IFACE_TYPE)
 				delete ((AttachmentComboBox *)cellWidget(row, col));
-			else if(col != COLUMN_IFACE_TYPE_DATA)
+			else if(col == COLUMN_IFACE_TYPE_DATA)
+				delete ((AttachmentDataWidget *)cellWidget(row, col));
+			else
 				delete itemAt(row, col);
 		}
-	}
-	
-	while(attachmentDataWidget_vec.size() > 0)
-	{
-		AttachmentDataWidget *a = attachmentDataWidget_vec.back();
-		attachmentDataWidget_vec.pop_back();
-		delete a;
 	}
 }
 
@@ -492,7 +502,8 @@ int IfacesTable::setIface(int iface, bool enabled, QString mac, bool cableConnec
 	AttachmentComboBox *attachmentComboBox = new AttachmentComboBox(this, iface, this);
 	setCellWidget(iface, COLUMN_IFACE_TYPE, attachmentComboBox);
 // 	CustomComboBox *customComboBox = new CustomComboBox(this, iface, this);
-	attachmentDataWidget_vec.push_back(new AttachmentDataWidget(this, iface, this));
+	AttachmentDataWidget *attachmentDataWidget = new AttachmentDataWidget(this, iface, this);
+	setCellWidget(iface, COLUMN_IFACE_TYPE_DATA, attachmentDataWidget);
 
 	int col;
 	for (col = 1; col < columnCount(); col++)
@@ -517,7 +528,7 @@ int IfacesTable::setIface(int iface, bool enabled, QString mac, bool cableConnec
 	blockSignals(false);
 // 	connect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
 	attachmentComboBox->add_connection();
-	attachmentDataWidget_vec.at(iface)->add_connection();
+	attachmentDataWidget->add_connection();
 
 	return iface;
 }
@@ -555,12 +566,13 @@ bool IfacesTable::setStatus(int iface, bool checked)
 			}
 			case COLUMN_IFACE_TYPE_DATA:
 			{
+				AttachmentDataWidget *a = (AttachmentDataWidget *)cellWidget(iface, col);
 				if(checked &&
 					(ifaces[iface]->attachmentType != NetworkAttachmentType::Null
 					&& ifaces[iface]->attachmentType != NetworkAttachmentType::NAT))
-					cellWidget(iface, COLUMN_IFACE_TYPE_DATA)->setEnabled(true);
+					a->comboBox->setEnabled(true);
 				else
-					cellWidget(iface, COLUMN_IFACE_TYPE_DATA)->setEnabled(false);
+					a->comboBox->setEnabled(false);
 
 				break;
 			}
@@ -680,14 +692,15 @@ bool IfacesTable::setSubnetMask(int iface, QString subnetMask)
 bool IfacesTable::setAttachmentType(int iface, uint32_t attachmentType)
 {
 	AttachmentComboBox *attachmentComboBox = (AttachmentComboBox *)cellWidget(iface, COLUMN_IFACE_TYPE);
+	AttachmentDataWidget *attachmentDataWidget = (AttachmentDataWidget *)cellWidget(iface, COLUMN_IFACE_TYPE_DATA);
 
 	if(ifaces[iface]->setAttachmentType(attachmentType))
 	{
 		attachmentComboBox->remove_connection();
-		attachmentDataWidget_vec.at(iface)->remove_connection();
+		attachmentDataWidget->remove_connection();
 		attachmentComboBox->comboBox->setCurrentIndex(ifaces[iface]->attachmentType);
-		attachmentDataWidget_vec.at(iface)->refreshWidget();
-		attachmentDataWidget_vec.at(iface)->add_connection();
+		attachmentDataWidget->refreshWidget();
+		attachmentDataWidget->add_connection();
 		attachmentComboBox->add_connection();
 		return true;
 	}
@@ -705,7 +718,7 @@ bool IfacesTable::setAttachmentData(int iface, QString attachmentData)
 
 	if(attachmentType == NetworkAttachmentType::Internal ||
 	   attachmentType == NetworkAttachmentType::Generic)
-		attachmentDataWidget_vec.at(iface)->comboBox->lineEdit()->setText(new_attachmentData);
+		((AttachmentDataWidget *)cellWidget(iface, COLUMN_IFACE_TYPE_DATA))->comboBox->lineEdit()->setText(new_attachmentData);
 // 	emit sigIfaceChange(iface, IFACE_ATTACHMENT_DATA, &new_attachmentData);
 
 	return true;

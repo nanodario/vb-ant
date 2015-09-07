@@ -180,7 +180,6 @@ class IfacesTable : public QTableWidget
 	private:
 		VirtualBoxBridge *vboxbridge;
 		MachineBridge *machine;
-		std::vector<AttachmentDataWidget*> attachmentDataWidget_vec;
 };
 
 #endif
