@@ -48,8 +48,6 @@ static QString returnQStringValue(nsXPIDLString s)
 	return retVal;
 }
 
-#define DEBUG_FLAG
-
 #ifdef DEBUG_FLAG
 	#define NS_CHECK_AND_DEBUG_ERROR(ptr, func, out_rc_value) \
 	do { \
