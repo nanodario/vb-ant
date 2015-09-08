@@ -67,6 +67,25 @@ set(Reti_SRCS
 set(nbdtool_SRCS nbdtool.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVBOX_WITH_XPCOM_NAMESPACE_CLEANUP")
+
+if($ENV{PROGRAM_NAME})
+	set(PROGRAM_NAME ${PROGRAM_NAME})
+else()
+	set(PROGRAM_NAME "vb-ant")
+endif()
+
+message("-- Program name: ${PROGRAM_NAME}")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROGRAM_NAME=\"\\\"${PROGRAM_NAME}\\\"\"")
+
+if($ENV{OS_PARTITION_NUMBER})
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=$ENV{OS_PARTITION_NUMBER}")
+	message("-- OS partition number: $ENV{OS_PARTITION_NUMBER}")
+else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=1")
+	message("-- OS partition number: 1")
+endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_FLAG")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar")
 set(SYSTEM_LIBS
@@ -85,10 +104,10 @@ set(VBOX_LIB "/usr/lib/virtualbox/VBoxXPCOM.so")
 
 qt4_automoc(${Reti_SRCS})
 
-add_executable(Reti ${Reti_SRCS} ${ui_src} ${ui_res})
+add_executable(${PROGRAM_NAME} ${Reti_SRCS} ${ui_src} ${ui_res})
 add_executable(nbdtool ${nbdtool_SRCS})
 
-target_link_libraries(Reti
+target_link_libraries(${PROGRAM_NAME}
 			${SYSTEM_LIBS}
 			${QT_QTCORE_LIBRARY}
 			${QT_QTGUI_LIBRARY}
@@ -97,5 +116,5 @@ target_link_libraries(Reti
 
 target_link_libraries(nbdtool
 			"kmod")
-install(TARGETS Reti RUNTIME DESTINATION bin)
+install(TARGETS ${PROGRAM_NAME} RUNTIME DESTINATION bin)
 install(TARGETS nbdtool RUNTIME DESTINATION bin)
