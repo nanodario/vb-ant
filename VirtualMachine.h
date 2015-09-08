@@ -49,8 +49,6 @@ class VirtualMachine
 		VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix);
 		~VirtualMachine();
 
-		bool mountVHD();
-		bool umountVHD();
 		bool mountVpartition(int index, bool readonly = false);
 		bool umountVpartition(int index);
 		bool start();
@@ -78,18 +76,22 @@ class VirtualMachine
 		Iface *getIfaceByNetworkAdapter(INetworkAdapter *iface);
 		Iface **getIfaces() const { return ifaces; };
 		void refreshIface(INetworkAdapter *iface);
-		QString getIp(uint32_t iface); // const { return QString("10.10.10.%1").arg(iface); }; //TODO
-		QString getSubnetMask(uint32_t iface); // const { return QString("%1").arg(iface); }; //TODO
+		QString getName(uint32_t iface);
+		QString getIp(uint32_t iface);
+		QString getSubnetMask(uint32_t iface);
+		
 		bool operator==(VirtualMachine *vm);
 		void operator=(const VirtualMachine &vm);
 
 	private:
+		bool mountVHD();
+		bool umountVHD();
 		MachineBridge *machine;
 		uint8_t ifaces_size;
 		Iface **ifaces;
 		std::string vhd_mountpoint;
 		std::string partition_mountpoint_prefix;
-		bool vhd_mounted;
+		std::vector<std::string> mounted_partitions_vec;
 };
 
 #endif //VIRTUALMACHINE_H

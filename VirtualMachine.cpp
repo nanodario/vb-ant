@@ -25,6 +25,8 @@
 #include <QDomElement>
 #include <QString>
 #include <QStringList>
+#include <QFile>
+#include <QLabel>
 
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -35,9 +37,12 @@
 #include "VirtualBoxBridge.h"
 #include "OSBridge.h"
 
+#define NET_HW_SETTINGS_FILE "etc/udev/rules.d/70-persistent-net.rules"
+#define NET_SW_SETTINGS_PREFIX "etc/sysconfig/network-scripts/ifcfg-"
+
 VirtualMachine::VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix)
 : machine(machine), ifaces_size(0), ifaces(NULL), vhd_mountpoint(vhd_mountpoint)
-, partition_mountpoint_prefix(partition_mountpoint_prefix), vhd_mounted(false)
+, partition_mountpoint_prefix(partition_mountpoint_prefix)
 {
 	populateIfaces();
 }
@@ -46,49 +51,89 @@ VirtualMachine::~VirtualMachine()
 {
 	while(ifaces_size > 0)
 		delete ifaces[ifaces_size-- - 1];
-
+	
 	free(ifaces);
+	
+	while(mounted_partitions_vec.size() > 0)
+	{
+		int i = mounted_partitions_vec.back().find_last_of('p');
+		umountVpartition(atoi(mounted_partitions_vec.back().substr(i).c_str()));
+		mounted_partitions_vec.pop_back();
+	}
 }
 
 bool VirtualMachine::mountVHD()
 {
-	if(!vhd_mounted)
-		vhd_mounted = OSBridge::mountVHD(machine->getHardDiskFilePath().toStdString(), vhd_mountpoint);
+	if(mounted_partitions_vec.size() == 0)
+	{
+		std::cout << "Mounting " << machine->getHardDiskFilePath().toStdString() << " on " << vhd_mountpoint << std::endl;
+		return OSBridge::mountVHD(machine->getHardDiskFilePath().toStdString(), vhd_mountpoint);
+	}
 
-	return vhd_mounted;
+	return true;
 }
 
 bool VirtualMachine::umountVHD()
 {
-	if(vhd_mounted)
-		vhd_mounted = !OSBridge::umountVHD(vhd_mountpoint);
+	while(mounted_partitions_vec.size() > 0)
+	{
+		int i = mounted_partitions_vec.back().find_last_of('p');
+		umountVpartition(atoi(mounted_partitions_vec.back().substr(i).c_str()));
+	}
 
-	return !vhd_mounted;
+	std::cout << "Unmounting " << machine->getHardDiskFilePath().toStdString() << " from " << vhd_mountpoint << std::endl;
+	return OSBridge::umountVHD(vhd_mountpoint);
 }
 
 bool VirtualMachine::mountVpartition(int index, bool readonly)
 {
-	if(!vhd_mounted)
-		mountVHD();
-
-	if(!vhd_mounted)
-		return false;
+	if(mounted_partitions_vec.size() == 0)
+		if(!mountVHD())
+			return false;
 
 	std::stringstream partition;		partition << vhd_mountpoint << "p" << index;
 	std::stringstream partition_mountpoint;	partition_mountpoint << partition_mountpoint_prefix << "p" << index;
 
-	return OSBridge::mountVpartition(partition.str(), partition_mountpoint.str());
+	std::cout << "Mounting " << partition.str() << " on " << partition_mountpoint.str() << std::endl;
+	for(int i = 0; i < mounted_partitions_vec.size(); i++)
+		if(mounted_partitions_vec.at(i) == partition.str())
+		{
+			std::cout << partition.str() << " already mounted" << std::endl;
+			return true;
+		}
+			
+	if(OSBridge::mountVpartition(partition.str(), partition_mountpoint.str()))
+	{
+		mounted_partitions_vec.push_back(partition.str());
+		return true;
+	}
+
+	return false;
 }
 
 bool VirtualMachine::umountVpartition(int index)
 {
-	if(!vhd_mounted)
-		return true;
+	std::stringstream partition; partition << vhd_mountpoint << "p" << index;
+	std::stringstream mpoint; mpoint << partition_mountpoint_prefix << "p" << index;
 
-	int device_num = vhd_mountpoint.find_first_of("nbd");
-	std::stringstream partition_mountpoint;	partition_mountpoint << partition_mountpoint_prefix << "p" << index;
+	for(int i = 0; i < mounted_partitions_vec.size(); i++)
+	{
+		if(mounted_partitions_vec.at(i) == partition.str())
+		{
+			std::cout << "Unmounting " << partition.str() << std::endl;
+			if(OSBridge::umountVpartition(mpoint.str()))
+			{
+				mounted_partitions_vec.erase(mounted_partitions_vec.begin() + i);
+				break;
+			}
+		}
+	}
 
-	return OSBridge::umountVpartition(partition_mountpoint.str());
+	if(mounted_partitions_vec.size() == 0)
+		if(!umountVHD())
+			return false;
+	
+	return true;	
 }
 
 bool VirtualMachine::start()
@@ -154,14 +199,159 @@ void VirtualMachine::refreshIface(INetworkAdapter *iface)
 	i->setAttachmentData(machine->getAttachmentData(iface, machine->getAttachmentType(iface)));
 }
 
+QString VirtualMachine::getName(uint32_t iface)
+{
+	//read from /etc/udev/rules.d/70-persistent-net.rules
+	/* .
+	 * .
+	 * 
+	 * # (01:23:45:67:89:0A) iface0
+	 * SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="01:23:45:67:89:0A", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="iface0"
+	 * 
+	 * -
+	 * -
+	 */
+	QString iface_name = QString("noname%1").arg(iface);
+	QString match = QString::fromUtf8("{address}==\"").toUpper().append(machine->getIfaceFormattedMac(iface).toUpper()).append("\"");
+
+	QString filename = QString::fromStdString(partition_mountpoint_prefix);
+	filename.append("p").append(OS_PARTITION_NUMBER).append("/").append(NET_HW_SETTINGS_FILE);
+
+	QFile file(filename);
+
+	if(file.open(QIODevice::ReadOnly))
+	{
+		while(!file.atEnd())
+		{
+			QString line = file.readLine();
+			if(line.toUpper().contains(match))
+			{
+				int ifacename_index_begin = line.lastIndexOf(QString::fromUtf8("NAME="));
+				int ifacename_index_end = QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 6)).lastIndexOf(QString::fromUtf8("\""));
+				iface_name = QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 6, ifacename_index_end));
+				break;
+			}
+		}
+		file.close();
+	}
+
+	return iface_name;
+}
+
 QString VirtualMachine::getIp(uint32_t iface)
 {
-	return QString("10.10.10.%1").arg(iface);
+	//read from /etc/sysconfig/network-scripts/ifcfg-IFACE_NAME
+	/*
+	 * DEVICE=eth0
+	 * HWADDR=08:00:27:C9:2D:87
+	 * IPADDR=208.164.186.1
+	 * NETMASK=255.255.255.0
+	 * ONBOOT=yes
+	 * BOOTPROTO=none
+	 */
+	QString iface_ip = QString::fromUtf8("");
+	const QString iface_name = getName(iface);
+	const QString iface_mac = machine->getIfaceFormattedMac(iface).toUpper();
+
+	bool correct_name = false;
+	bool correct_mac = false;
+
+	QString match_name = QString::fromUtf8("DEVICE=").append(iface_name.toUpper());
+	QString match_mac = QString::fromUtf8("HWADDR=").append(iface_mac.toUpper());
+
+	QString filename = QString::fromStdString(partition_mountpoint_prefix);
+	filename.append("p").append(OS_PARTITION_NUMBER).append("/").append(NET_SW_SETTINGS_PREFIX).append(iface_name);
+
+// 	QString filename = QString::fromUtf8("/dev/shm/ifcfg-eth0");
+	QFile file(filename);
+
+	if(file.open(QIODevice::ReadOnly))
+	{
+		QString iface_ip_tmp = QString::fromUtf8("");;
+		while(!file.atEnd())
+		{
+			QString line = file.readLine();
+			if(!correct_name && line.toUpper().contains(match_name))
+				correct_name = true;
+			if(!correct_mac && line.toUpper().contains(match_mac))
+				correct_mac = true;
+
+			if(line.toUpper().contains(QString::fromUtf8("IPADDR=")))
+			{
+				int ifacename_index_begin = line.lastIndexOf(QString::fromUtf8("IPADDR="));
+				iface_ip_tmp = (QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 7))).trimmed();
+			}
+		}
+
+		if(!correct_name)
+			std::cerr << "Warning: iface " << iface << " (" << iface_mac.toStdString() << ", " << iface_name.toStdString() << ") does not match the ifcfg-" << iface_name.toStdString() << " settings file" << std::endl;
+
+		if(correct_mac)
+			iface_ip = iface_ip_tmp;
+
+		file.close();
+	}
+
+	return iface_ip;
 }
 
 QString VirtualMachine::getSubnetMask(uint32_t iface)
 {
-	return QString("%1").arg(iface);
+	//read from /etc/sysconfig/network-scripts/ifcfg-IFACE_NAME
+	/*
+	 * DEVICE=eth0
+	 * HWADDR=08:00:27:C9:2D:87
+	 * IPADDR=208.164.186.1
+	 * NETMASK=255.255.255.0
+	 * ONBOOT=yes
+	 * BOOTPROTO=none
+	 */
+	QString iface_subnetMask = QString::fromUtf8("");
+	const QString iface_name = getName(iface);
+	const QString iface_mac = machine->getIfaceFormattedMac(iface).toUpper();
+
+	bool correct_name = false;
+	bool correct_mac = false;
+
+	QString match_name = QString::fromUtf8("DEVICE=").append(iface_name.toUpper());
+	QString match_mac = QString::fromUtf8("HWADDR=").append(iface_mac.toUpper());
+
+	QString filename = QString::fromStdString(partition_mountpoint_prefix);
+	filename.append("p").append(OS_PARTITION_NUMBER).append("/").append(NET_SW_SETTINGS_PREFIX).append(iface_name);
+
+// 	QString filename = QString::fromUtf8("/dev/shm/ifcfg-eth0");
+	QFile file(filename);
+
+	if(file.open(QIODevice::ReadOnly))
+	{
+		QString iface_subnetMask_tmp = QString::fromUtf8("");;
+		while(!file.atEnd())
+		{
+			QString line = file.readLine();
+			if(!correct_name && line.toUpper().contains(match_name))
+				correct_name = true;
+			if(!correct_mac && line.toUpper().contains(match_mac))
+				correct_mac = true;
+			
+			if(line.toUpper().contains(QString::fromUtf8("NETMASK=")))
+			{
+				int ifacename_index_begin = line.lastIndexOf(QString::fromUtf8("NETMASK="));
+				iface_subnetMask_tmp = (QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 8))).trimmed();
+			}
+		}
+
+		if(correct_mac)
+		{
+			if(!correct_name)
+				std::cerr << "Warning: iface " << iface << " (" << iface_mac.toStdString() << ", " << iface_name.toStdString() << ") does not match the ifcfg-" << iface_name.toStdString() << " settings file" << std::endl;
+
+			iface_subnetMask = iface_subnetMask_tmp;
+		}
+
+		file.close();
+	}
+	
+	return iface_subnetMask;
 }
 
 bool VirtualMachine::saveSettings()
@@ -174,6 +364,9 @@ bool VirtualMachine::saveSettings()
 		return false;
 	}
 	
+	/*
+	 * SET VIRTUALBOX PARAMS
+	 */
 	for(int i = 0; i < ifaces_size; i++)
 	{
 		//Interfaccia abilitata
@@ -215,41 +408,82 @@ bool VirtualMachine::saveSettings()
 		}
 	}
 
-	for(int i = 0; i < ifaces_size; i++)
+	
+	/*
+	 * SET OS PARAMS
+	 */
+	QString filename = QString::fromStdString(partition_mountpoint_prefix);
+// 	QString filename = QString::fromUtf8("/dev/shm/");
+	filename.append("p").append(OS_PARTITION_NUMBER).append("/").append(NET_HW_SETTINGS_FILE);
+	
+	QFile file(filename);
+	std::cout << "filename: " << filename.toStdString() << std::endl;
+
+	if(file.exists() && file.open(QIODevice::WriteOnly))
 	{
-		/*
-		 * TODO: scrivere sull'hard disk della VM la configurazione per le interfacce
-		 * //Nome
-		 *
-		 * # PCI device 0x14e4:0x167d (tg3)
-		 * SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="00:11:25:d3:6d:d1", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="eth0"
-		 * 
-		 */
-		std::string line = "";
+		file.write("# This file was automatically generated by the " PROGRAM_NAME " program\n#\n# You can modify it, as long as you keep each rule on a single\n# line, and change only the value of the NAME= key.\n\n");
 
-		line.append("# (");
-		line.append(ifaces[i]->mac.toStdString());
-		line.append(") ");
-		line.append(ifaces[i]->name.toStdString());
-		std::cout << line << std::endl;
+		for(int i = 0; i < ifaces_size; i++)
+		{
+			std::string line = "";
 
-		line.clear();
-		line.append("SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"?*\", ATTR{address}==\"");
-		line.append(ifaces[i]->mac.toStdString());
-		line.append("\", ATTR{dev_id}==\"0x0\", ATTR{type}==\"1\", KERNEL==\"eth*\", NAME=\"");
-		line.append(ifaces[i]->name.toStdString());
-		line.append("\"");
-		std::cout << line << std::endl << std::endl;
+			line.append("# (");
+			line.append(ifaces[i]->mac.toStdString());
+			line.append(") ");
+			line.append(ifaces[i]->name.toStdString());
+			line.append("\n");
+			line.append("SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"?*\", ATTR{address}==\"");
+			line.append(ifaces[i]->mac.toStdString());
+			line.append("\", ATTR{dev_id}==\"0x0\", ATTR{type}==\"1\", KERNEL==\"eth*\", NAME=\"");
+			line.append(ifaces[i]->name.toStdString());
+			line.append("\"\n\n");
+
+			file.write(line.c_str());
+		}
+		file.close();
+	}
 
 #ifdef CONFIGURABLE_IP
-		/*
-		 * TODO: scrivere sull'hard disk della VM gli indirizzi ip delle interfacce
-		 * //Indirizzo IP
-		 * //Maschera sottorete
-		 */
-#endif
+	for(int i = 0; i < ifaces_size; i++) //TEST
+	{
+		filename = QString::fromStdString(partition_mountpoint_prefix);
+// 		filename = QString::fromUtf8("/dev/shm/");
+		filename.append("p").append(OS_PARTITION_NUMBER).append("/").append(NET_SW_SETTINGS_PREFIX).append(ifaces[i]->name);
+		
+		QFile file(filename);
+		std::cout << "filename: " << filename.toStdString() << std::endl;
+
+		if(file.open(QIODevice::WriteOnly))
+		{
+			/*
+			 * DEVICE=eth0
+			 * HWADDR=08:00:27:C9:2D:87
+			 * IPADDR=208.164.186.1
+			 * NETMASK=255.255.255.0
+			 * ONBOOT=yes
+			 * BOOTPROTO=none
+			 */
+
+			file.write("# This file was automatically generated by the " PROGRAM_NAME " program\n\n");
+			file.write("DEVICE="); file.write(ifaces[i]->name.toStdString().c_str()); file.write("\n");
+			file.write("HWADDR="); file.write(ifaces[i]->mac.toStdString().c_str()); file.write("\n");
+// 			file.write("TYPE=Ethernet\n");
+			if(ifaces[i]->ip.length() > 0 && ifaces[i]->subnetMask.length() > 0)
+			{
+				file.write("IPADDR="); file.write(ifaces[i]->ip.toStdString().c_str()); file.write("\n");
+				file.write("NETMASK="); file.write(ifaces[i]->subnetMask.toStdString().c_str()); file.write("\n");
+				file.write("BOOTPROTO=static\n");
+			}
+			else
+				file.write("BOOTPROTO=none\n");				
+// 			file.write("UUID=0a52f5f1-00ee-4239-b86c-fdd2ef7b0d41\n"); //this field is only used by network manager
+			file.write("ONBOOT=yes\n");
+			file.write("NM_CONTROLLED=no\n");
+		}
+		file.close();
 	}
-	
+#endif
+
 	if(!machine->saveSettings())
 	{
 		std::cout << "saveSettings(): false" << std::endl;
@@ -315,15 +549,18 @@ void VirtualMachine::populateIfaces()
 	for(int i = 0; i < ifaces_size; i++)
 	{
 // 		Iface(enabled, mac, cableConnected, attachmentType, attachmentData, name, ip, subnetMask);
-		Iface *iface = new Iface(
-			machine->getIfaceEnabled(networkAdapter_vec.at(i)),
-			machine->getIfaceMac(networkAdapter_vec.at(i)),
-			machine->getIfaceCableConnected(networkAdapter_vec.at(i)),
-			machine->getAttachmentType(networkAdapter_vec.at(i)),
-			machine->getAttachmentData(networkAdapter_vec.at(i), machine->getAttachmentType(networkAdapter_vec.at(i)))
+		ifaces[i] = new Iface(
+			  machine->getIfaceEnabled(networkAdapter_vec.at(i))
+			, machine->getIfaceMac(networkAdapter_vec.at(i))
+			, machine->getIfaceCableConnected(networkAdapter_vec.at(i))
+			, machine->getAttachmentType(networkAdapter_vec.at(i))
+			, machine->getAttachmentData(networkAdapter_vec.at(i), machine->getAttachmentType(networkAdapter_vec.at(i)))
+			, getName(i)
+#ifdef CONFIGURABLE_IP
+			, getIp(i)
+			, getSubnetMask(i)
+#endif
 		);
-
-		ifaces[i] = iface;
 	}
 
 	while(networkAdapter_vec.size() > 0)
@@ -365,12 +602,14 @@ bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *valu
 		case IFACE_IP:
 		{
 			QString *ip = (QString *)value_ptr;
-			return ifaces[iface]->setIp(*ip);
+// 			return ifaces[iface]->setIp(*ip);
+			break;
 		}
 		case IFACE_SUBNETMASK:
 		{
 			QString *subnetMask = (QString *)value_ptr;
-			return ifaces[iface]->setSubnetMask(*subnetMask);
+// 			return ifaces[iface]->setSubnetMask(*subnetMask);
+			break;
 		}
 #endif
 		case IFACE_ATTACHMENT_TYPE:

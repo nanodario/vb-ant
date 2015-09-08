@@ -30,10 +30,6 @@ int main(int argc, char** argv)
 	QApplication app(argc, argv);
 	QStringList args = QApplication::arguments();
 
-	/* TODO verificare che il modulo nbd sia caricato
-	 * prima dell'avvio dell'interfaccia grafica
-	 */
-	
 	if(OSBridge::checkNbdModule())
 		std::cout << "Module nbd loaded" << std::endl;
 	else

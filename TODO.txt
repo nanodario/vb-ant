@@ -1,6 +1,7 @@
 OK	Aggiungere header GPLv2 ad ogni file
 	Clonazione nuova macchina da "golden copy"
-	Salvataggio impostazioni IP su macchina virtuale
+OK	Salvataggio impostazioni hardware su macchina virtuale
+OK	Salvataggio impostazioni IP su macchina virtuale
 	Salvataggio impostazioni della singola macchina su file
 	Salvataggio impostazioni parco macchine su file
 

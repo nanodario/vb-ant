@@ -79,20 +79,19 @@ VMTabSettings::~VMTabSettings()
 
 void VMTabSettings::refreshTable()
 {
-// 	ifaces = vm->getIfaces();
-
+	vm->mountVpartition(OS_PARTITION_NUMBER);
 	for(int row = 0; row < ifaces_table->rowCount(); row++)
 	{
 		bool enabled = ifaces_table->operator[](row)->enabled;
-		QString name = QString("test%1").arg(row);
 		QString mac = ifaces_table->operator[](row)->mac;
 		bool cableConnected = ifaces_table->operator[](row)->cableConnected;
 		uint32_t attachmentType = ifaces_table->operator[](row)->attachmentType;
-#ifdef CONFIGURABLE_IP
-		QString ip = vm->getIp(row); //QString("10.10.10.%1").arg(row);
-		QString subnetMask = vm->getSubnetMask(row); //QString("%1").arg(row);
-#endif
 		QString attachmentData = ifaces_table->operator[](row)->attachmentData;
+		QString name = ifaces_table->operator[](row)->name;
+#ifdef CONFIGURABLE_IP
+		QString ip = ifaces_table->operator[](row)->ip;
+		QString subnetMask = ifaces_table->operator[](row)->subnetMask;
+#endif
 		
 #ifdef CONFIGURABLE_IP
 		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, attachmentData, name, ip, subnetMask);
@@ -100,6 +99,7 @@ void VMTabSettings::refreshTable()
 		ifaces_table->setIface(row, enabled, mac, cableConnected, attachmentType, attachmentData, name);
 #endif
 	}
+	vm->umountVpartition(OS_PARTITION_NUMBER);
 }
 
 void VMTabSettings::refreshTableUI()
@@ -108,15 +108,15 @@ void VMTabSettings::refreshTableUI()
 	for(int row = 0; row < ifaces_table->rowCount(); row++)
 	{
 		ifaces_table->setIfaceEnabled(row, ifaces_table->operator[](row)->enabled);
-		ifaces_table->setName(row, ifaces_table->operator[](row)->name);
 		ifaces_table->setMac(row, ifaces_table->operator[](row)->mac);
 		ifaces_table->setCableConnected(row, ifaces_table->operator[](row)->cableConnected);
 		ifaces_table->setAttachmentType(row, ifaces_table->operator[](row)->attachmentType);
-#ifdef CONFIGURABLE_IP
-		ifaces_table->setIp(row, vm->getIp(row));
-		ifaces_table->setSubnetMask(row, vm->getSubnetMask(row));
-#endif
 		ifaces_table->setAttachmentData(row, ifaces_table->operator[](row)->attachmentData);
+		ifaces_table->setName(row, ifaces_table->operator[](row)->name);
+#ifdef CONFIGURABLE_IP
+		ifaces_table->setIp(row, ifaces_table->operator[](row)->ip);
+		ifaces_table->setSubnetMask(row, ifaces_table->operator[](row)->subnetMask);
+#endif
 	}
 	ifaces_table->blockSignals(false);
 }

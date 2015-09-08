@@ -628,7 +628,6 @@ QString MachineBridge::getHardDiskFilePath()
 		if(medium != NULL)
 		{
 			NS_CHECK_AND_DEBUG_ERROR(medium, GetLocation(getter_Copies(path)), rc);
-			std::cout << "[" << getName().toStdString() << "] -> medium[" << i << "] path: " << returnQStringValue(path).toStdString() << std::endl;
 			return returnQStringValue(path);
 		}
 	}

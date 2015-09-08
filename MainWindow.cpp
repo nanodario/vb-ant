@@ -95,7 +95,6 @@ MainWindow::~MainWindow()
 
 	while(!VMTabSettings_vec.empty())
 	{
-		VMTabSettings_vec.back()->vm->umountVHD();
 		delete VMTabSettings_vec.back();
 		VMTabSettings_vec.pop_back();
 	}
