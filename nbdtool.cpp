@@ -73,7 +73,7 @@ int check_module_inuse(kmod_module *mod)
 
 	if (kmod_module_get_refcnt(mod) != 0)
 	{
-		std::cerr << "Module " << kmod_module_get_name(mod) << "is in use" << std::endl;
+		std::cerr << "Module " << kmod_module_get_name(mod) << " is in use" << std::endl;
 		return -EBUSY;
 	}
 
@@ -269,6 +269,13 @@ int do_mountVHD(std::string source, std::string target)
 	argv_new[3] = (char *)malloc(sizeof(char) * (source.length() + 1)); strcpy(argv_new[3], source.c_str());
 	argv_new[4] = NULL;
 
+	int retval = setuid(0);
+	if(retval != 0)
+	{
+		perror("setuid(): ");
+		return retval;
+	}
+
 	return execute_cmd(5, argv_new);
 }
 
@@ -284,6 +291,13 @@ int do_umountVHD(std::string target)
 	argv_new[2] = (char *)malloc(sizeof(char) * (target.length() + 1)); strcpy(argv_new[2], target.c_str());
 	argv_new[3] = NULL;
 
+	int retval = setuid(0);
+	if(retval != 0)
+	{
+		perror("setuid(): ");
+		return retval;
+	}
+
 	return execute_cmd(4, argv_new);
 }
 
@@ -291,7 +305,13 @@ int do_mount(std::string source, std::string mountpoint, bool readonly = false)
 {
 	std::string cmd = "mount";
 
-	int retval;
+	int retval = setuid(0);
+
+	if(retval != 0)
+	{
+		perror("setuid(): ");
+		return retval;
+	}
 
 	if(readonly)
 	{
@@ -333,6 +353,13 @@ int do_umount(std::string mountpoint)
 	argv_new[1] = (char *)malloc(sizeof(char) * (mountpoint.length() + 1)); strcpy(argv_new[1], mountpoint.c_str());
 	argv_new[2] = NULL;
 
+	int retval = setuid(0);
+	if(retval != 0)
+	{
+		perror("setuid(): ");
+		return retval;
+	}
+
 	return execute_cmd(3, argv_new);
 }
 
@@ -352,6 +379,9 @@ int main(int argc, char **argv)
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 #endif
+
+	uid_t original_uid = getuid();
+	uid_t original_gid = getgid();
 
 	int retval = -1;
 
@@ -401,19 +431,34 @@ int main(int argc, char **argv)
 	{
 		if(!strcmp(argv[1], "load"))
 		{
-			if(argc > 3 && atoi(argv[2]) && atoi(argv[3]))
-				retval = insert_module(atoi(argv[2]), atoi(argv[3]));
-			else if(argc > 2 && atoi(argv[2]))
-				retval = insert_module(atoi(argv[2]));
+			if(setuid(0) == 0 && setgid(0) == 0)
+			{
+				if(argc > 3 && atoi(argv[2]) && atoi(argv[3]))
+					retval = insert_module(atoi(argv[2]), atoi(argv[3]));
+				else if(argc > 2 && atoi(argv[2]))
+					retval = insert_module(atoi(argv[2]));
+				else
+					retval = insert_module();
+				std::cout << "nbd module is" << (check_module() == 0 ? " " : " not ") << "loaded" << std::endl;
+			}
 			else
-				retval = insert_module();
-
-			std::cout << "nbd module is" << (check_module() == 0 ? " " : " not ") << "loaded" << std::endl;
+			{
+				std::cerr << "*** " << getpid() << " *** ERROR: can't set uid/gid" << std::endl;
+				retval = -1;
+			}
 		}
 		else if(!strcmp(argv[1], "unload"))
 		{
-			retval = remove_module();
-			std::cout << "nbd module is" << (check_module() == 0 ? " " : " not ") << "loaded" << std::endl;
+			if(setuid(0) == 0 && setgid(0) == 0)
+			{
+				retval = remove_module();
+				std::cout << "nbd module is" << (check_module() == 0 ? " " : " not ") << "loaded" << std::endl;
+			}
+			else
+			{
+				std::cerr << "*** " << getpid() << " *** ERROR: can't set uid/gid" << std::endl;
+				retval = -1;
+			}
 		}
 		else if(!strcmp(argv[1], "check"))
 		{
@@ -427,6 +472,9 @@ int main(int argc, char **argv)
 		retval = check_module();
 		std::cout << "nbd module is" << (retval == 0 ? " " : " not ") << "loaded" << std::endl;	
 	}
+
+	setuid(original_uid);
+	setgid(original_gid);
 
 	return retval;
 }
