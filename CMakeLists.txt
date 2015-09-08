@@ -86,7 +86,14 @@ else()
 	message("-- OS partition number: 1")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_FLAG")
+if($ENV{DEBUG_FLAG})
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_FLAG")
+        message("-- Debug output: enabled")
+else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -UDEBUG_FLAG")
+        message("-- Debug output: disabled")
+endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar")
 set(SYSTEM_LIBS
 	"pthread"
