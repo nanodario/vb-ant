@@ -53,20 +53,22 @@ class MainWindow : public QMainWindow
 	private slots:
 	// 	void slotAddMachine();
 		void slotInfo();
-		void slotActionNew();
-		void slotActionOpen();
-		bool slotActionSave();
-		bool slotActionSaveAs();
+// 		void slotActionNew();
+// 		void slotActionOpen();
+// 		bool slotActionSave();
+// 		bool slotActionSaveAs();
 		void currentChangedSlot(int tab);
+		void slotClone();
+		void slotRemove();
+		void slotStartAll();
+		void slotInterrompiAll();
 		void slotStart();
-		void slotReset();
 		void slotPause();
+		void slotReset();
 		void slotStop();
-		void slotSettings();
+// 		void slotSettings();
 		void slotStateChange(MachineBridge *machine, uint32_t state);
 		void slotNetworkAdapterChange(MachineBridge *machine, INetworkAdapter *nic);
-		void slotOpenCloneDialog();
-		void slotRemove();
 
 	private:
 		bool queryClose();

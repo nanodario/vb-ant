@@ -74,24 +74,31 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	}
 
 	connect(ui->actionInfo_su, SIGNAL(triggered(bool)), this, SLOT(slotInfo()));
-	connect(ui->actionNew, SIGNAL(triggered(bool)), this, SLOT(slotActionNew()));
-	connect(ui->actionopen, SIGNAL(triggered(bool)), this, SLOT(slotActionOpen()));
-	connect(ui->actionSave, SIGNAL(triggered(bool)), this, SLOT(slotActionSave()));
-	connect(ui->actionSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotActionSaveAs()));
+// 	connect(ui->actionNew, SIGNAL(triggered(bool)), this, SLOT(slotActionNew()));
+// 	connect(ui->actionopen, SIGNAL(triggered(bool)), this, SLOT(slotActionOpen()));
+// 	connect(ui->actionSave, SIGNAL(triggered(bool)), this, SLOT(slotActionSave()));
+// 	connect(ui->actionSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotActionSaveAs()));
 	connect(ui->vm_tabs, SIGNAL(currentChanged(int)), this, SLOT(currentChangedSlot(int)));
+
+	connect(ui->actionClona, SIGNAL(triggered(bool)), this, SLOT(slotClone()));
+	connect(ui->actionElimina, SIGNAL(triggered(bool)), this, SLOT(slotRemove()));
+	connect(ui->actionAvviaAll, SIGNAL(triggered(bool)), this, SLOT(slotStartAll()));
+	connect(ui->actionInterrompiAll, SIGNAL(triggered(bool)), this, SLOT(slotInterrompiAll()));
 	connect(ui->actionAvvia, SIGNAL(triggered(bool)), this, SLOT(slotStart()));
 	connect(ui->actionPausa, SIGNAL(triggered(bool)), this, SLOT(slotPause()));
 	connect(ui->actionReset, SIGNAL(triggered(bool)), this, SLOT(slotReset()));
 	connect(ui->actionInterrompi, SIGNAL(triggered(bool)), this, SLOT(slotStop()));
-	connect(ui->actionImpostazioni, SIGNAL(triggered(bool)), this, SLOT(slotSettings()));
-	connect(ui->actionClona, SIGNAL(triggered(bool)), this, SLOT(slotOpenCloneDialog()));
-	connect(ui->actionElimina, SIGNAL(triggered(bool)), this, SLOT(slotRemove()));
-	
-	connect(ui->toolbarAvvia, SIGNAL(triggered(bool)), ui->actionAvvia, SIGNAL(triggered(bool)));
-	connect(ui->toolbarPausa, SIGNAL(triggered(bool)), ui->actionPausa, SIGNAL(triggered(bool)));
-	connect(ui->toolbarImpostazioni, SIGNAL(triggered(bool)), ui->actionImpostazioni, SIGNAL(triggered(bool)));
+// 	connect(ui->actionImpostazioni, SIGNAL(triggered(bool)), this, SLOT(slotSettings()));
+
 	connect(ui->toolbarClona, SIGNAL(triggered(bool)), ui->actionClona, SIGNAL(triggered(bool)));
 	connect(ui->toolbarElimina, SIGNAL(triggered(bool)), ui->actionElimina, SIGNAL(triggered(bool)));
+	connect(ui->toolbarAvviaAll, SIGNAL(triggered(bool)), ui->actionAvviaAll, SIGNAL(triggered(bool)));
+	connect(ui->toolbarInterrompiAll, SIGNAL(triggered(bool)), ui->actionInterrompiAll, SIGNAL(triggered(bool)));
+	connect(ui->toolbarAvvia, SIGNAL(triggered(bool)), ui->actionAvvia, SIGNAL(triggered(bool)));
+	connect(ui->toolbarPausa, SIGNAL(triggered(bool)), ui->actionPausa, SIGNAL(triggered(bool)));
+	connect(ui->toolbarReset, SIGNAL(triggered(bool)), ui->actionReset, SIGNAL(triggered(bool)));
+	connect(ui->toolbarInterrompi, SIGNAL(triggered(bool)), ui->actionInterrompi, SIGNAL(triggered(bool)));
+// 	connect(ui->toolbarImpostazioni, SIGNAL(triggered(bool)), ui->actionImpostazioni, SIGNAL(triggered(bool)));
 }
 
 MainWindow::~MainWindow()
@@ -152,6 +159,7 @@ bool MainWindow::queryClose()
 	return true;
 }
 
+#if 0
 void MainWindow::slotActionNew()
 {
 	std::cout << "[" << __func__ << "]" << std::endl;
@@ -217,6 +225,7 @@ bool MainWindow::slotActionSaveAs()
 	return slotActionSave();
 // 	return true;
 }
+#endif
 
 void MainWindow::slotInfo()
 {
@@ -228,9 +237,56 @@ void MainWindow::currentChangedSlot(int tab)
 	refreshUI(tab);
 }
 
+void MainWindow::slotStartAll()
+{
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::question(this, "Avvio multiplo macchine", "Avviare tutte le macchine abilitate?", QMessageBox::Yes|QMessageBox::No);
+
+	if (reply != QMessageBox::Yes)
+		return;
+
+	for(int i = 0; i < ui->vm_tabs->count(); i++)
+	{
+		if(VMTabSettings_vec.at(i)->vm_enabled->isChecked())
+		{
+			uint32_t machineState = VMTabSettings_vec.at(i)->machine->getState();
+
+			if(machineState != MachineState::Running ||
+				machineState != MachineState::Paused ||
+				machineState != MachineState::Starting)
+			{
+				VMTabSettings_vec.at(i)->vm->start();
+
+				uint32_t machineState = VMTabSettings_vec.at(i)->machine->getState();
+				setSettingsPolicy(i, machineState);
+
+				refreshUI(i);
+			}
+		}
+	}
+}
+
+void MainWindow::slotInterrompiAll()
+{
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::question(this, "Chiusura multipla macchine", "Arrestare tutte le macchine virtuali?", QMessageBox::Yes|QMessageBox::No);
+
+	if (reply != QMessageBox::Yes)
+		return;
+
+	for(int i = 0; i < ui->vm_tabs->count(); i++)
+	{
+		uint32_t machineState = VMTabSettings_vec.at(i)->machine->getState();
+
+		if(machineState == MachineState::Running ||
+		   machineState == MachineState::Paused ||
+		   machineState == MachineState::Starting)
+			VMTabSettings_vec.at(i)->vm->stop();
+	}
+}
+
 void MainWindow::slotStart()
 {
-// 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->lockSettings();
 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->start();
 
 	uint32_t machineState = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->getState();
@@ -273,12 +329,14 @@ void MainWindow::slotStop()
 	}
 }
 
+#if 0
 void MainWindow::slotSettings()
 {
 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->openSettings();
 }
+#endif
 
-void MainWindow::slotOpenCloneDialog()
+void MainWindow::slotClone()
 {
 	CloneDialog *c = new CloneDialog(this);
 	c->exec();
@@ -403,36 +461,44 @@ void MainWindow::refreshUI(int tab)
 		case MachineState::Running:
 		{
 			ui->actionClona->setEnabled(false);
+			ui->actionElimina->setEnabled(false);
+			ui->actionAvviaAll->setEnabled(true);
+			ui->actionInterrompiAll->setEnabled(true);
 			ui->actionAvvia->setEnabled(false);
-			ui->actionPausa->setEnabled(true);
-			ui->actionPausa->setChecked(false);
+			ui->actionPausa->setEnabled(true); ui->actionPausa->setChecked(false);
 			ui->actionReset->setEnabled(true);
 			ui->actionInterrompi->setEnabled(true);
-			ui->actionElimina->setEnabled(false);
 
 			ui->toolbarClona->setEnabled(false);
-			ui->toolbarAvvia->setEnabled(false);
-			ui->toolbarPausa->setEnabled(true);
-			ui->toolbarPausa->setChecked(false);
 			ui->toolbarElimina->setEnabled(false);
+			ui->toolbarAvviaAll->setEnabled(true);
+			ui->toolbarInterrompiAll->setEnabled(true);
+			ui->toolbarAvvia->setEnabled(false);
+			ui->toolbarPausa->setEnabled(true); ui->toolbarPausa->setChecked(false);
+			ui->toolbarReset->setEnabled(true);
+			ui->toolbarInterrompi->setEnabled(true);
 			break;
 		}
 
 		case MachineState::Paused:
 		{
 			ui->actionClona->setEnabled(false);
+			ui->actionElimina->setEnabled(false);
+			ui->actionAvviaAll->setEnabled(true);
+			ui->actionInterrompiAll->setEnabled(true);
 			ui->actionAvvia->setEnabled(false);
-			ui->actionPausa->setEnabled(true);
-			ui->actionPausa->setChecked(true);
+			ui->actionPausa->setEnabled(true); ui->actionPausa->setChecked(true);
 			ui->actionReset->setEnabled(false);
 			ui->actionInterrompi->setEnabled(true);
-			ui->actionElimina->setEnabled(false);
 			
 			ui->toolbarClona->setEnabled(false);
-			ui->toolbarAvvia->setEnabled(false);
-			ui->toolbarPausa->setEnabled(true);
-			ui->toolbarPausa->setChecked(true);
 			ui->toolbarElimina->setEnabled(false);
+			ui->toolbarAvviaAll->setEnabled(true);
+			ui->toolbarInterrompiAll->setEnabled(true);
+			ui->toolbarAvvia->setEnabled(false);
+			ui->toolbarPausa->setEnabled(true); ui->toolbarPausa->setChecked(true);
+			ui->toolbarReset->setEnabled(false);
+			ui->toolbarInterrompi->setEnabled(true);
 			break;
 		}
 
@@ -440,18 +506,22 @@ void MainWindow::refreshUI(int tab)
 		default:
 		{
 			ui->actionClona->setEnabled(true);
+			ui->actionElimina->setEnabled(true);
+			ui->actionAvviaAll->setEnabled(true);
+			ui->actionInterrompiAll->setEnabled(true);
 			ui->actionAvvia->setEnabled(true);
-			ui->actionPausa->setEnabled(false);
-			ui->actionPausa->setChecked(false);
+			ui->actionPausa->setEnabled(false); ui->actionPausa->setChecked(false);
 			ui->actionReset->setEnabled(false);
 			ui->actionInterrompi->setEnabled(false);
-			ui->actionElimina->setEnabled(true);
 			
 			ui->toolbarClona->setEnabled(true);
-			ui->toolbarAvvia->setEnabled(true);
-			ui->toolbarPausa->setEnabled(false);
-			ui->toolbarPausa->setChecked(false);
 			ui->toolbarElimina->setEnabled(true);
+			ui->toolbarAvviaAll->setEnabled(true);
+			ui->toolbarInterrompiAll->setEnabled(true);
+			ui->toolbarAvvia->setEnabled(true);
+			ui->toolbarPausa->setEnabled(false); ui->toolbarPausa->setChecked(false);
+			ui->toolbarReset->setEnabled(false);
+			ui->toolbarInterrompi->setEnabled(false);
 			break;
 		}
 	}

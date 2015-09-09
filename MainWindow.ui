@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>900</width>
     <height>600</height>
    </rect>
   </property>
@@ -32,7 +32,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>900</width>
      <height>21</height>
     </rect>
    </property>
@@ -46,12 +46,6 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="actionNew"/>
-    <addaction name="actionopen"/>
-    <addaction name="separator"/>
-    <addaction name="actionSave"/>
-    <addaction name="actionSaveAs"/>
-    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuMacchina">
@@ -61,11 +55,13 @@
     <addaction name="actionClona"/>
     <addaction name="actionElimina"/>
     <addaction name="separator"/>
+    <addaction name="actionAvviaAll"/>
+    <addaction name="actionInterrompiAll"/>
+    <addaction name="separator"/>
     <addaction name="actionAvvia"/>
     <addaction name="actionPausa"/>
     <addaction name="actionReset"/>
     <addaction name="actionInterrompi"/>
-    <addaction name="actionImpostazioni"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuMacchina"/>
@@ -97,16 +93,16 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionNew"/>
-   <addaction name="actionopen"/>
-   <addaction name="actionSave"/>
-   <addaction name="separator"/>
    <addaction name="toolbarClona"/>
+   <addaction name="toolbarElimina"/>
+   <addaction name="separator"/>
+   <addaction name="toolbarAvviaAll"/>
+   <addaction name="toolbarInterrompiAll"/>
    <addaction name="separator"/>
    <addaction name="toolbarAvvia"/>
    <addaction name="toolbarPausa"/>
-   <addaction name="toolbarImpostazioni"/>
-   <addaction name="toolbarElimina"/>
+   <addaction name="toolbarReset"/>
+   <addaction name="toolbarInterrompi"/>
   </widget>
   <action name="actionInfo_su">
    <property name="text">
@@ -307,7 +303,7 @@
      <normaloff>:/new/resources/vm_new_32px.png</normaloff>:/new/resources/vm_new_32px.png</iconset>
    </property>
    <property name="text">
-    <string>Clona...</string>
+    <string>Clona VM...</string>
    </property>
    <property name="toolTip">
     <string>Clona macchina virtuale</string>
@@ -329,6 +325,93 @@
    </property>
    <property name="text">
     <string>Elimina VM</string>
+   </property>
+  </action>
+  <action name="actionAvviaAll">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/start/resources/vm_start_16px.png</normaloff>:/start/resources/vm_start_16px.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Avvia tutte</string>
+   </property>
+   <property name="toolTip">
+    <string>Avvia tutte le macchine abilitate</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+A</string>
+   </property>
+  </action>
+  <action name="toolbarAvviaAll">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/start/resources/vm_start_32px.png</normaloff>:/start/resources/vm_start_32px.png</iconset>
+   </property>
+   <property name="text">
+    <string>Avvia tutte</string>
+   </property>
+   <property name="toolTip">
+    <string>Avvia tutte le macchine abilitate</string>
+   </property>
+  </action>
+  <action name="actionInterrompiAll">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/poweroff/resources/vm_poweroff_16px.png</normaloff>:/poweroff/resources/vm_poweroff_16px.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Interrompi tutte</string>
+   </property>
+   <property name="toolTip">
+    <string>Interrompi tutte le macchine virtuali avviate</string>
+   </property>
+  </action>
+  <action name="toolbarInterrompiAll">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/poweroff/resources/vm_poweroff_16px.png</normaloff>:/poweroff/resources/vm_poweroff_16px.png</iconset>
+   </property>
+   <property name="text">
+    <string>Interrompi tutte</string>
+   </property>
+   <property name="toolTip">
+    <string>Interrompi tutte le macchine virtuali avviate</string>
+   </property>
+  </action>
+  <action name="toolbarInterrompi">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/poweroff/resources/vm_poweroff_16px.png</normaloff>:/poweroff/resources/vm_poweroff_16px.png</iconset>
+   </property>
+   <property name="text">
+    <string>Interrompi</string>
+   </property>
+   <property name="toolTip">
+    <string>Interrompi macchina virtuale selezionata</string>
+   </property>
+  </action>
+  <action name="toolbarReset">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/reset/resources/vm_reset_16px.png</normaloff>:/reset/resources/vm_reset_16px.png</iconset>
+   </property>
+   <property name="text">
+    <string>Reset</string>
+   </property>
+   <property name="toolTip">
+    <string>Resetta macchina virtuale selezionata</string>
    </property>
   </action>
  </widget>
