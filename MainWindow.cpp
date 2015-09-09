@@ -139,23 +139,24 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 bool MainWindow::queryClose()
 {
-/*
-	// Se non ci sono cambiamenti non salvati
-	if (!ui->actionSave->isEnabled())
-		return true;
-
-	switch (QMessageBox::warning(this, "Chiudi documento",
-		"Sono presenti modifiche non salvate.\nSalvare i cambiamenti?",
-		QMessageBox::Discard | QMessageBox::Save | QMessageBox::Cancel))
+	for(int i = 0; i < VMTabSettings_vec.size(); i++)
 	{
-		case QMessageBox::Discard:
-			return true;
-		case QMessageBox::Save:
-			return slotSave();
-		case QMessageBox::Cancel:
-			return false;
+		uint32_t machineState = VMTabSettings_vec.at(i)->machine->getState();
+
+		if(machineState == MachineState::Running ||
+			machineState == MachineState::Paused ||
+			machineState == MachineState::Starting)
+		switch (QMessageBox::warning(this, "Chiudi " PROGRAM_NAME,
+			"Alcune macchine virtuali sono ancora avviate.\nUscire comunque?",
+			QMessageBox::Yes | QMessageBox::No))
+		{
+			case QMessageBox::Yes:
+				return true;
+			case QMessageBox::No:
+				return false;
+		}
 	}
-*/
+
 	return true;
 }
 
