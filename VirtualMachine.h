@@ -43,8 +43,11 @@ typedef enum
 	IFACE_ATTACHMENT_DATA
 } ifacekey_t;
 
+class MainWindow;
+
 class VirtualMachine
 {
+	friend class MainWindow;
 	public:
 		VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix);
 		~VirtualMachine();
@@ -59,6 +62,8 @@ class VirtualMachine
 		bool reset() const { return machine->reset(); };
 		bool shutdownVMProcess() const { return machine->shutdownVMProcess(); };
 		bool openSettings() const { return machine->openSettings(); };
+		IMachine *clone(QString qName, bool reInitIfaces);
+		bool remove();
 		bool saveSettings();
 		bool saveSettingsRunTime();
 		bool loadSettings(QString filename);

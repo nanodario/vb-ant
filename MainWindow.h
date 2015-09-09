@@ -44,11 +44,12 @@ class MainWindow : public QMainWindow
 	public:
 		explicit MainWindow(const QString &fileToOpen = QString(), QWidget *parent = 0);
 		~MainWindow();
+		void launchCloneProcess(QString qName, bool reInitIfaces);
 		VirtualBoxBridge *vboxbridge;
 		
 	protected:
 		void closeEvent(QCloseEvent *event);
-		
+	
 	private slots:
 	// 	void slotAddMachine();
 		void slotInfo();
@@ -64,6 +65,8 @@ class MainWindow : public QMainWindow
 		void slotSettings();
 		void slotStateChange(MachineBridge *machine, uint32_t state);
 		void slotNetworkAdapterChange(MachineBridge *machine, INetworkAdapter *nic);
+		void slotOpenCloneDialog();
+		void slotRemove();
 
 	private:
 		bool queryClose();

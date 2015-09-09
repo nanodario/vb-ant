@@ -60,7 +60,9 @@
  */
 #include "VirtualBox_XPCOM.h"
 #include "Iface.h"
+#include "OSBridge.h"
 #include <QVector>
+#include <QFile>
 
 /*
  * HACK This code interacts with VirtualBox API every 500 ms. This is needed
@@ -396,90 +398,129 @@ std::vector<nsCOMPtr<INATNetwork> > VirtualBoxBridge::getNatNetworks()
 	return natNetworks_vec;
 }
 
-#if 0
-void UIMachineSettingsNetworkPage::refreshInternalNetworkList(bool fFullRefresh /* = false */)
+IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *m)
 {
-/* Reload internal network list: */
-m_internalNetworkList.clear();
-/* Get internal network names from other VMs: */
-if (fFullRefresh)
-	m_internalNetworkList << otherInternalNetworkList();
-/* Append internal network list with names from all the tabs: */
-for (int iTab = 0; iTab < m_pTwAdapters->count(); ++iTab)
-{
-UIMachineSettingsNetwork *pTab = qobject_cast<UIMachineSettingsNetwork*>(m_pTwAdapters->widget(iTab));
-if (pTab)
-{
-QString strName = pTab->alternativeName(KNetworkAttachmentType_Internal);
-if (!strName.isEmpty() && !m_internalNetworkList.contains(strName))
-	m_internalNetworkList << strName;
-}
-}
+	nsXPIDLString name; name.AssignWithConversion(qName.toStdString().c_str());
+	nsXPIDLString osTypeId;
+	nsresult rc;
+
+	m->GetOSTypeId(getter_Copies(osTypeId));
+
+	IMachine *new_machine;
+	IProgress *progress;
+
+	NS_CHECK_AND_DEBUG_ERROR(virtualBox, FindMachine(name, &new_machine), rc);
+	if(rc != VBOX_E_OBJECT_NOT_FOUND)
+	{
+		std::cout << "machine: " << &new_machine << std::endl;
+		return NULL;
+	}
+
+	nsXPIDLString settingsFile;
+	virtualBox->ComposeMachineFilename(name, NULL, NULL, NULL, getter_Copies(settingsFile));
+	std::cout << "Predicted settings file name: " << returnQStringValue(settingsFile).toStdString() << std::endl;
+
+	QFile file(returnQStringValue(settingsFile));
+	QFile file_prev(returnQStringValue(settingsFile).append("-prev"));
+
+	if(file.exists())
+	{
+		if(file.remove())
+			std::cerr  << "Deleted old settings file: " << file.fileName().toStdString() << std::endl;
+		else
+			std::cerr  << "Error while deleting old settings file: " << file.fileName().toStdString() << std::endl;
+	}
+	if(file_prev.exists())
+	{
+		if(file_prev.remove())
+			std::cerr  << "Deleted old backup settings file: " << file_prev.fileName().toStdString() << std::endl;
+		else
+			std::cerr  << "Error while deleting old backup settings file: " << file_prev.fileName().toStdString() << std::endl;
+	}
+	
+	NS_CHECK_AND_DEBUG_ERROR(virtualBox, CreateMachine(NULL, name, 0, NULL, osTypeId, NULL, &new_machine), rc);
+	if(NS_FAILED(rc))
+		return NULL;
+
+	std::cout << "Machine " << qName.toStdString() << " created" << std::endl;
+
+	if(!reInitIfaces)
+	{
+		uint32_t clone_options[1];
+		clone_options[0] = CloneOptions::KeepAllMACs;
+		NS_CHECK_AND_DEBUG_ERROR(m, CloneTo(new_machine, CloneMode::MachineState, 1, clone_options, &progress), rc);
+	}
+	else
+		NS_CHECK_AND_DEBUG_ERROR(m, CloneTo(new_machine, CloneMode::MachineState, 0, NULL, &progress), rc);
+
+	if(NS_FAILED(rc))
+		return NULL;
+	
+	std::cout << "Machine " << qName.toStdString() << " cloned" << std::endl;
+	int32_t resultCode;
+	progress->WaitForCompletion(-1);
+	progress->GetResultCode(&resultCode);
+	
+	if (resultCode != 0) // check success
+	{
+		std::cout << "Error during clone process: " << resultCode << std::endl;
+		return NULL;
+	}
+
+	NS_CHECK_AND_DEBUG_ERROR(virtualBox, RegisterMachine(new_machine), rc);
+	if(NS_FAILED(rc))
+		return NULL;
+	
+	std::cout << "Machine " << qName.toStdString() << " registered" << std::endl;
+	return new_machine;
 }
 
-void UIMachineSettingsNetworkPage::refreshHostInterfaceList()
+bool VirtualBoxBridge::deleteVM(IMachine *m)
 {
-/* Reload host-only interface list: */
-m_hostInterfaceList.clear();
-const CHostNetworkInterfaceVector &ifaces = vboxGlobal().host().GetNetworkInterfaces();
-for (int i = 0; i < ifaces.size(); ++i)
-{
-const CHostNetworkInterface &iface = ifaces[i];
-if (iface.GetInterfaceType() == KHostNetworkInterfaceType_HostOnly && !m_hostInterfaceList.contains(iface.GetName()))
-	m_hostInterfaceList << iface.GetName();
-}
-}
+	uint32_t medias_size;
+	IMedium ** medias;
+	nsresult rc;
 
-void UIMachineSettingsNetworkPage::refreshGenericDriverList(bool fFullRefresh /* = false */)
-{
-/* Load generic driver list: */
-m_genericDriverList.clear();
-/* Get generic driver names from other VMs: */
-if (fFullRefresh)
-	m_genericDriverList << otherGenericDriverList();
-/* Append generic driver list with names from all the tabs: */
-for (int iTab = 0; iTab < m_pTwAdapters->count(); ++iTab)
-{
-UIMachineSettingsNetwork *pTab = qobject_cast<UIMachineSettingsNetwork*>(m_pTwAdapters->widget(iTab));
-if (pTab)
-{
-QString strName = pTab->alternativeName(KNetworkAttachmentType_Generic);
-if (!strName.isEmpty() && !m_genericDriverList.contains(strName))
-	m_genericDriverList << strName;
-}
-}
-}
+	NS_CHECK_AND_DEBUG_ERROR(m, Unregister(CleanupMode::Full, &medias_size, &medias), rc);
+	if(NS_FAILED(rc))
+		return false;
+	
+	std::cout << "medias_size: " << medias_size << std::endl;
 
-void UIMachineSettingsNetworkPage::refreshNATNetworkList()
-{
-/* Reload NAT network list: */
-m_natNetworkList.clear();
-const CNATNetworkVector &nws = vboxGlobal().virtualBox().GetNATNetworks();
-for (int i = 0; i < nws.size(); ++i)
-{
-const CNATNetwork &nw = nws[i];
-m_natNetworkList << nw.GetNetworkName();
-}
-}
+	bool succeeded = true;
+	for(int i = 0; i < medias_size; i++)
+	{
+		nsXPIDLString media_name;
+		nsXPIDLString media_location;
+		medias[i]->GetName(getter_Copies(media_name));
+		medias[i]->GetLocation(getter_Copies(media_location));
 
-/* static */
-QStringList UIMachineSettingsNetworkPage::otherInternalNetworkList()
-{
-/* Load total internal network list of all VMs: */
-CVirtualBox vbox = vboxGlobal().virtualBox();
-QStringList otherInternalNetworks(QList<QString>::fromVector(vbox.GetInternalNetworks()));
-return otherInternalNetworks;
+		std::cout << "Deleting media " << returnQStringValue(media_name).toStdString()
+		<< " (" << returnQStringValue(media_location).toStdString() << ")" << std::endl;
+		
+		IProgress *progress;
+		int32_t resultCode;
+		medias[i]->DeleteStorage(&progress);
+		progress->WaitForCompletion(-1);
+		progress->GetResultCode(&resultCode);
+		
+		if(resultCode != 0)
+		{
+			succeeded= false;
+			std::cerr << "Error while deleting media " << returnQStringValue(media_name).toStdString()
+				<< " (" << returnQStringValue(media_location).toStdString() << ")" << std::endl;
+		}
+		
+		if(resultCode == 0)
+		{
+			QFile media_file(returnQStringValue(media_location));
+			if(media_file.exists())
+				media_file.remove();
+		}
+	}
+	
+	return succeeded;
 }
-
-/* static */
-QStringList UIMachineSettingsNetworkPage::otherGenericDriverList()
-{
-/* Load total generic driver list of all VMs: */
-CVirtualBox vbox = vboxGlobal().virtualBox();
-QStringList otherGenericDrivers(QList<QString>::fromVector(vbox.GetGenericNetworkDrivers()));
-return otherGenericDrivers;
-}
-#endif
 
 QString VirtualBoxBridge::getVBoxVersion()
 {

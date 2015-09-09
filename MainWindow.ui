@@ -58,7 +58,7 @@
     <property name="title">
      <string>&amp;Macchina</string>
     </property>
-    <addaction name="actionCrea"/>
+    <addaction name="actionClona"/>
     <addaction name="actionElimina"/>
     <addaction name="separator"/>
     <addaction name="actionAvvia"/>
@@ -101,7 +101,7 @@
    <addaction name="actionopen"/>
    <addaction name="actionSave"/>
    <addaction name="separator"/>
-   <addaction name="toolbarCrea"/>
+   <addaction name="toolbarClona"/>
    <addaction name="separator"/>
    <addaction name="toolbarAvvia"/>
    <addaction name="toolbarPausa"/>
@@ -184,13 +184,16 @@
     <string>Ctrl+S</string>
    </property>
   </action>
-  <action name="actionCrea">
+  <action name="actionClona">
    <property name="icon">
     <iconset resource="res.qrc">
      <normaloff>:/new/resources/vm_new_16px.png</normaloff>:/new/resources/vm_new_16px.png</iconset>
    </property>
    <property name="text">
-    <string>&amp;Crea VM...</string>
+    <string>&amp;Clona VM...</string>
+   </property>
+   <property name="toolTip">
+    <string>Clona macchina virtuale</string>
    </property>
   </action>
   <action name="actionImpostazioni">
@@ -298,13 +301,16 @@
     <string>Impostazioni</string>
    </property>
   </action>
-  <action name="toolbarCrea">
+  <action name="toolbarClona">
    <property name="icon">
     <iconset resource="res.qrc">
      <normaloff>:/new/resources/vm_new_32px.png</normaloff>:/new/resources/vm_new_32px.png</iconset>
    </property>
    <property name="text">
-    <string>Crea...</string>
+    <string>Clona...</string>
+   </property>
+   <property name="toolTip">
+    <string>Clona macchina virtuale</string>
    </property>
   </action>
   <action name="actionElimina">

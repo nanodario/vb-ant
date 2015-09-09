@@ -115,6 +115,7 @@ static void *knockAPI(void *tparam);
 class VirtualBoxBridge
 {
 	friend class MachineBridge;
+	friend class VirtualMachine;
 
 	public:
 		VirtualBoxBridge();
@@ -129,6 +130,8 @@ class VirtualBoxBridge
 		std::vector<QString> getGenericDriversList();
 		std::vector<QString> getInternalNetworkList();
 		std::vector<nsCOMPtr<INATNetwork> > getNatNetworks();
+		IMachine *cloneVM(QString name, bool reInitIfaces, IMachine *m);
+		bool deleteVM(IMachine *m);
 
 	private:
 		bool initXPCOM();

@@ -354,6 +354,22 @@ QString VirtualMachine::getSubnetMask(uint32_t iface)
 	return iface_subnetMask;
 }
 
+IMachine *VirtualMachine::clone(QString qName, bool reInitIfaces)
+{
+	return machine->vboxbridge->cloneVM(qName, reInitIfaces, machine->machine);
+}
+
+bool VirtualMachine::remove()
+{
+	uint32_t machineState = machine->getState();
+	if(machineState == MachineState::Paused ||
+	   machineState == MachineState::Starting ||
+	   machineState == MachineState::Running)
+		return false;
+
+	return machine->vboxbridge->deleteVM(machine->machine);
+}
+
 bool VirtualMachine::saveSettings()
 {
 	bool succeeded = true;

@@ -38,6 +38,7 @@
 #include "InfoDialog.h"
 #include "VirtualBoxBridge.h"
 #include "OSBridge.h"
+#include "CloneDialog.h"
 
 MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 : QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge()), machines_vec(vboxbridge->getMachines(this))
@@ -83,10 +84,14 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionReset, SIGNAL(triggered(bool)), this, SLOT(slotReset()));
 	connect(ui->actionInterrompi, SIGNAL(triggered(bool)), this, SLOT(slotStop()));
 	connect(ui->actionImpostazioni, SIGNAL(triggered(bool)), this, SLOT(slotSettings()));
+	connect(ui->actionClona, SIGNAL(triggered(bool)), this, SLOT(slotOpenCloneDialog()));
+	connect(ui->actionElimina, SIGNAL(triggered(bool)), this, SLOT(slotRemove()));
 	
 	connect(ui->toolbarAvvia, SIGNAL(triggered(bool)), ui->actionAvvia, SIGNAL(triggered(bool)));
 	connect(ui->toolbarPausa, SIGNAL(triggered(bool)), ui->actionPausa, SIGNAL(triggered(bool)));
 	connect(ui->toolbarImpostazioni, SIGNAL(triggered(bool)), ui->actionImpostazioni, SIGNAL(triggered(bool)));
+	connect(ui->toolbarClona, SIGNAL(triggered(bool)), ui->actionClona, SIGNAL(triggered(bool)));
+	connect(ui->toolbarElimina, SIGNAL(triggered(bool)), ui->actionElimina, SIGNAL(triggered(bool)));
 }
 
 MainWindow::~MainWindow()
@@ -273,6 +278,69 @@ void MainWindow::slotSettings()
 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->openSettings();
 }
 
+void MainWindow::slotOpenCloneDialog()
+{
+	CloneDialog *c = new CloneDialog(this);
+	c->exec();
+}
+
+void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
+{
+	IMachine *m = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->clone(qName, reInitIfaces);
+	if(m == NULL)
+		return;
+
+	machines_vec.push_back(new MachineBridge(vboxbridge, m, this));
+
+	const char *tmpdir = getenv("TMPDIR");
+	if(tmpdir == NULL)
+		tmpdir = "/tmp";
+	
+	int newTabIndex = ui->vm_tabs->count();
+
+	std::stringstream tmpdir_prefix; tmpdir_prefix << tmpdir << "/" << PROGRAM_NAME;
+	std::stringstream mountpoint_ss; mountpoint_ss << "/dev/nbd" << newTabIndex;
+	std::stringstream partition_mountpoint_prefix_ss; partition_mountpoint_prefix_ss << tmpdir_prefix.str() << "/nbd" << newTabIndex;
+
+	QString tabname = machines_vec.at(newTabIndex)->getName();
+	VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(newTabIndex), mountpoint_ss.str(), partition_mountpoint_prefix_ss.str());
+
+	ui->vm_tabs->addTab(vmSettings, tabname);
+	VMTabSettings_vec.push_back(vmSettings);
+}
+
+void MainWindow::slotRemove()
+{
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::question(this, "Rimuovi la macchina virtuale", "Eliminare la macchina virtuale?", QMessageBox::Yes|QMessageBox::No);
+
+	int tabIndex = ui->vm_tabs->currentIndex();
+
+	if (reply == QMessageBox::Yes)
+	{
+		if(VMTabSettings_vec.at(tabIndex)->vm->remove())
+		{
+			std::vector<VMTabSettings*> VMTabSettings_vec_shadow;
+			std::vector<MachineBridge*> machines_vec_shadow;
+			for(int i = 0; i < VMTabSettings_vec.size(); i++)
+				if(i != tabIndex)
+				{
+					VMTabSettings_vec_shadow.push_back(VMTabSettings_vec.at(i));
+					machines_vec_shadow.push_back(machines_vec.at(i));
+				}
+
+			ui->vm_tabs->removeTab(tabIndex);
+			VMTabSettings *v = VMTabSettings_vec.at(tabIndex);
+			MachineBridge *mb = machines_vec.at(tabIndex);
+			VMTabSettings_vec = VMTabSettings_vec_shadow;
+			machines_vec = machines_vec_shadow;
+
+			delete v;
+			delete mb;
+		}
+	}
+}
+
 void MainWindow::slotStateChange(MachineBridge *machine, uint32_t state)
 {
 	int tabIndex;
@@ -334,47 +402,56 @@ void MainWindow::refreshUI(int tab)
 		case MachineState::Starting:
 		case MachineState::Running:
 		{
-			ui->actionElimina->setEnabled(false);
+			ui->actionClona->setEnabled(false);
 			ui->actionAvvia->setEnabled(false);
 			ui->actionPausa->setEnabled(true);
 			ui->actionPausa->setChecked(false);
 			ui->actionReset->setEnabled(true);
 			ui->actionInterrompi->setEnabled(true);
+			ui->actionElimina->setEnabled(false);
 
+			ui->toolbarClona->setEnabled(false);
 			ui->toolbarAvvia->setEnabled(false);
 			ui->toolbarPausa->setEnabled(true);
 			ui->toolbarPausa->setChecked(false);
+			ui->toolbarElimina->setEnabled(false);
 			break;
 		}
 
 		case MachineState::Paused:
 		{
-			ui->actionElimina->setEnabled(false);
+			ui->actionClona->setEnabled(false);
 			ui->actionAvvia->setEnabled(false);
 			ui->actionPausa->setEnabled(true);
 			ui->actionPausa->setChecked(true);
 			ui->actionReset->setEnabled(false);
 			ui->actionInterrompi->setEnabled(true);
-
+			ui->actionElimina->setEnabled(false);
+			
+			ui->toolbarClona->setEnabled(false);
 			ui->toolbarAvvia->setEnabled(false);
 			ui->toolbarPausa->setEnabled(true);
 			ui->toolbarPausa->setChecked(true);
+			ui->toolbarElimina->setEnabled(false);
 			break;
 		}
 
 		case MachineState::PoweredOff:
 		default:
 		{
-			ui->actionElimina->setEnabled(true);
+			ui->actionClona->setEnabled(true);
 			ui->actionAvvia->setEnabled(true);
 			ui->actionPausa->setEnabled(false);
 			ui->actionPausa->setChecked(false);
 			ui->actionReset->setEnabled(false);
 			ui->actionInterrompi->setEnabled(false);
-
+			ui->actionElimina->setEnabled(true);
+			
+			ui->toolbarClona->setEnabled(true);
 			ui->toolbarAvvia->setEnabled(true);
 			ui->toolbarPausa->setEnabled(false);
 			ui->toolbarPausa->setChecked(false);
+			ui->toolbarElimina->setEnabled(true);
 			break;
 		}
 	}
