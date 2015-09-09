@@ -61,6 +61,7 @@
 #include "VirtualBox_XPCOM.h"
 #include "Iface.h"
 #include "OSBridge.h"
+#include "ProgressDialog.h"
 #include <QVector>
 #include <QFile>
 
@@ -438,6 +439,11 @@ IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *
 			std::cerr  << "Error while deleting old backup settings file: " << file_prev.fileName().toStdString() << std::endl;
 	}
 	
+	QString label = QString::fromUtf8("Creazione macchina ").append(qName);
+	ProgressDialog p(label);
+	p.ui->progressBar->setValue(0);
+	p.open();
+	
 	NS_CHECK_AND_DEBUG_ERROR(virtualBox, CreateMachine(NULL, name, 0, NULL, osTypeId, NULL, &new_machine), rc);
 	if(NS_FAILED(rc))
 		return NULL;
@@ -455,10 +461,20 @@ IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *
 
 	if(NS_FAILED(rc))
 		return NULL;
-	
+
 	std::cout << "Machine " << qName.toStdString() << " cloned" << std::endl;
+
 	int32_t resultCode;
-	progress->WaitForCompletion(-1);
+	PRBool progress_completed;
+	do
+	{
+		uint32_t percent;
+		progress->GetCompleted(&progress_completed);
+		progress->GetPercent(&percent);
+		p.ui->progressBar->setValue(percent);
+		usleep(750000);
+	} while(!progress_completed);
+
 	progress->GetResultCode(&resultCode);
 	
 	if (resultCode != 0) // check success
@@ -1085,6 +1101,10 @@ bool MachineBridge::start()
 		return false;
 	}
 */
+	ProgressDialog p(QString::fromUtf8("Avvio macchina ").append(getName()));
+	p.ui->progressBar->setValue(0);
+	p.open();
+
 	NS_CHECK_AND_DEBUG_ERROR(machine, LaunchVMProcess(session, type, environment, getter_AddRefs(progress)), rc);
 	if(NS_FAILED(rc))
 	{
@@ -1096,7 +1116,16 @@ bool MachineBridge::start()
 	{
 		launchSucceeded = true;
 		PRInt32 resultCode;
-		progress->WaitForCompletion(-1);
+		PRBool progress_completed;
+		do
+		{
+			uint32_t percent;
+			progress->GetCompleted(&progress_completed);
+			progress->GetPercent(&percent);
+			p.ui->progressBar->setValue(percent);
+			usleep(750000);
+		} while(!progress_completed);
+		
 		progress->GetResultCode(&resultCode);
 
 		if (resultCode != 0) // check success
@@ -1125,10 +1154,25 @@ bool MachineBridge::stop(bool force)
 	}
 
 	nsCOMPtr<IProgress> progress;
+
+	ProgressDialog p(QString::fromUtf8("Arresto macchina ").append(getName()));
+	p.ui->progressBar->setValue(0);
+	p.open();
+
 	if(force)
 		rc = console->PowerDown(getter_AddRefs(progress));
 	else
 		rc = console->PowerButton();
+
+	PRBool progress_completed;
+	do
+	{
+		uint32_t percent;
+		progress->GetCompleted(&progress_completed);
+		progress->GetPercent(&percent);
+		p.ui->progressBar->setValue(percent);
+		usleep(750000);
+	} while(!progress_completed);
 
 	progress = nsnull;
 

@@ -46,7 +46,11 @@ include_directories(${QT_INCLUDES}
 # 			"sdk/bindings/xpcom/include/xpcom"
 )
 
-qt4_wrap_ui(ui_src MainWindow.ui CloneDialog.ui info_dialog.ui)
+qt4_wrap_ui(ui_src
+	MainWindow.ui
+	CloneDialog.ui
+	ProgressDialog.ui
+	info_dialog.ui)
 
 qt4_add_resources(ui_res res.qrc)
 
@@ -58,6 +62,7 @@ set(Reti_SRCS
 	main.cpp
 	MainWindow.cpp
 	OSBridge.cpp
+	ProgressDialog.cpp
 	VirtualBoxBridge.cpp
 	VirtualMachine.cpp
 	VMSettings.cpp
