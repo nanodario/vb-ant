@@ -101,6 +101,8 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 // 	connect(ui->toolbarImpostazioni, SIGNAL(triggered(bool)), ui->actionImpostazioni, SIGNAL(triggered(bool)));
 
 	ui->retranslateUi(this);
+	setWindowTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
+	ui->menuFile->setTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
 }
 
 MainWindow::~MainWindow()
