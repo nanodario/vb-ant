@@ -128,15 +128,15 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 	{
 		case QDialogButtonBox::Apply:
 		{
-			std::cout << "apply: \t" << vm_name.toStdString() << std::endl;
 			uint32_t machineState = machine->getState();
 			if(machineState == MachineState::Starting ||
 			   machineState == MachineState::Running ||
 			   machineState == MachineState::Paused)
-				std::cout << "vm->saveSettings(): " << std::string(vm->saveSettingsRunTime() ? "true" : "false") << std::endl;
+				std::cout << "vm->saveSettingsRuntime(): " << std::string(vm->saveSettingsRunTime() ? "true" : "false") << std::endl;
 			else
 				std::cout << "vm->saveSettings(): " << std::string(vm->saveSettings() ? "true" : "false") << std::endl;
 
+/*
 			for (int i = 0; i < 8; i++)
 			{
 				QStringList iface_info = ifaces_table->getIfaceInfo(i);
@@ -145,21 +145,13 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 					std::cout << iface_info.at(j).toStdString() << " \t";
 				std::cout << iface_info.at(j).toStdString() << std::endl;
 			}
+*/
 			refreshTable();
 			break;
 		}
 		case QDialogButtonBox::Reset:
 			vm->populateIfaces();
 			refreshTableUI();
-			std::cout << "reset: \t" << vm_name.toStdString() << std::endl;
-			break;
-		case QDialogButtonBox::Ok:
-			std::cout << "ok: \t" << vm_name.toStdString() << std::endl;
-			vm->start();
-			break;
-		case QDialogButtonBox::Cancel:
-			std::cout << "cancel: \t" << vm_name.toStdString() << std::endl;
-			vm->ACPIstop();
 			break;
 	}
 }

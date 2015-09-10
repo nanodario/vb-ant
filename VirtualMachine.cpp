@@ -199,7 +199,7 @@ void VirtualMachine::refreshIface(INetworkAdapter *iface)
 	i->setAttachmentData(machine->getAttachmentData(iface, machine->getAttachmentType(iface)));
 }
 
-QString VirtualMachine::getName(uint32_t iface)
+QString VirtualMachine::getIfaceName(uint32_t iface)
 {
 	//read from /etc/udev/rules.d/70-persistent-net.rules
 	/* .
@@ -250,7 +250,7 @@ QString VirtualMachine::getIp(uint32_t iface)
 	 * BOOTPROTO=none
 	 */
 	QString iface_ip = QString::fromUtf8("");
-	const QString iface_name = getName(iface);
+	const QString iface_name = getIfaceName(iface);
 	const QString iface_mac = machine->getIfaceFormattedMac(iface).toUpper();
 
 	bool correct_name = false;
@@ -307,7 +307,7 @@ QString VirtualMachine::getSubnetMask(uint32_t iface)
 	 * BOOTPROTO=none
 	 */
 	QString iface_subnetMask = QString::fromUtf8("");
-	const QString iface_name = getName(iface);
+	const QString iface_name = getIfaceName(iface);
 	const QString iface_mac = machine->getIfaceFormattedMac(iface).toUpper();
 
 	bool correct_name = false;
@@ -433,7 +433,7 @@ bool VirtualMachine::saveSettings()
 	filename.append("p").append(OS_PARTITION_NUMBER).append("/").append(NET_HW_SETTINGS_FILE);
 	
 	QFile file(filename);
-	std::cout << "filename: " << filename.toStdString() << std::endl;
+// 	std::cout << "filename: " << filename.toStdString() << std::endl;
 
 	if(file.exists() && file.open(QIODevice::WriteOnly))
 	{
@@ -467,7 +467,7 @@ bool VirtualMachine::saveSettings()
 		filename.append("p").append(OS_PARTITION_NUMBER).append("/").append(NET_SW_SETTINGS_PREFIX).append(ifaces[i]->name);
 		
 		QFile file(filename);
-		std::cout << "filename: " << filename.toStdString() << std::endl;
+// 		std::cout << "filename: " << filename.toStdString() << std::endl;
 
 		if(file.open(QIODevice::WriteOnly))
 		{
@@ -571,7 +571,7 @@ void VirtualMachine::populateIfaces()
 			, machine->getIfaceCableConnected(networkAdapter_vec.at(i))
 			, machine->getAttachmentType(networkAdapter_vec.at(i))
 			, machine->getAttachmentData(networkAdapter_vec.at(i), machine->getAttachmentType(networkAdapter_vec.at(i)))
-			, getName(i)
+			, getIfaceName(i)
 #ifdef CONFIGURABLE_IP
 			, getIp(i)
 			, getSubnetMask(i)

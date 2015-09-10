@@ -26,6 +26,8 @@ CloneDialog::CloneDialog(MainWindow *destination)
 {
 	ui->setupUi(this);
 	connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(slotAccepted()));
+
+	ui->retranslateUi(this);
 }
 
 CloneDialog::~CloneDialog()

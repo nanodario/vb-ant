@@ -99,6 +99,8 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->toolbarReset, SIGNAL(triggered(bool)), ui->actionReset, SIGNAL(triggered(bool)));
 	connect(ui->toolbarInterrompi, SIGNAL(triggered(bool)), ui->actionInterrompi, SIGNAL(triggered(bool)));
 // 	connect(ui->toolbarImpostazioni, SIGNAL(triggered(bool)), ui->actionImpostazioni, SIGNAL(triggered(bool)));
+
+	ui->retranslateUi(this);
 }
 
 MainWindow::~MainWindow()
@@ -146,7 +148,7 @@ bool MainWindow::queryClose()
 		if(machineState == MachineState::Running ||
 			machineState == MachineState::Paused ||
 			machineState == MachineState::Starting)
-		switch (QMessageBox::warning(this, "Chiudi " PROGRAM_NAME,
+		switch (QMessageBox::warning(this, "Confermare uscita",
 			"Alcune macchine virtuali sono ancora avviate.\nUscire comunque?",
 			QMessageBox::Yes | QMessageBox::No))
 		{

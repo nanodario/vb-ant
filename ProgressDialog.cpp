@@ -30,6 +30,8 @@ ProgressDialog::ProgressDialog(QString label) : QDialog()
 	ui = new Ui_Dialog;
 	ui->setupUi(this);
 	ui->label->setText(label);
+
+	ui->retranslateUi(this);
 }
 
 ProgressDialog::~ProgressDialog()

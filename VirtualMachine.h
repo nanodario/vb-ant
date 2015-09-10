@@ -81,7 +81,7 @@ class VirtualMachine
 		Iface *getIfaceByNetworkAdapter(INetworkAdapter *iface);
 		Iface **getIfaces() const { return ifaces; };
 		void refreshIface(INetworkAdapter *iface);
-		QString getName(uint32_t iface);
+		QString getIfaceName(uint32_t iface);
 		QString getIp(uint32_t iface);
 		QString getSubnetMask(uint32_t iface);
 		
