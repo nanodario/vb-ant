@@ -184,27 +184,32 @@ bool OSBridge::umountVHD(std::string target)
 	return retval == 0;
 }
 
-bool OSBridge::mountVpartition(std::string source, std::string target, bool readonly)
+bool OSBridge::mountVpartition(std::string source, std::string target, std::string user_target, bool readonly)
 {
 	struct stat s;
+
 	if(stat(target.c_str(), &s) < 0 && errno == ENOENT)
 		mkdir(target.c_str(), 0777);
 
-	char *argv[6];
+	if(stat(user_target.c_str(), &s) < 0 && errno == ENOENT)
+		mkdir(user_target.c_str(), 0777);
+
+	char *argv[7];
 	argv[0] = (char *)malloc(sizeof(char) * (strlen(NBDTOOL_CMD_NAME) + 1)); strcpy(argv[0], NBDTOOL_CMD_NAME);
 	argv[1] = (char *)malloc(sizeof(char) * (strlen("mount") + 1)); strcpy(argv[1], "mount");
 	argv[2] = (char *)malloc(sizeof(char) * (source.length() + 1)); strcpy(argv[2], source.c_str());
 	argv[3] = (char *)malloc(sizeof(char) * (target.length() + 1)); strcpy(argv[3], target.c_str());
-	argv[4] = (char *)malloc(sizeof(char) * (3));
+	argv[4] = (char *)malloc(sizeof(char) * (user_target.length() + 1)); strcpy(argv[4], user_target.c_str());
+	argv[5] = (char *)malloc(sizeof(char) * (3));
 
 	if(readonly)
-		strcpy(argv[4], "ro");
+		strcpy(argv[5], "ro");
 	else
-		strcpy(argv[4], "rw");
+		strcpy(argv[5], "rw");
 
-	argv[5] = NULL;
+	argv[6] = NULL;
 	
-	int retval = execute_cmd(6, argv, true);
+	int retval = execute_cmd(7, argv, true);
 #ifdef TRY_FROM_LOCAL_WD
 	if(retval != 0)
 	{

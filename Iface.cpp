@@ -95,6 +95,7 @@ Iface::Iface(bool enabled, QString mac, bool cableConnected, uint32_t attachment
 #endif
 {
 	setName(name);
+	last_valid_name = name;
 	setMac(mac);
 	setAttachmentType(attachmentType);
 	setAttachmentData(attachmentData);

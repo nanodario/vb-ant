@@ -33,7 +33,7 @@ class OSBridge
 		static bool checkNbdModule();
 		static bool mountVHD(std::string source, std::string target);
 		static bool umountVHD(std::string target);
-		static bool mountVpartition(std::string source, std::string target, bool readonly = false);
+		static bool mountVpartition(std::string source, std::string target, std::string usertarget, bool readonly = false);
 		static bool umountVpartition(std::string target);
 
 	private:

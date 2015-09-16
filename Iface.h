@@ -60,7 +60,7 @@ class Iface
 		inline bool operator!=(const Iface *i) const { return !operator==(i); };
 		Iface *copyIface();
 		
-		QString name, mac, attachmentData;
+		QString last_valid_name, name, mac, attachmentData;
 #ifdef CONFIGURABLE_IP
 		QString ip, subnetMask;
 #endif
