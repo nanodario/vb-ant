@@ -74,8 +74,8 @@ set(nbdtool_SRCS nbdtool.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVBOX_WITH_XPCOM_NAMESPACE_CLEANUP")
 
-if($ENV{PROGRAM_NAME})
-	set(PROGRAM_NAME ${PROGRAM_NAME})
+if(DEFINED ENV{PROGRAM_NAME})
+	set(PROGRAM_NAME $ENV{PROGRAM_NAME})
 else()
 	set(PROGRAM_NAME "vb-ant")
 endif()
@@ -84,15 +84,15 @@ message("-- Program name: ${PROGRAM_NAME}")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROGRAM_NAME=\"\\\"${PROGRAM_NAME}\\\"\"")
 
-if($ENV{OS_PARTITION_NUMBER})
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=$ENV{OS_PARTITION_NUMBER}")
+if(DEFINED ENV{OS_PARTITION_NUMBER})
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=\"$ENV{OS_PARTITION_NUMBER}\"")
 	message("-- OS partition number: $ENV{OS_PARTITION_NUMBER}")
 else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=1")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=\"1\"")
 	message("-- OS partition number: 1")
 endif()
 
-if($ENV{DEBUG_FLAG})
+if(DEFINED ENV{DEBUG_FLAG})
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_FLAG")
         message("-- Debug output: enabled")
 else()
@@ -106,10 +106,11 @@ set(SYSTEM_LIBS
 	"kmod"
 )
 
-if($ENV{CONFIGURABLE_IP})
+if(DEFINED ENV{CONFIGURABLE_IP})
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCONFIGURABLE_IP")
 	message("-- Enabled IP configuration")
 else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -UCONFIGURABLE_IP")
 	message("-- Disabled IP configuration")
 endif()
 
