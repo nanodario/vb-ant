@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <libkmod.h>
 #include <sys/mount.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
@@ -275,6 +276,13 @@ int do_mountVHD(std::string source, std::string target)
 		perror("setuid(): ");
 		return retval;
 	}
+	
+	retval = setgid(0);
+	if(retval != 0)
+	{
+		perror("setgid(): ");
+		return retval;
+	}
 
 	return execute_cmd(5, argv_new);
 }
@@ -297,6 +305,13 @@ int do_umountVHD(std::string target)
 		perror("setuid(): ");
 		return retval;
 	}
+	
+	retval = setgid(0);
+	if(retval != 0)
+	{
+		perror("setgid(): ");
+		return retval;
+	}
 
 	return execute_cmd(4, argv_new);
 }
@@ -313,6 +328,13 @@ int do_mount(std::string source, std::string mountpoint, bool readonly = false)
 		return retval;
 	}
 
+	retval = setgid(0);
+	if(retval != 0)
+	{
+		perror("setgid(): ");
+		return retval;
+	}
+	
 	if(readonly)
 	{
 		char *argv_new[6];
@@ -343,6 +365,28 @@ int do_mount(std::string source, std::string mountpoint, bool readonly = false)
 	return retval;
 }
 
+int do_bindmount(std::string mountpoint, std::string user_mountpoint, uid_t uid, uid_t gid)
+{
+	std::string cmd = "bindfs";
+	std::stringstream opt1; opt1 << "-u";
+	std::stringstream opt2; opt2 << uid;
+	std::stringstream opt3; opt3 << "-g";
+	std::stringstream opt4; opt4 << gid;
+	
+	char *argv_new[8];
+	
+	argv_new[0] = (char *)malloc(sizeof(char) * (cmd.length() + 1)); strcpy(argv_new[0], cmd.c_str());
+	argv_new[1] = (char *)malloc(sizeof(char) * (opt1.str().length() + 1)); strcpy(argv_new[1], opt1.str().c_str());
+	argv_new[2] = (char *)malloc(sizeof(char) * (opt2.str().length() + 1)); strcpy(argv_new[2], opt2.str().c_str());
+	argv_new[3] = (char *)malloc(sizeof(char) * (opt3.str().length() + 1)); strcpy(argv_new[3], opt3.str().c_str());
+	argv_new[4] = (char *)malloc(sizeof(char) * (opt4.str().length() + 1)); strcpy(argv_new[4], opt4.str().c_str());
+	argv_new[5] = (char *)malloc(sizeof(char) * (mountpoint.length() + 1)); strcpy(argv_new[5], mountpoint.c_str());
+	argv_new[6] = (char *)malloc(sizeof(char) * (user_mountpoint.length() + 1)); strcpy(argv_new[6], user_mountpoint.c_str());
+	argv_new[7] = NULL;
+	
+	return execute_cmd(8, argv_new);
+}
+
 int do_umount(std::string mountpoint)
 {
 	std::string cmd = "umount";
@@ -357,6 +401,13 @@ int do_umount(std::string mountpoint)
 	if(retval != 0)
 	{
 		perror("setuid(): ");
+		return retval;
+	}
+
+	retval = setgid(0);
+	if(retval != 0)
+	{
+		perror("setgid(): ");
 		return retval;
 	}
 
@@ -383,8 +434,28 @@ int main(int argc, char **argv)
 	uid_t original_uid = getuid();
 	uid_t original_gid = getgid();
 
+	std::cout << "original_uid: " << original_uid << ", original_gid: " << original_gid << std::endl;
+	
 	int retval = -1;
 
+	if(argc > 4)
+	{
+		if(!strcmp(argv[1], "mount"))
+		{
+			bool readonly = false;
+			if(argc > 5)
+				readonly = strcmp(argv[5], "ro") == 0;
+			
+			if(!check_module())
+			{
+				if((retval = do_mount(argv[2], argv[3], readonly)) == 0)
+					retval = do_bindmount(argv[3], argv[4], original_uid, original_gid);
+			}
+			else
+				std::cerr << "*** " << getpid() << " *** ERROR: nbd module is not loaded, cannot mount Vpartition" << std::endl;
+		}
+	}
+	
 	if(argc > 3)
 	{
 		if(!strcmp(argv[1], "mountVHD"))
@@ -393,18 +464,6 @@ int main(int argc, char **argv)
 				retval = do_mountVHD(argv[2], argv[3]);
 			else
 				std::cerr << "*** " << getpid() << " *** ERROR: nbd module is not loaded, cannot mount VHD" << std::endl;
-		}
-		
-		if(!strcmp(argv[1], "mount"))
-		{
-			bool readonly = false;
-			if(argc > 4)
-				readonly = strcmp(argv[4], "ro") == 0;
-
-			if(!check_module())
-				retval = do_mount(argv[2], argv[3], readonly);
-			else
-				std::cerr << "*** " << getpid() << " *** ERROR: nbd module is not loaded, cannot mount Vpartition" << std::endl;
 		}
 	}
 
@@ -473,8 +532,15 @@ int main(int argc, char **argv)
 		std::cout << "nbd module is" << (retval == 0 ? " " : " not ") << "loaded" << std::endl;	
 	}
 
+	std::cout << "uid: " << getuid() << ", gid: " << getgid() << std::endl;
+	
 	setuid(original_uid);
 	setgid(original_gid);
+
+#ifdef DEBUG_FLAG
+	if(retval != 0)
+		std::cerr << "*** " << getpid() << " *** ERROR: " << retval << std::endl;
+#endif
 
 	return retval;
 }
