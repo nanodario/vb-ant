@@ -79,9 +79,11 @@ VMTabSettings::~VMTabSettings()
 
 void VMTabSettings::refreshTable()
 {
-	vm->mountVpartition(OS_PARTITION_NUMBER);
+	vm->mountVpartition(OS_PARTITION_NUMBER, true);
 	for(int row = 0; row < ifaces_table->rowCount(); row++)
 	{
+		vm->refreshIface(vm->machine->getIface(row));
+		
 		bool enabled = ifaces_table->operator[](row)->enabled;
 		QString mac = ifaces_table->operator[](row)->mac;
 		bool cableConnected = ifaces_table->operator[](row)->cableConnected;

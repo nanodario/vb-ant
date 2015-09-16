@@ -193,12 +193,25 @@ void VirtualMachine::refreshIface(INetworkAdapter *iface)
 	Iface *i = getIfaceByNetworkAdapter(iface);
 	if(i == NULL)
 		return;
-	
+
+	int iface_index;
+	for(iface_index = 0; iface_index < ifaces_size; iface_index++)
+		if(ifaces[iface_index] == i)
+			break;
+
+	if(iface_index >= ifaces_size)
+		return;
+
 	i->enabled = machine->getIfaceEnabled(iface);
 	i->setMac(machine->getIfaceMac(iface));
 	i->cableConnected = machine->getIfaceCableConnected(iface);
 	i->setAttachmentType(machine->getAttachmentType(iface));
 	i->setAttachmentData(machine->getAttachmentData(iface, machine->getAttachmentType(iface)));
+	i->name = getIfaceName(iface_index);
+#ifdef CONFIGURABLE_IP
+	i->setIp(getIp(iface_index));
+	i->setSubnetMask(getSubnetMask(iface_index));
+#endif
 }
 
 QString VirtualMachine::getIfaceName(uint32_t iface)

@@ -103,7 +103,9 @@ static QString returnQStringValue(nsXPIDLString s)
 	} while (0)
 		
 class MachineBridge;
-class VirtualBoxBridge;
+class VMTabSettings;
+class VirtualMachine;
+class UIMainEventListener;
 
 typedef struct
 {
@@ -146,17 +148,15 @@ class VirtualBoxBridge
 		tparam_t tparam;
 };
 
-class VirtualMachine;
-
 /* Wrap the IListener interface around our implementation class. */
-class UIMainEventListener;
 typedef ListenerImpl<UIMainEventListener, QObject*> UIMainEventListenerImpl;
 
 class MachineBridge
 {
 	friend class VirtualMachine;
 	friend class UIMainEventListener;
-	
+	friend class VMTabSettings;
+
 	public:
 		MachineBridge(VirtualBoxBridge *vboxbridge, IMachine *machine, QObject *parent);
 		~MachineBridge();

@@ -44,10 +44,13 @@ typedef enum
 } ifacekey_t;
 
 class MainWindow;
+class VMTabSettings;
 
 class VirtualMachine
 {
 	friend class MainWindow;
+	friend class VMTabSettings;
+	
 	public:
 		VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix);
 		~VirtualMachine();
