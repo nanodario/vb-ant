@@ -422,7 +422,7 @@ int main(int argc, char **argv)
 	 * 	unload
 	 * 	mountVHD	VHD dev_mountpoint
 	 * 	umountVHD	dev_mountpoint
-	 * 	mount		Vpartition mountpoint [ro|rw]
+	 * 	mount		Vpartition mountpoint user_mountpoint [ro|rw]
 	 * 	umount		mountpoint
 	 */
 
@@ -434,8 +434,6 @@ int main(int argc, char **argv)
 	uid_t original_uid = getuid();
 	uid_t original_gid = getgid();
 
-	std::cout << "original_uid: " << original_uid << ", original_gid: " << original_gid << std::endl;
-	
 	int retval = -1;
 
 	if(argc > 4)
@@ -532,8 +530,6 @@ int main(int argc, char **argv)
 		std::cout << "nbd module is" << (retval == 0 ? " " : " not ") << "loaded" << std::endl;	
 	}
 
-	std::cout << "uid: " << getuid() << ", gid: " << getgid() << std::endl;
-	
 	setuid(original_uid);
 	setgid(original_gid);
 
