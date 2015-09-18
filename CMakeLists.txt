@@ -47,30 +47,31 @@ include_directories(${QT_INCLUDES}
 )
 
 qt4_wrap_ui(ui_src
-	MainWindow.ui
-	CloneDialog.ui
-	ProgressDialog.ui
-	info_dialog.ui)
-
-qt4_add_resources(ui_res res.qrc)
-
-set(Reti_SRCS
-	CloneDialog.cpp
-	Iface.cpp
-	IfacesTable.cpp
-	InfoDialog.cpp
-	main.cpp
-	MainWindow.cpp
-	OSBridge.cpp
-	ProgressDialog.cpp
-	VirtualBoxBridge.cpp
-	VirtualMachine.cpp
-	VMSettings.cpp
-	VMTabSettings.cpp
-	UIMainEventListener.cpp
+	"src/MainWindow.ui"
+	"src/CloneDialog.ui"
+	"src/ProgressDialog.ui"
+	"src/info_dialog.ui"
 )
 
-set(nbdtool_SRCS nbdtool.cpp)
+qt4_add_resources(ui_res "src/res.qrc")
+
+set(Reti_SRCS
+	"src/CloneDialog.cpp"
+	"src/Iface.cpp"
+	"src/IfacesTable.cpp"
+	"src/InfoDialog.cpp"
+	"src/main.cpp"
+	"src/MainWindow.cpp"
+	"src/OSBridge.cpp"
+	"src/ProgressDialog.cpp"
+	"src/VirtualBoxBridge.cpp"
+	"src/VirtualMachine.cpp"
+	"src/VMSettings.cpp"
+	"src/VMTabSettings.cpp"
+	"src/UIMainEventListener.cpp"
+)
+
+set(nbdtool_SRCS "src/nbdtool.cpp")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVBOX_WITH_XPCOM_NAMESPACE_CLEANUP")
 
