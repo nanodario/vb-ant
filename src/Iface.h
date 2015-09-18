@@ -52,7 +52,10 @@ class Iface
 		static bool isValidMac(QString mac);
 		static bool isValidAttachmentType(uint32_t attachmentType);
 #ifdef CONFIGURABLE_IP
-		static bool isValidIp(QString ip);
+		static bool isValidIPv4(QString ip);
+#ifdef ENABLE_IPv6
+		static bool isValidIPv6(QString ip);
+#endif
 		static bool isValidSubnetMask(QString subnetMask);
 #endif
 

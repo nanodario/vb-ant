@@ -26,7 +26,10 @@
 #include <sstream>
 #include <iostream>
 #include <stdint.h>
+#include <regex>
 #include "VirtualBoxBridge.h"
+
+#define IPV6_REGEX "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
 
 static QString subnetMaskFromSubnetSize(int subnetSize)
 {
@@ -134,7 +137,11 @@ bool Iface::setMac(QString _mac)
 #ifdef CONFIGURABLE_IP
 bool Iface::setIp(QString _ip)
 {
-	if(isValidIp(_ip))
+	if(
+#ifdef ENABLE_IPv6
+		isValidIPv6(_ip) ||
+#endif
+		isValidIPv4(_ip))
 	{
 		ip = _ip;
 		return true;
@@ -354,7 +361,7 @@ QString Iface::formatMac(QString mac)
 }
 
 #ifdef CONFIGURABLE_IP
-bool Iface::isValidIp(QString ip)
+bool Iface::isValidIPv4(QString ip)
 {
 	if (ip.length() == 0)
 		return true;
@@ -400,6 +407,13 @@ bool Iface::isValidIp(QString ip)
 	
 	return true;
 }
+
+#ifdef ENABLE_IPv6
+bool Iface::isValidIPv6(QString ip)
+{
+	return std::regex_match (ip.toStdString().c_str(), std::regex(IPV6_REGEX));
+}
+#endif
 
 bool Iface::isValidSubnetMask(QString subnetMask)
 {

@@ -1,6 +1,15 @@
 project(Reti)
 cmake_minimum_required(VERSION 2.6)
 find_package(Qt4 REQUIRED)
+cmake_policy(SET CMP0012 NEW)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9.2")
+		set(STD_REGEX_SUPPORTED FALSE)
+	else()
+		set(STD_REGEX_SUPPORTED TRUE)
+	endif()
+endif()
 
 if($ENV{DISABLE_CCACHE})
 	message("-- CCache disabled")
@@ -93,7 +102,8 @@ else()
 	message("-- OS partition number: 1")
 endif()
 
-if(DEFINED ENV{DEBUG_FLAG})
+option(DEBUG "Enable debug output" OFF)
+if(${DEBUG})
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_FLAG")
         message("-- Debug output: enabled")
 else()
@@ -101,20 +111,30 @@ else()
         message("-- Debug output: disabled")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar")
-set(SYSTEM_LIBS
-	"pthread"
-	"kmod"
-)
-
-if(DEFINED ENV{CONFIGURABLE_IP})
+option(CONFIGURABLE_IP "Enable IP and subnet mask configuration" OFF)
+if(${CONFIGURABLE_IP})
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCONFIGURABLE_IP")
-	message("-- Enabled IP configuration")
+	message("-- IPv4 configuration: supported, enabled")
+	if(STD_REGEX_SUPPORTED)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_IPv6")
+		message("-- IPv6 configuration: supported, enabled")
+	else()
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -UENABLE_IPv6")
+		message("-- IPv6 configuration: unsupported, wanted")
+	endif()
 else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -UCONFIGURABLE_IP")
-	message("-- Disabled IP configuration")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -UENABLE_IPv6")
+	message("-- IPv4 configuration: supported, disabled")
+	if(STD_REGEX_SUPPORTED)
+		message("-- IPv6 configuration: supported, disabled")
+	else()
+		message("-- IPv6 configuration: unsupported, disabled")
+	endif()
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar -std=c++0x")
+set(SYSTEM_LIBS	"pthread" "kmod")
 set(VBOX_LIB "/usr/lib/virtualbox/VBoxXPCOM.so")
 
 qt4_automoc(${Reti_SRCS})
@@ -129,7 +149,6 @@ target_link_libraries(${PROGRAM_NAME}
 			${VBOX_LIB}
 )
 
-target_link_libraries(nbdtool
-			"kmod")
-install(TARGETS ${PROGRAM_NAME} RUNTIME DESTINATION bin)
+target_link_libraries(nbdtool "kmod")
+#install(TARGETS ${PROGRAM_NAME} RUNTIME DESTINATION bin)
 install(TARGETS nbdtool RUNTIME DESTINATION bin)
