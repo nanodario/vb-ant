@@ -39,6 +39,7 @@
 #include "VirtualBoxBridge.h"
 #include "OSBridge.h"
 #include "CloneDialog.h"
+#include "ProgressDialog.h"
 
 MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 : QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge()), machines_vec(vboxbridge->getMachines(this))
@@ -61,17 +62,27 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	if(stat(tmpdir_prefix.str().c_str(), &s) < 0 && errno == ENOENT)
 		mkdir(tmpdir_prefix.str().c_str(), 0777);
 
+	ProgressDialog p("");
+	p.ui->label->setText("Caricamento impostazioni...");
+	p.ui->progressBar->setValue(0);
+	p.show();
+
 	for (int i = 0; i < machines_vec.size(); i++)
 	{
+		QString tabname = machines_vec.at(i)->getName();
+		p.ui->label->setText(QString::fromUtf8("Caricamento macchina \"").append(tabname).append("\""));
+
 		std::stringstream mountpoint_ss; mountpoint_ss << "/dev/nbd" << i;
 		std::stringstream partition_mountpoint_prefix_ss; partition_mountpoint_prefix_ss << tmpdir_prefix.str() << "/nbd" << i;
 
-		QString tabname = machines_vec.at(i)->getName();
 		VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(i), mountpoint_ss.str(), partition_mountpoint_prefix_ss.str());
-
+	
 		ui->vm_tabs->addTab(vmSettings, tabname);
 		VMTabSettings_vec.push_back(vmSettings);
+		p.ui->progressBar->setValue((i*100)/machines_vec.size());
 	}
+	p.ui->label->setText("Caricamento completato");
+	p.ui->progressBar->setValue(100);
 
 	connect(ui->actionInfo_su, SIGNAL(triggered(bool)), this, SLOT(slotInfo()));
 // 	connect(ui->actionNew, SIGNAL(triggered(bool)), this, SLOT(slotActionNew()));
