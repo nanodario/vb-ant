@@ -76,7 +76,9 @@ class VirtualMachine
 #else
 		int setIface(int iface, QString name = "", QString mac = "");
 #endif
-		void populateIfaces();		
+		void populateIfaces();	
+		void cleanIfaces(Iface **ifaces_src, int ifaces_src_size);
+		void copyIfaces(Iface **ifaces_src, int ifaces_src_size);
 		bool setNetworkAdapterData(int iface, ifacekey_t key, void *value_ptr);
 
 		Iface *getIfaceByName(QString name);

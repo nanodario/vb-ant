@@ -364,23 +364,36 @@ void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
 	if(m == NULL)
 		return;
 
+	OSBridge::unloadNbdModule();
+	OSBridge::loadNbdModule(machines_vec.size() + 1);
+
+	ProgressDialog p("");
+	p.ui->label->setText(QString::fromUtf8("Caricamento macchina \"").append(qName).append("\""));
+	p.ui->progressBar->setValue(0);
+	p.open();
+
+	int newTabIndex = ui->vm_tabs->count();
+
 	machines_vec.push_back(new MachineBridge(vboxbridge, m, this));
 
 	const char *tmpdir = getenv("TMPDIR");
 	if(tmpdir == NULL)
 		tmpdir = "/tmp";
 	
-	int newTabIndex = ui->vm_tabs->count();
-
 	std::stringstream tmpdir_prefix; tmpdir_prefix << tmpdir << "/" << PROGRAM_NAME;
 	std::stringstream mountpoint_ss; mountpoint_ss << "/dev/nbd" << newTabIndex;
 	std::stringstream partition_mountpoint_prefix_ss; partition_mountpoint_prefix_ss << tmpdir_prefix.str() << "/nbd" << newTabIndex;
 
 	QString tabname = machines_vec.at(newTabIndex)->getName();
 	VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(newTabIndex), mountpoint_ss.str(), partition_mountpoint_prefix_ss.str());
+	vmSettings->vm->cleanIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
+	vmSettings->vm->copyIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
+	vmSettings->vm->saveSettings();
+	vmSettings->refreshTable();
 
 	ui->vm_tabs->addTab(vmSettings, tabname);
 	VMTabSettings_vec.push_back(vmSettings);
+	p.ui->progressBar->setValue(100);
 }
 
 void MainWindow::slotRemove()

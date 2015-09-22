@@ -620,6 +620,34 @@ void VirtualMachine::populateIfaces()
 	}
 }
 
+void VirtualMachine::cleanIfaces(Iface **ifaces_src, int ifaces_src_size)
+{
+	std::cerr << "[" << __func__ << "] unimplemented function, skipping..." << std::endl;
+
+	for(int i = 0; i < std::min((int) ifaces_size, ifaces_src_size); i++)
+	{
+		QString filename = QString::fromStdString(partition_mountpoint_prefix).append(QString::fromUtf8("p%1-u/").arg(OS_PARTITION_NUMBER)).append(NET_SW_SETTINGS_PREFIX).append(ifaces_src[i]->last_valid_name);
+		if(QFile::exists(filename))
+		{
+			std::cout << "Removing old configuration file: " << filename.toStdString() << "...";
+			if(QFile::remove(filename))
+				std::cout << "OK" << std::endl;
+			else
+				std::cout << "FAIL" << std::endl;
+		}
+	}
+}
+
+void VirtualMachine::copyIfaces(Iface **ifaces_src, int ifaces_src_size)
+{
+	for(int i = 0; i < std::min((int) ifaces_size, ifaces_src_size); i++)
+	{
+		ifaces[i]->name = ifaces_src[i]->name;
+		ifaces[i]->ip = ifaces_src[i]->ip;
+		ifaces[i]->subnetMask = ifaces_src[i]->subnetMask;
+	}
+}
+
 bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *value_ptr)
 {
 	switch(key)

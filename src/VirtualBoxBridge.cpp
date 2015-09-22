@@ -439,9 +439,10 @@ IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *
 			std::cerr  << "Error while deleting old backup settings file: " << file_prev.fileName().toStdString() << std::endl;
 	}
 	
-	QString label = QString::fromUtf8("Creazione macchina ").append(qName);
+	QString label = QString::fromUtf8("Creazione macchina \"").append(qName).append("\"...");
 	ProgressDialog p(label);
 	p.ui->progressBar->setValue(0);
+	p.ui->label->setText(label);
 	p.open();
 	
 	NS_CHECK_AND_DEBUG_ERROR(virtualBox, CreateMachine(NULL, name, 0, NULL, osTypeId, NULL, &new_machine), rc);
@@ -462,8 +463,6 @@ IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *
 	if(NS_FAILED(rc))
 		return NULL;
 
-	std::cout << "Machine " << qName.toStdString() << " cloned" << std::endl;
-
 	int32_t resultCode;
 	PRBool progress_completed;
 	do
@@ -476,13 +475,16 @@ IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *
 	} while(!progress_completed);
 
 	progress->GetResultCode(&resultCode);
-	
+
 	if (resultCode != 0) // check success
 	{
 		std::cout << "Error during clone process: " << resultCode << std::endl;
 		return NULL;
 	}
 
+	std::cout << "Machine " << qName.toStdString() << " cloned" << std::endl;
+
+	p.ui->label->setText(QString::fromUtf8("Registrazione macchina \"").append(qName).append("\"..."));
 	NS_CHECK_AND_DEBUG_ERROR(virtualBox, RegisterMachine(new_machine), rc);
 	if(NS_FAILED(rc))
 		return NULL;
