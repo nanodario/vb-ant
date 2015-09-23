@@ -344,61 +344,26 @@ void AttachmentDataWidget::refreshWidget()
 	refreshData();
 }
 
-void AttachmentDataWidget::refreshData()
+void AttachmentDataWidget::refreshData() //FIXME
 {
+	QString selected_entry;
 	switch(destination->ifaces[row]->attachmentType)
 	{
-		case NetworkAttachmentType::NATNetwork:
-		{
-			QString natNetwork_name = destination->machine->getNatNetwork(row);
-
-			for(int i = 0; i < comboBox->count(); i++)
-				if(natNetwork_name == comboBox->itemText(i))
-					comboBox->setCurrentIndex(i);
-			break;
-		}
-		case NetworkAttachmentType::Bridged:
-		{
-			QString bridged_iface = destination->machine->getBridgedIface(row);
-
-			for(int i = 0; i < comboBox->count(); i++)
-				if(bridged_iface == comboBox->itemText(i))
-					comboBox->setCurrentIndex(i);
-			break;
-		}
-		case NetworkAttachmentType::Internal:
-		{
-			QString internal_name = destination->machine->getInternalName(row);
-
-			for(int i = 0; i < comboBox->count(); i++)
-				if(internal_name == comboBox->itemText(i))
-					comboBox->setCurrentIndex(i);
-			break;
-		}
-		case NetworkAttachmentType::HostOnly:
-		{
-			QString host_iface = destination->machine->getHostIface(row);
-
-			for(int i = 0; i < comboBox->count(); i++)
-				if(host_iface == comboBox->itemText(i))
-					comboBox->setCurrentIndex(i);
-			break;
-		}
-		case NetworkAttachmentType::Generic:
-		{
-			QString generic_driver = destination->machine->getGenericDriver(row);
-
-			for(int i = 0; i < comboBox->count(); i++)
-				if(generic_driver == comboBox->itemText(i))
-					comboBox->setCurrentIndex(i);
-			break;
-		}
+		case NetworkAttachmentType::NATNetwork: selected_entry = destination->machine->getNatNetwork(row); break;
+		case NetworkAttachmentType::Bridged: selected_entry = destination->machine->getBridgedIface(row); break;
+		case NetworkAttachmentType::Internal: selected_entry = destination->machine->getInternalName(row); break;
+		case NetworkAttachmentType::HostOnly: selected_entry = destination->machine->getHostIface(row); break;
+		case NetworkAttachmentType::Generic: selected_entry = destination->machine->getGenericDriver(row); break;
 		default:
 			std::cout << "NetworkAttachmentType::" << destination->ifaces[row]->attachmentType << " is an unknown attachment type" << std::endl;
 		case NetworkAttachmentType::Null:
 		case NetworkAttachmentType::NAT:
-			break;
+			return;
 	}
+
+	for(int i = 0; i < comboBox->count(); i++)
+		if(selected_entry == comboBox->itemText(i))
+			comboBox->setCurrentIndex(i);
 }
 
 void AttachmentDataWidget::currentIndexChangedSlot(int index)
