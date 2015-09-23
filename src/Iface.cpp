@@ -29,28 +29,59 @@
 #include <regex>
 #include "VirtualBoxBridge.h"
 
-#define IPV6_REGEX "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
+#define IPV6_REGEX "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
 
 static QString subnetMaskFromSubnetSize(int subnetSize)
 {
 	int i;
-	uint32_t subnetMask_bits = 0;
-	int subnetMask_dotted[] = {0, 0, 0, 0};
-	
+	typedef union
+	{
+		uint64_t subnetMask_ipv6[2];
+		uint32_t subnetMask_ipv4[4];
+		uint8_t subnetMask_byte[4][4];
+	} subnetMask_t;
+
+	subnetMask_t subnetMask;
+	subnetMask.subnetMask_ipv6[0] = subnetMask.subnetMask_ipv6[1] = 0;
+
 	for (i = 31; i > (31 - subnetSize); i--)
-		subnetMask_bits |= 1 << i;
-	
-	for(i = 0; i < 4; i++)
-		subnetMask_dotted[i] = (subnetMask_bits >> ((3-i)*8)) & 0xFF;
+		subnetMask.subnetMask_ipv4[0] |= 1 << i;
 
 	std::stringstream ss;
-	ss << subnetMask_dotted[0] << "." << subnetMask_dotted[1] << "." << subnetMask_dotted[2] << "." << subnetMask_dotted[3];
-	
+	ss << (int) subnetMask.subnetMask_byte[0][3] << "." << (int) subnetMask.subnetMask_byte[0][2] << "." << (int) subnetMask.subnetMask_byte[0][1] << "." << (int) subnetMask.subnetMask_byte[0][0];
+
 	std::string out;
 	ss >> out;
 	
 	return QString::fromUtf8(out.c_str());
 }
+
+#ifdef ENABLE_IPv6
+int Iface::subnetSizeFromSubnetMask(QString qSubnetMask)
+{
+	typedef union
+	{
+		uint64_t subnetMask_ipv6[2];
+		uint32_t subnetMask_ipv4[4];
+		uint8_t subnetMask_byte[4][4];
+	} subnetMask_t;
+
+	subnetMask_t subnetMask;
+	subnetMask.subnetMask_ipv6[0] = subnetMask.subnetMask_ipv6[1] = 0;
+
+	QStringList s_qSubnetMask = qSubnetMask.split(".");
+	
+	for (int i = 0; i < s_qSubnetMask.size(); i++)
+		subnetMask.subnetMask_byte[0][i] = s_qSubnetMask[3-i].toInt();
+
+	int size = 0;
+	for (int i = 0; i < 32; i++)
+		if(subnetMask.subnetMask_ipv4[0] & (1<<i))
+			size++;
+
+	return size;
+}
+#endif
 
 static bool isValidHexNumber(std::string hex, int min, int max)
 {
@@ -152,12 +183,23 @@ bool Iface::setIp(QString _ip)
 
 bool Iface::setSubnetMask(QString _subnetMask)
 {
-	if(isValidSubnetMask(_subnetMask))
+	if(isValidSubnetMask(_subnetMask, ip))
 	{
-		if(_subnetMask.split(".").count() == 1 && _subnetMask.length() != 0)
+		if(_subnetMask.length() == 0)
+			subnetMask = _subnetMask;
+		else if(_subnetMask.split(".").count() == 1
+#ifdef ENABLE_IPv6
+			&& !isValidIPv6(ip)
+#endif
+		)
 			subnetMask = subnetMaskFromSubnetSize(_subnetMask.toInt());
 		else
 			subnetMask = _subnetMask;
+		return true;
+	}
+	else if(subnetMask == _subnetMask)
+	{
+		subnetMask = "";
 		return true;
 	}
 	return false;
@@ -415,7 +457,7 @@ bool Iface::isValidIPv6(QString ip)
 }
 #endif
 
-bool Iface::isValidSubnetMask(QString subnetMask)
+bool Iface::isValidSubnetMask(QString subnetMask, QString ip)
 {
 	if (subnetMask.length() == 0)
 		return true;
@@ -426,9 +468,13 @@ bool Iface::isValidSubnetMask(QString subnetMask)
 	QStringList s_smask = subnetMask.split(".");
 	if (s_smask.count() == 1)
 	{
-		if(!isValidDecNumber(s_smask.at(0).toStdString(), 0, 32))
-			return false;
-		return true;
+		if(isValidDecNumber(s_smask.at(0).toStdString(), 0, 32)
+#ifdef ENABLE_IPv6
+		|| (isValidIPv6(ip) && isValidDecNumber(s_smask.at(0).toStdString(), 0, 64))
+#endif
+		)
+			return true;
+		return false;
 	}
 
 	if (s_smask.count() == 4)

@@ -56,7 +56,8 @@ class Iface
 #ifdef ENABLE_IPv6
 		static bool isValidIPv6(QString ip);
 #endif
-		static bool isValidSubnetMask(QString subnetMask);
+		static bool isValidSubnetMask(QString subnetMask, QString ip = QString::fromUtf8(""));
+		static int subnetSizeFromSubnetMask(QString qSubnetMask);
 #endif
 
 		inline bool operator==(const Iface *i) const { return mac == i->mac; };

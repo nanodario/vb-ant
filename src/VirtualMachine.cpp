@@ -282,7 +282,7 @@ QString VirtualMachine::getIp(uint32_t iface)
 
 	if(file.open(QIODevice::ReadOnly))
 	{
-		QString iface_ip_tmp = QString::fromUtf8("");;
+		QString iface_ip_tmp = QString::fromUtf8("");
 		while(!file.atEnd())
 		{
 			QString line = file.readLine();
@@ -296,6 +296,13 @@ QString VirtualMachine::getIp(uint32_t iface)
 				int ifacename_index_begin = line.lastIndexOf(QString::fromUtf8("IPADDR="));
 				iface_ip_tmp = (QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 7))).trimmed();
 			}
+			else if(line.toUpper().contains(QString::fromUtf8("IPV6ADDR=")))
+			{
+				int ifacename_index_begin = line.lastIndexOf(QString::fromUtf8("IPV6ADDR="));
+				int ifacename_index_end = line.lastIndexOf(QString::fromUtf8("/"));
+				iface_ip_tmp = (QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 9, ifacename_index_end - (ifacename_index_begin + 9)))).trimmed();
+			}
+				
 		}
 
 		if(!correct_name)
@@ -353,6 +360,14 @@ QString VirtualMachine::getSubnetMask(uint32_t iface)
 				int ifacename_index_begin = line.lastIndexOf(QString::fromUtf8("NETMASK="));
 				iface_subnetMask_tmp = (QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 8))).trimmed();
 			}
+#ifdef ENABLE_IPv6
+			else if(line.toUpper().contains(QString::fromUtf8("IPV6ADDR=")))
+			{
+				int ifacename_index_begin = line.lastIndexOf(QString::fromUtf8("/"));
+				if(ifacename_index_begin > -1)
+					iface_subnetMask_tmp = (QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 1))).trimmed();
+			}
+#endif
 		}
 
 		if(correct_mac)
@@ -513,6 +528,18 @@ bool VirtualMachine::saveSettings()
 			file.write("HWADDR="); file.write(ifaces[i]->mac.toStdString().c_str()); file.write("\n");
 // 			file.write("TYPE=Ethernet\n");
 #ifdef CONFIGURABLE_IP
+#ifdef ENABLE_IPv6
+			if(ifaces[i]->ip.length() > 0 && Iface::isValidIPv6(ifaces[i]->ip))
+			{
+				file.write("IPV6ADDR="); file.write(ifaces[i]->ip.toStdString().c_str());
+				if(ifaces[i]->subnetMask.length() > 0)
+					file.write("/"); file.write(ifaces[i]->subnetMask.toStdString().c_str());
+				file.write("\n");
+				file.write("IPV6INIT=yes\n");
+				file.write("BOOTPROTO=static\n");
+			}
+			else
+#endif
 			if(ifaces[i]->ip.length() > 0 && ifaces[i]->subnetMask.length() > 0)
 			{
 				file.write("IPADDR="); file.write(ifaces[i]->ip.toStdString().c_str()); file.write("\n");

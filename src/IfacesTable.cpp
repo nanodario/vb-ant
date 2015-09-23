@@ -36,8 +36,13 @@
 #include <malloc.h>
 #include "VirtualMachine.h"
 #include "VMTabSettings.h"
-
 #include "Iface.h"
+
+#ifdef CONFIGURABLE_IP
+	#define HORIZONTAL_HEADERS "Abilita;Indirizzo MAC;Collegata;Nome;Indirizzo IP;Maschera sottorete;Connessa a;Nome"
+#else
+	#define HORIZONTAL_HEADERS "Abilita;Indirizzo MAC;Collegata;Nome;Connessa a;Nome"
+#endif
 
 MacWidgetField::MacWidgetField(QWidget *parent, int row, IfacesTable *destination) : QWidget(parent)
 , row(row), destination(destination)
@@ -413,11 +418,7 @@ IfacesTable::IfacesTable(QWidget *parent, QBoxLayout *layout, VirtualBoxBridge *
 {
 	setObjectName(QString::fromUtf8("tableView"));
 
-#ifdef CONFIGURABLE_IP
-	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Collegata;Nome;Indirizzo IP;Maschera sottorete;Connessa a;Nome").split(";");
-#else
-	QStringList horizontalHeaderLabels = QString("Abilita;Indirizzo MAC;Collegata;Nome;Connessa a;Nome").split(";");
-#endif
+	QStringList horizontalHeaderLabels = QString(HORIZONTAL_HEADERS).split(";");
 
 	setColumnCount(horizontalHeaderLabels.count());
 	setHorizontalHeaderLabels(horizontalHeaderLabels);
@@ -664,6 +665,13 @@ bool IfacesTable::setIp(int iface, QString ip)
 	{
 		QString new_ip = ifaces[iface]->ip;
 		item(iface, COLUMN_IP)->setText(new_ip);
+		if(ifaces[iface]->subnetMask.length() > 0)
+		{
+			if(ifaces[iface]->subnetMask.split(".").size() == 4)
+				setSubnetMask(iface, QString::fromUtf8("%1").arg(Iface::subnetSizeFromSubnetMask(ifaces[iface]->subnetMask)));
+			else
+				setSubnetMask(iface, ifaces[iface]->subnetMask);
+		}
 // 		emit sigIfaceChange(iface, IFACE_IP, &new_ip);
 	}
 	else
