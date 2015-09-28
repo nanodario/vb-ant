@@ -286,7 +286,9 @@ int execute_cmd(int argc, char **argv)
 	else
 	{
 		while(wait(&status) != pid);
+#ifdef DEBUG_FLAG
 		std::cout << "Return value: " << status << std::endl;
+#endif
 	}
 
 	return status;
@@ -420,10 +422,6 @@ int main(int argc, char **argv)
 	 * 	umount		mountpoint
 	 */
 
-#ifndef DEBUG_FLAG
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-#endif
 
 	uid_t original_uid = getuid();
 	uid_t original_gid = getgid();
@@ -501,7 +499,7 @@ int main(int argc, char **argv)
 				return retval;
 
 			retval = remove_module();
-			std::cout << "nbd module " << (check_module() == 0 ? "is already loaded" : "has been unloaded") << std::endl;
+			std::cout << "nbd module " << (check_module() == 0 ? "is still loaded" : "has been unloaded") << std::endl;
 		}
 		else if(!strcmp(argv[1], "check"))
 		{

@@ -134,6 +134,11 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar -std=c++0x")
+
+if(${DEBUG})
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+endif()
+
 set(SYSTEM_LIBS	"pthread" "kmod")
 set(VBOX_LIB "/usr/lib/virtualbox/VBoxXPCOM.so")
 
