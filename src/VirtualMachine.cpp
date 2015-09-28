@@ -670,8 +670,10 @@ void VirtualMachine::copyIfaces(Iface **ifaces_src, int ifaces_src_size)
 	for(int i = 0; i < std::min((int) ifaces_size, ifaces_src_size); i++)
 	{
 		ifaces[i]->name = ifaces_src[i]->name;
+#ifdef CONFIGURABLE_IP
 		ifaces[i]->ip = ifaces_src[i]->ip;
 		ifaces[i]->subnetMask = ifaces_src[i]->subnetMask;
+#endif
 	}
 }
 

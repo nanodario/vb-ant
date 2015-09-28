@@ -99,7 +99,6 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionPausa, SIGNAL(triggered(bool)), this, SLOT(slotPause()));
 	connect(ui->actionReset, SIGNAL(triggered(bool)), this, SLOT(slotReset()));
 	connect(ui->actionInterrompi, SIGNAL(triggered(bool)), this, SLOT(slotStop()));
-// 	connect(ui->actionImpostazioni, SIGNAL(triggered(bool)), this, SLOT(slotSettings()));
 
 	connect(ui->toolbarClona, SIGNAL(triggered(bool)), ui->actionClona, SIGNAL(triggered(bool)));
 	connect(ui->toolbarElimina, SIGNAL(triggered(bool)), ui->actionElimina, SIGNAL(triggered(bool)));
@@ -109,7 +108,6 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->toolbarPausa, SIGNAL(triggered(bool)), ui->actionPausa, SIGNAL(triggered(bool)));
 	connect(ui->toolbarReset, SIGNAL(triggered(bool)), ui->actionReset, SIGNAL(triggered(bool)));
 	connect(ui->toolbarInterrompi, SIGNAL(triggered(bool)), ui->actionInterrompi, SIGNAL(triggered(bool)));
-// 	connect(ui->toolbarImpostazioni, SIGNAL(triggered(bool)), ui->actionImpostazioni, SIGNAL(triggered(bool)));
 
 	ui->retranslateUi(this);
 	setWindowTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
@@ -411,8 +409,8 @@ void MainWindow::slotSettings()
 
 void MainWindow::slotClone()
 {
-	CloneDialog *c = new CloneDialog(this);
-	c->exec();
+	CloneDialog c(this);
+	c.exec();
 }
 
 void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
