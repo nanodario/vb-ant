@@ -161,14 +161,25 @@ bool MainWindow::queryClose()
 		if(machineState == MachineState::Running ||
 			machineState == MachineState::Paused ||
 			machineState == MachineState::Starting)
-		switch (QMessageBox::warning(this, "Confermare uscita",
-			"Alcune macchine virtuali sono ancora avviate.\nUscire comunque?",
-			QMessageBox::Yes | QMessageBox::No))
 		{
-			case QMessageBox::Yes:
-				return true;
-			case QMessageBox::No:
-				return false;
+			QMessageBox qm(QMessageBox::Warning, "Confermare uscita", "Alcune macchine virtuali sono ancora avviate.\nUscire comunque?", QMessageBox::Yes | QMessageBox::No, this);
+			qm.setPalette(palette());
+			for(int i = 0; i < qm.buttons().size(); i++)
+			{
+				switch(qm.standardButton(qm.buttons()[i]))
+				{
+					case QDialogButtonBox::Yes: qm.buttons()[i]->setText(QString::fromUtf8("Sì")); break;
+					case QDialogButtonBox::No: qm.buttons()[i]->setText("No"); break;
+				}
+			}
+
+			switch (qm.exec())
+			{
+				case QMessageBox::Yes:
+					return true;
+				case QMessageBox::No:
+					return false;
+			}
 		}
 	}
 
@@ -255,10 +266,18 @@ void MainWindow::currentChangedSlot(int tab)
 
 void MainWindow::slotStartAll()
 {
-	QMessageBox::StandardButton reply;
-	reply = QMessageBox::question(this, "Avvio multiplo macchine", "Avviare tutte le macchine abilitate?", QMessageBox::Yes|QMessageBox::No);
+	QMessageBox qm(QMessageBox::Question, "Avvio multiplo macchine", "Avviare tutte le macchine abilitate?", QMessageBox::Yes|QMessageBox::No, this);
+	qm.setPalette(palette());
+	for(int i = 0; i < qm.buttons().size(); i++)
+	{
+		switch(qm.standardButton(qm.buttons()[i]))
+		{
+			case QDialogButtonBox::Yes: qm.buttons()[i]->setText(QString::fromUtf8("Sì")); break;
+			case QDialogButtonBox::No: qm.buttons()[i]->setText("No"); break;
+		}
+	}
 
-	if (reply != QMessageBox::Yes)
+	if (qm.exec() != QMessageBox::Yes)
 		return;
 
 	for(int i = 0; i < ui->vm_tabs->count(); i++)
@@ -284,10 +303,18 @@ void MainWindow::slotStartAll()
 
 void MainWindow::slotInterrompiAll()
 {
-	QMessageBox::StandardButton reply;
-	reply = QMessageBox::question(this, "Chiusura multipla macchine", "Arrestare tutte le macchine virtuali?", QMessageBox::Yes|QMessageBox::No);
+	QMessageBox qm(QMessageBox::Question, "Chiusura multipla macchine", "Arrestare tutte le macchine virtuali?", QMessageBox::Yes|QMessageBox::No, this);
+	qm.setPalette(palette());
+	for(int i = 0; i < qm.buttons().size(); i++)
+	{
+		switch(qm.standardButton(qm.buttons()[i]))
+		{
+			case QDialogButtonBox::Yes: qm.buttons()[i]->setText(QString::fromUtf8("Sì")); break;
+			case QDialogButtonBox::No: qm.buttons()[i]->setText("No"); break;
+		}
+	}
 
-	if (reply != QMessageBox::Yes)
+	if (qm.exec() != QMessageBox::Yes)
 		return;
 
 	for(int i = 0; i < ui->vm_tabs->count(); i++)
@@ -398,12 +425,20 @@ void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
 
 void MainWindow::slotRemove()
 {
-	QMessageBox::StandardButton reply;
-	reply = QMessageBox::question(this, "Rimuovi la macchina virtuale", "Eliminare la macchina virtuale?", QMessageBox::Yes|QMessageBox::No);
+	QMessageBox qm(QMessageBox::Question, "Rimuovi la macchina virtuale", "Eliminare la macchina virtuale?", QMessageBox::Yes|QMessageBox::No, this);
+	qm.setPalette(palette());
+	for(int i = 0; i < qm.buttons().size(); i++)
+	{
+		switch(qm.standardButton(qm.buttons()[i]))
+		{
+			case QDialogButtonBox::Yes: qm.buttons()[i]->setText(QString::fromUtf8("Sì")); break;
+			case QDialogButtonBox::No: qm.buttons()[i]->setText("No"); break;
+		}
+	}
 
 	int tabIndex = ui->vm_tabs->currentIndex();
 
-	if (reply == QMessageBox::Yes)
+	if (qm.exec() == QMessageBox::Yes)
 	{
 		if(VMTabSettings_vec.at(tabIndex)->vm->remove())
 		{

@@ -57,6 +57,15 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 	buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
 	buttonBox->setStandardButtons(QDialogButtonBox::Apply|QDialogButtonBox::Reset/*|QDialogButtonBox::Ok|QDialogButtonBox::Cancel*/);
 
+	for(int i = 0; i < buttonBox->buttons().size(); i++)
+	{
+		switch(buttonBox->standardButton(buttonBox->buttons()[i]))
+		{
+			case QDialogButtonBox::Apply: buttonBox->buttons()[i]->setText("Applica"); break;
+			case QDialogButtonBox::Reset: buttonBox->buttons()[i]->setText("Reset"); break;
+		}
+	}
+
 	verticalLayout->addWidget(buttonBox);
 
 	connect(vm_enabled, SIGNAL(toggled(bool)), this, SLOT(vm_enabledSlot(bool)));

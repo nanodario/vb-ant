@@ -28,6 +28,14 @@ CloneDialog::CloneDialog(MainWindow *destination)
 	connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(slotAccepted()));
 
 	ui->retranslateUi(this);
+	for(int i = 0; i < ui->buttonBox->buttons().size(); i++)
+	{
+		switch(ui->buttonBox->standardButton(ui->buttonBox->buttons()[i]))
+		{
+			case QDialogButtonBox::Ok: ui->buttonBox->buttons()[i]->setText("Ok"); break;
+			case QDialogButtonBox::Cancel: ui->buttonBox->buttons()[i]->setText("Annulla"); break;
+		}
+	}
 }
 
 CloneDialog::~CloneDialog()

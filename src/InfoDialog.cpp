@@ -20,12 +20,21 @@
  */
 
 #include "InfoDialog.h"
+#include <QAbstractButton>
 
 InfoDialog::InfoDialog()
 : ui(new Ui_Info_dialog)
 {
 	ui->setupUi(this);
 	ui->retranslateUi(this);
+	for(int i = 0; i < ui->buttonBox->buttons().size(); i++)
+	{
+		switch(ui->buttonBox->standardButton(ui->buttonBox->buttons()[i]))
+		{
+			case QDialogButtonBox::Close: ui->buttonBox->buttons()[i]->setText("Chiudi"); break;
+		}
+	}
+	
 }
 
 InfoDialog::~InfoDialog()

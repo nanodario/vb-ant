@@ -58,7 +58,7 @@ MacWidgetField::MacWidgetField(QWidget *parent, int row, IfacesTable *destinatio
 	button = new QToolButton(this);
 	button->setObjectName(QString::fromUtf8("button"));
 	button->setAutoRaise(true);
-	button->setIcon(QIcon(QString::fromUtf8(":/refresh/resources/refresh_16px.png")));
+	button->setIcon(QIcon(QString::fromUtf8(":/refresh/resources/SVG PINO/ricollega.svg")));
 	button->setToolButtonStyle(Qt::ToolButtonIconOnly);
 	horizontalLayout->addWidget(button);
 	
