@@ -670,6 +670,33 @@ uint32_t MachineBridge::getSessionState()
 	return SessionState::Null;
 }
 
+bool MachineBridge::supportsACPI()
+{
+	nsresult rc;
+	PRBool acpiSupported = false;
+
+	if(console == nsnull)
+	{
+		if(session != nsnull)
+		{
+			rc = session->GetConsole(getter_AddRefs(console));
+			if(NS_FAILED(rc))
+			{
+				console = nsnull;
+				return false;
+			}
+			
+		}
+		else
+			return false;
+	}
+
+	if(console != nsnull)
+		console->GetGuestEnteredACPIMode(&acpiSupported);
+
+	return acpiSupported;
+}
+
 QString MachineBridge::getHardDiskFilePath()
 {
 	nsresult rc;
@@ -1162,21 +1189,22 @@ bool MachineBridge::stop(bool force)
 	p.open();
 
 	if(force)
+	{
 		rc = console->PowerDown(getter_AddRefs(progress));
+		PRBool progress_completed;
+		do
+		{
+			uint32_t percent;
+			progress->GetCompleted(&progress_completed);
+			progress->GetPercent(&percent);
+			p.ui->progressBar->setValue(percent);
+			usleep(750000);
+		} while(!progress_completed);
+		
+		progress = nsnull;
+	}
 	else
 		rc = console->PowerButton();
-
-	PRBool progress_completed;
-	do
-	{
-		uint32_t percent;
-		progress->GetCompleted(&progress_completed);
-		progress->GetPercent(&percent);
-		p.ui->progressBar->setValue(percent);
-		usleep(750000);
-	} while(!progress_completed);
-
-	progress = nsnull;
 
 	if(NS_FAILED(rc))
 		return false;

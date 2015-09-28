@@ -330,6 +330,7 @@ void MainWindow::slotInterrompiAll()
 
 void MainWindow::slotStart()
 {
+	requestedACPIstop = false;
 	VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->start();
 
 	uint32_t machineState = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->getState();
@@ -341,10 +342,11 @@ void MainWindow::slotStart()
 void MainWindow::slotPause()
 {
 	uint32_t machineState = ((VMTabSettings *)VMTabSettings_vec.at(ui->vm_tabs->currentIndex()))->machine->getState();
-	if(machineState == MachineState::Paused)
-		VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->exitPause();
-	else
+
+	if(machineState != MachineState::Paused)
 		VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->enterPause();
+	else
+		VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->exitPause();
 }
 
 void MainWindow::slotReset()
@@ -354,22 +356,50 @@ void MainWindow::slotReset()
 
 void MainWindow::slotStop()
 {
-	uint32_t machineState = ((VMTabSettings *)VMTabSettings_vec.at(ui->vm_tabs->currentIndex()))->machine->getState();
+	uint32_t machineState = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->getState();
+	bool acpiEnabled = false;
 
-	if(machineState != MachineState::Paused)
+	bool wasPaused = (machineState == MachineState::Paused);
+	if(wasPaused)
 		slotPause();
+	
+	acpiEnabled = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->supportsACPI();
+	slotPause();
 
-	QMessageBox::StandardButton reply;
-	reply = QMessageBox::question(this, "Chiudi la macchina virtuale", "Arrestare la macchina virtuale?", QMessageBox::Yes|QMessageBox::No);
+	QMessageBox qm(QMessageBox::Question, "Chiudi la macchina virtuale", "Arrestare la macchina virtuale?", QMessageBox::Yes|QMessageBox::No, this);
+	QCheckBox *c = new QCheckBox("Forza arresto", &qm);
+	c->setGeometry(QRect(86, 40, 300, 21));
+	c->setChecked(false);
+	c->setPalette(palette());
+	qm.setPalette(palette());
 
-	if (reply == QMessageBox::Yes)
-		VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->stop();
+	if (!acpiEnabled)
+	{
+		c->setChecked(true);
+		c->setEnabled(false);
+	}
+
+	if (qm.exec() == QMessageBox::Yes)
+	{
+		if(c->isChecked())
+			VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->stop();
+		else
+		{
+			machineState = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->getState();
+			if(machineState == MachineState::Paused)
+				slotPause();
+			VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ACPIstop();
+			requestedACPIstop = true;
+		}
+	}
 	else
 	{
-		machineState = ((VMTabSettings *)VMTabSettings_vec.at(ui->vm_tabs->currentIndex()))->machine->getState();
-		if(machineState == MachineState::Paused)
+		machineState = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->getState();
+		if(!wasPaused && machineState == MachineState::Paused)
 			slotPause();
 	}
+
+	delete c;
 }
 
 #if 0
@@ -474,10 +504,13 @@ void MainWindow::slotStateChange(MachineBridge *machine, uint32_t state)
 		}
 
 	if(state == MachineState::PoweredOff)
+	{
 		VMTabSettings_vec.at(tabIndex)->vm->shutdownVMProcess();
+		requestedACPIstop = false;
+	}
 
 	setSettingsPolicy(tabIndex, state);
-	refreshUI(tabIndex);
+	refreshUI(tabIndex, state);
 }
 
 void MainWindow::setSettingsPolicy(int tab, uint32_t state)
@@ -515,13 +548,15 @@ void MainWindow::slotNetworkAdapterChange(MachineBridge *machine, INetworkAdapte
 	refreshUI(tabIndex);
 }
 
-void MainWindow::refreshUI(int tab)
+void MainWindow::refreshUI(int tab, uint32_t state)
 {
-	uint32_t machineState = ((VMTabSettings *)VMTabSettings_vec.at(tab))->machine->getState();
+	if(state == -1)
+		state = ((VMTabSettings *)VMTabSettings_vec.at(tab))->machine->getState();
 
-	switch(machineState)
+	switch(state)
 	{
 		case MachineState::Starting:
+		case MachineState::Stopping:
 		case MachineState::Running:
 		{
 			ui->actionClona->setEnabled(false);
@@ -543,7 +578,6 @@ void MainWindow::refreshUI(int tab)
 			ui->toolbarInterrompi->setEnabled(true);
 			break;
 		}
-
 		case MachineState::Paused:
 		{
 			ui->actionClona->setEnabled(false);
@@ -565,9 +599,8 @@ void MainWindow::refreshUI(int tab)
 			ui->toolbarInterrompi->setEnabled(true);
 			break;
 		}
-
 		case MachineState::PoweredOff:
-		default:
+		case MachineState::Null:
 		{
 			ui->actionClona->setEnabled(true);
 			ui->actionElimina->setEnabled(true);
@@ -588,5 +621,11 @@ void MainWindow::refreshUI(int tab)
 			ui->toolbarInterrompi->setEnabled(false);
 			break;
 		}
+	}
+
+	if(requestedACPIstop)
+	{
+		ui->actionPausa->setEnabled(false);
+		ui->toolbarPausa->setEnabled(false);
 	}
 }

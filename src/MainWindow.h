@@ -74,13 +74,14 @@ class MainWindow : public QMainWindow
 		bool queryClose();
 		bool loadFile(const QString &path);
 		void setSettingsPolicy(int tab, uint32_t state);
-		void refreshUI(int tab);
+		void refreshUI(int tab, uint32_t state = -1);
 		
 		Ui_MainWindow *ui;
 		std::vector<VMTabSettings*> VMTabSettings_vec;
 		std::vector<MachineBridge*> machines_vec;
 		InfoDialog infoDialog;
 		QString fileName;
+		bool requestedACPIstop;
 };
 
 #endif //MAINWINDOW_H

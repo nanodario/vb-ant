@@ -167,6 +167,7 @@ class MachineBridge
 		QString getName();
 		uint32_t getState();
 		uint32_t getSessionState();
+		bool supportsACPI();
 		
 		//Getters
 		std::vector<nsCOMPtr<INetworkAdapter> > getNetworkInterfaces();

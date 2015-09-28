@@ -49,6 +49,7 @@ HRESULT UIMainEventListener::init(QObject *pParent)
 	setParent(pParent);
 	
 	connect(this, SIGNAL(sigStateChange(MachineBridge*, uint32_t)), parent(), SLOT(slotStateChange(MachineBridge*, uint32_t)));
+	connect(this, SIGNAL(sigMachineStateChange(MachineBridge*,uint32_t)), this, SIGNAL(sigStateChange(MachineBridge*, uint32_t)));
 	connect(this, SIGNAL(sigNetworkAdapterChange(MachineBridge*,INetworkAdapter*)), parent(), SLOT(slotNetworkAdapterChange(MachineBridge*,INetworkAdapter*)));
 	return NS_OK;
 }
