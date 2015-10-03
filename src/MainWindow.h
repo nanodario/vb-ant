@@ -77,7 +77,7 @@ class MainWindow : public QMainWindow
 		bool loadFile(const QString &path);
 		void setSettingsPolicy(int tab, uint32_t state);
 		void refreshUI(int tab, uint32_t state = -1);
-		void addMachine(IMachine *m, QString qName);
+		VMTabSettings *addMachine(IMachine *m);
 		
 		Ui_MainWindow *ui;
 		std::vector<VMTabSettings*> VMTabSettings_vec;

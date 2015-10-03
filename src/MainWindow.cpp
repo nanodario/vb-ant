@@ -423,26 +423,52 @@ void MainWindow::slotClone()
 
 void MainWindow::launchCreateProcess(QString qName, bool reInitIfaces)
 {
-	addMachine(vboxbridge->newVM(qName), qName);
-}
-
-void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
-{
-	addMachine(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->clone(qName, reInitIfaces), qName);
-}
-
-void MainWindow::addMachine(IMachine *m, QString qName)
-{
-	if(m == NULL)
+	VMTabSettings *vmSettings = addMachine(vboxbridge->newVM(qName));
+	if(vmSettings == NULL)
 		return;
-
-	OSBridge::unloadNbdModule();
-	OSBridge::loadNbdModule(machines_vec.size() + 1);
 
 	ProgressDialog p("");
 	p.ui->label->setText(QString::fromUtf8("Caricamento macchina \"").append(qName).append("\""));
 	p.ui->progressBar->setValue(0);
 	p.open();
+
+	vmSettings->vm->cleanIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
+	vmSettings->vm->saveSettings();
+	vmSettings->refreshTable();
+
+	ui->vm_tabs->addTab(vmSettings, qName);
+	VMTabSettings_vec.push_back(vmSettings);
+	p.ui->progressBar->setValue(100);
+}
+
+void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
+{
+	VMTabSettings *vmSettings = addMachine(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->clone(qName, reInitIfaces));
+	if(vmSettings == NULL)
+		return;
+
+	ProgressDialog p("");
+	p.ui->label->setText(QString::fromUtf8("Caricamento macchina \"").append(qName).append("\""));
+	p.ui->progressBar->setValue(0);
+	p.open();
+
+	vmSettings->vm->cleanIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
+	vmSettings->vm->copyIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
+	vmSettings->vm->saveSettings();
+	vmSettings->refreshTable();
+
+	ui->vm_tabs->addTab(vmSettings, qName);
+	VMTabSettings_vec.push_back(vmSettings);
+	p.ui->progressBar->setValue(100);
+}
+
+VMTabSettings *MainWindow::addMachine(IMachine *m)
+{
+	if(m == NULL)
+		return NULL;
+
+	OSBridge::unloadNbdModule();
+	OSBridge::loadNbdModule(machines_vec.size() + 1);
 
 	int newTabIndex = ui->vm_tabs->count();
 
@@ -458,14 +484,8 @@ void MainWindow::addMachine(IMachine *m, QString qName)
 
 	QString tabname = machines_vec.at(newTabIndex)->getName();
 	VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(newTabIndex), mountpoint_ss.str(), partition_mountpoint_prefix_ss.str());
-	vmSettings->vm->cleanIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
-	vmSettings->vm->copyIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
-	vmSettings->vm->saveSettings();
-	vmSettings->refreshTable();
 
-	ui->vm_tabs->addTab(vmSettings, tabname);
-	VMTabSettings_vec.push_back(vmSettings);
-	p.ui->progressBar->setValue(100);
+	return vmSettings;
 }
 
 void MainWindow::slotRemove()
