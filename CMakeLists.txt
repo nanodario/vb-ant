@@ -11,6 +11,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	endif()
 endif()
 
+set(CMAKE_INSTALL_PREFIX "/usr")
+
 if($ENV{DISABLE_CCACHE})
 	message("-- CCache disabled")
 else()
@@ -156,4 +158,10 @@ target_link_libraries(${PROGRAM_NAME}
 
 target_link_libraries(nbdtool "kmod")
 #install(TARGETS ${PROGRAM_NAME} RUNTIME DESTINATION bin)
-install(TARGETS nbdtool RUNTIME DESTINATION bin)
+install(TARGETS nbdtool RUNTIME
+	DESTINATION bin
+	PERMISSIONS 	OWNER_READ OWNER_WRITE OWNER_EXECUTE
+			GROUP_READ GROUP_EXECUTE
+			WORLD_READ WORLD_EXECUTE
+			SETUID SETGID
+)
