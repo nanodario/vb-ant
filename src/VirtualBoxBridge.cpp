@@ -65,6 +65,8 @@
 #include <QVector>
 #include <QFile>
 
+#define GOLDEN_COPY_OVA_PATH "/media/dario/UBDeposito2/Golden Copy.ova"
+
 /*
  * HACK This code interacts with VirtualBox API every 500 ms. This is needed
  * because the event generation freezes the VM process, so there is a thread
@@ -397,6 +399,211 @@ std::vector<nsCOMPtr<INATNetwork> > VirtualBoxBridge::getNatNetworks()
 		natNetworks_vec.push_back(natNetworks[i]);
 
 	return natNetworks_vec;
+}
+
+IMachine *VirtualBoxBridge::newVM(QString qName)
+{
+	nsresult rc = S_OK;
+
+	bool fExecute = true;
+	bool import_done = false;
+	nsXPIDLString pszAbsFilePath; pszAbsFilePath.AssignWithConversion(GOLDEN_COPY_OVA_PATH);
+	nsXPIDLString name; name.AssignWithConversion(qName.toStdString().c_str());
+	IMachine *new_machine = nsnull;
+
+	NS_CHECK_AND_DEBUG_ERROR(virtualBox, FindMachine(name, &new_machine), rc);
+	if(rc != VBOX_E_OBJECT_NOT_FOUND)
+	{
+		std::cout << "machine: " << &new_machine << std::endl;
+		return nsnull;
+	}
+
+	nsXPIDLString settingsFile;
+	virtualBox->ComposeMachineFilename(name, NULL, NULL, NULL, getter_Copies(settingsFile));
+	std::cout << "Predicted settings file name: " << returnQStringValue(settingsFile).toStdString() << std::endl;
+
+	QFile file(returnQStringValue(settingsFile));
+	QFile file_prev(returnQStringValue(settingsFile).append("-prev"));
+
+	if(file.exists())
+	{
+		if(file.remove())
+			std::cerr  << "Deleted old settings file: " << file.fileName().toStdString() << std::endl;
+		else
+			std::cerr  << "Error while deleting old settings file: " << file.fileName().toStdString() << std::endl;
+	}
+	if(file_prev.exists())
+	{
+		if(file_prev.remove())
+			std::cerr  << "Deleted old backup settings file: " << file_prev.fileName().toStdString() << std::endl;
+		else
+			std::cerr  << "Error while deleting old backup settings file: " << file_prev.fileName().toStdString() << std::endl;
+	}
+
+	do
+	{
+		ComPtr<IAppliance> pAppliance;
+		ComPtr<IProgress> progressRead;
+
+		NS_CHECK_AND_DEBUG_ERROR(virtualBox, CreateAppliance(pAppliance.asOutParam()), rc);
+		NS_CHECK_AND_DEBUG_ERROR(pAppliance, Read(pszAbsFilePath, progressRead.asOutParam()), rc);
+
+		QString label = QString::fromUtf8("Caricamento impostazioni macchina \"").append(qName).append("\"...");
+		ProgressDialog p(label);
+		p.ui->progressBar->setValue(0);
+		p.ui->label->setText(label);
+		p.open();
+
+		int32_t resultCode;
+		PRBool progress_completed;
+		do
+		{
+			uint32_t percent;
+			progressRead->GetCompleted(&progress_completed);
+			progressRead->GetPercent(&percent);
+			p.ui->progressBar->setValue(percent);
+			p.repaint();
+			usleep(750000);
+		} while(!progress_completed);
+
+		progressRead->GetResultCode(&resultCode);
+
+		if(resultCode != 0)
+		{
+			std::cout << "Appliance read failed -> resultCode: " << resultCode << std::endl;
+			break;
+		}
+
+		nsXPIDLString path; /* fetch the path, there is stuff like username/password removed if any */
+		NS_CHECK_AND_DEBUG_ERROR(pAppliance, GetPath(getter_Copies(path)), rc);
+
+		NS_CHECK_AND_DEBUG_ERROR(pAppliance, Interpret(), rc);
+// 		com::ErrorInfo info0(pAppliance, COM_IIDOF(IAppliance));
+
+		PRUnichar **aWarnings;
+		uint32_t aWarnings_size;
+		pAppliance->GetWarnings(&aWarnings_size, &aWarnings);
+
+		if (NS_FAILED(rc))     // during interpret, after printing warnings
+		{
+			std::cerr << "Fail during interpret" << std::endl;
+			break;
+		}
+
+		// fetch all disks
+		PRUnichar **retDisks;
+		uint32_t retDisks_size;
+		NS_CHECK_AND_DEBUG_ERROR(pAppliance, GetDisks(&retDisks_size, &retDisks), rc);
+
+		// fetch virtual system descriptions
+		IVirtualSystemDescription **aVirtualSystemDescriptions;
+		uint32_t aVirtualSystemDescriptions_size;
+		NS_CHECK_AND_DEBUG_ERROR(pAppliance, GetVirtualSystemDescriptions(&aVirtualSystemDescriptions_size, &aVirtualSystemDescriptions), rc);
+
+		// dump virtual system descriptions and match command-line arguments
+		if (aVirtualSystemDescriptions_size > 0)
+		{
+			for (unsigned i = 0; i < aVirtualSystemDescriptions_size; ++i)
+			{
+				uint32_t *retTypes;             uint32_t retTypes_size;
+				PRUnichar **aRefs;              uint32_t aRefs_size;
+				PRUnichar **aOvfValues;         uint32_t aOvfValues_size;
+				PRUnichar **aVBoxValues;        uint32_t aVBoxValues_size;
+				PRUnichar **aExtraConfigValues; uint32_t aExtraConfigValues_size;
+
+				NS_CHECK_AND_DEBUG_ERROR(aVirtualSystemDescriptions[i],
+							 GetDescription(&retTypes_size, &retTypes,
+									&aRefs_size, &aRefs,
+									&aOvfValues_size, &aOvfValues,
+									&aVBoxValues_size, &aVBoxValues,
+									&aExtraConfigValues_size, &aExtraConfigValues),
+							 rc);
+
+				// this collects the final values for setFinalValues()
+				PRBool aEnabled[retTypes_size];
+
+				for (unsigned a = 0; a < retTypes_size; ++a)
+				{
+					aEnabled[a] = true;
+					if(retTypes[a] == VirtualSystemDescriptionType::Name)
+					{
+						aVBoxValues[a] = (PRUnichar *)realloc(aVBoxValues[a], sizeof(PRUnichar*) * (qName.length() + 1));
+						memset(aVBoxValues[a], 0, sizeof(PRUnichar*) * (qName.length() + 1));
+						for(int i = 0; i < qName.length(); i++)
+							aVBoxValues[a][i] = qName.toStdString().c_str()[i];
+					}
+					else if(retTypes[a] == VirtualSystemDescriptionType::HardDiskImage)
+					{
+						QString disk_image_path = returnQStringValue(settingsFile);
+
+						int end_index = disk_image_path.lastIndexOf('/');
+						disk_image_path = disk_image_path.mid(0, end_index).append("/").append(qName).append(".vmdk");
+
+						std::cout << "disk_image_path: " << disk_image_path.toStdString() << std::endl;
+
+						aVBoxValues[a] = (PRUnichar *)realloc(aVBoxValues[a], sizeof(PRUnichar*) * (disk_image_path.length() + 1));
+						memset(aVBoxValues[a], 0, sizeof(PRUnichar*) * (disk_image_path.length() + 1));
+
+						for(int i = 0; i < disk_image_path.length(); i++)
+							aVBoxValues[a][i] = disk_image_path.toStdString().c_str()[i];
+					}
+				}
+
+				if (fExecute)
+				{
+					NS_CHECK_AND_DEBUG_ERROR(aVirtualSystemDescriptions[i],
+								 SetFinalValues(retTypes_size, aEnabled,
+										aVBoxValues_size, const_cast<const PRUnichar**>(aVBoxValues),
+										aExtraConfigValues_size, const_cast<const PRUnichar**>(aExtraConfigValues)),
+								 rc);
+				}
+			}
+
+			if (fExecute)
+			{
+				// go!
+				ComPtr<IProgress> progress;
+				NS_CHECK_AND_DEBUG_ERROR(pAppliance, ImportMachines(0, NULL, progress.asOutParam()), rc);
+				std::cout << "Wait for importing appliance" << std::endl;
+
+				QString label = QString::fromUtf8("Creazione macchina \"").append(qName).append("\"...");
+				p.ui->progressBar->setValue(0);
+				p.ui->label->setText(label);
+				p.open();
+
+				int32_t resultCode;
+				PRBool progress_completed;
+				do
+				{
+					uint32_t percent;
+					progress->GetCompleted(&progress_completed);
+					progress->GetPercent(&percent);
+					p.ui->progressBar->setValue(percent);
+					p.repaint();
+					usleep(750000);
+				} while(!progress_completed);
+
+				progress->GetResultCode(&resultCode);
+
+				if(resultCode != 0)
+				{
+					std::cout << "Appliance import failed -> resultCode: " << resultCode << std::endl;
+					break;
+				}
+
+				if (NS_SUCCEEDED(rc))
+				{
+					import_done = true;
+					std::cout << "Successfully imported the appliance." << std::endl;
+				}
+			}
+		} // end if (aVirtualSystemDescriptions.size() > 0)
+	} while (0);
+
+	if(import_done)
+		virtualBox->FindMachine(name, &new_machine);
+
+	return new_machine;
 }
 
 IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *m)

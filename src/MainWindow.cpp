@@ -80,17 +80,18 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 		ui->vm_tabs->addTab(vmSettings, tabname);
 		VMTabSettings_vec.push_back(vmSettings);
 		p.ui->progressBar->setValue(((i+1)*100)/machines_vec.size());
+		p.repaint();
 	}
 	p.ui->label->setText("Caricamento completato");
 	p.ui->progressBar->setValue(100);
 
 	connect(ui->actionInfo_su, SIGNAL(triggered(bool)), this, SLOT(slotInfo()));
-// 	connect(ui->actionNew, SIGNAL(triggered(bool)), this, SLOT(slotActionNew()));
 // 	connect(ui->actionopen, SIGNAL(triggered(bool)), this, SLOT(slotActionOpen()));
 // 	connect(ui->actionSave, SIGNAL(triggered(bool)), this, SLOT(slotActionSave()));
 // 	connect(ui->actionSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotActionSaveAs()));
 	connect(ui->vm_tabs, SIGNAL(currentChanged(int)), this, SLOT(currentChangedSlot(int)));
 
+	connect(ui->actionNuova, SIGNAL(triggered(bool)), this, SLOT(slotNew()));
 	connect(ui->actionClona, SIGNAL(triggered(bool)), this, SLOT(slotClone()));
 	connect(ui->actionElimina, SIGNAL(triggered(bool)), this, SLOT(slotRemove()));
 	connect(ui->actionAvviaAll, SIGNAL(triggered(bool)), this, SLOT(slotStartAll()));
@@ -100,6 +101,7 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionReset, SIGNAL(triggered(bool)), this, SLOT(slotReset()));
 	connect(ui->actionInterrompi, SIGNAL(triggered(bool)), this, SLOT(slotStop()));
 
+	connect(ui->toolbarNuova, SIGNAL(triggered(bool)), ui->actionNuova, SIGNAL(triggered(bool)));
 	connect(ui->toolbarClona, SIGNAL(triggered(bool)), ui->actionClona, SIGNAL(triggered(bool)));
 	connect(ui->toolbarElimina, SIGNAL(triggered(bool)), ui->actionElimina, SIGNAL(triggered(bool)));
 	connect(ui->toolbarAvviaAll, SIGNAL(triggered(bool)), ui->actionAvviaAll, SIGNAL(triggered(bool)));
@@ -407,15 +409,30 @@ void MainWindow::slotSettings()
 }
 #endif
 
+void MainWindow::slotNew()
+{
+	CloneDialog c(this, true);
+	c.exec();
+}
+
 void MainWindow::slotClone()
 {
 	CloneDialog c(this);
 	c.exec();
 }
 
+void MainWindow::launchCreateProcess(QString qName, bool reInitIfaces)
+{
+	addMachine(vboxbridge->newVM(qName), qName);
+}
+
 void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
 {
-	IMachine *m = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->clone(qName, reInitIfaces);
+	addMachine(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->clone(qName, reInitIfaces), qName);
+}
+
+void MainWindow::addMachine(IMachine *m, QString qName)
+{
 	if(m == NULL)
 		return;
 

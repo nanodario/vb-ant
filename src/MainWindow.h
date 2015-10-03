@@ -44,6 +44,7 @@ class MainWindow : public QMainWindow
 	public:
 		explicit MainWindow(const QString &fileToOpen = QString(), QWidget *parent = 0);
 		~MainWindow();
+		void launchCreateProcess(QString qName, bool reInitIfaces);
 		void launchCloneProcess(QString qName, bool reInitIfaces);
 		VirtualBoxBridge *vboxbridge;
 		
@@ -58,6 +59,7 @@ class MainWindow : public QMainWindow
 // 		bool slotActionSave();
 // 		bool slotActionSaveAs();
 		void currentChangedSlot(int tab);
+		void slotNew();
 		void slotClone();
 		void slotRemove();
 		void slotStartAll();
@@ -75,6 +77,7 @@ class MainWindow : public QMainWindow
 		bool loadFile(const QString &path);
 		void setSettingsPolicy(int tab, uint32_t state);
 		void refreshUI(int tab, uint32_t state = -1);
+		void addMachine(IMachine *m, QString qName);
 		
 		Ui_MainWindow *ui;
 		std::vector<VMTabSettings*> VMTabSettings_vec;

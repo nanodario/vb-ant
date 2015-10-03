@@ -132,6 +132,7 @@ class VirtualBoxBridge
 		std::vector<QString> getGenericDriversList();
 		std::vector<QString> getInternalNetworkList();
 		std::vector<nsCOMPtr<INATNetwork> > getNatNetworks();
+		IMachine *newVM(QString name);
 		IMachine *cloneVM(QString name, bool reInitIfaces, IMachine *m);
 		bool deleteVM(IMachine *m);
 

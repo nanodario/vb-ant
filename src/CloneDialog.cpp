@@ -21,8 +21,8 @@
 
 #include "CloneDialog.h"
 
-CloneDialog::CloneDialog(MainWindow *destination)
-: ui(new Ui_clone_machine), destination(destination)
+CloneDialog::CloneDialog(MainWindow *destination, bool newMachine)
+: ui(new Ui_clone_machine), destination(destination), newMachine(newMachine)
 {
 	ui->setupUi(this);
 	connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(slotAccepted()));
@@ -36,6 +36,13 @@ CloneDialog::CloneDialog(MainWindow *destination)
 			case QDialogButtonBox::Cancel: ui->buttonBox->buttons()[i]->setText("Annulla"); break;
 		}
 	}
+
+	if(newMachine)
+	{
+		setWindowTitle(QApplication::translate("clone_machine", "Crea macchina...", 0, QApplication::UnicodeUTF8));
+		ui->checkBox->setChecked(true);
+		ui->checkBox->setEnabled(false);
+	}
 }
 
 CloneDialog::~CloneDialog()
@@ -46,5 +53,10 @@ CloneDialog::~CloneDialog()
 void CloneDialog::slotAccepted()
 {
 	if(ui->lineEdit->text().length() > 0)
-		destination->launchCloneProcess(ui->lineEdit->text(), ui->checkBox->isChecked());
+	{
+		if(newMachine)
+			destination->launchCreateProcess(ui->lineEdit->text(), ui->checkBox->isChecked());
+		else
+			destination->launchCloneProcess(ui->lineEdit->text(), ui->checkBox->isChecked());
+	}
 }

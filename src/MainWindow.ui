@@ -1721,6 +1721,7 @@
     <property name="title">
      <string>&amp;Macchina</string>
     </property>
+    <addaction name="actionNuova"/>
     <addaction name="actionClona"/>
     <addaction name="actionElimina"/>
     <addaction name="separator"/>
@@ -1759,6 +1760,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="toolbarNuova"/>
    <addaction name="toolbarClona"/>
    <addaction name="toolbarElimina"/>
    <addaction name="separator"/>
@@ -1775,17 +1777,16 @@
     <string>Info su...</string>
    </property>
   </action>
-  <action name="actionNew">
+  <action name="actionNuova">
    <property name="enabled">
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="document-new">
-     <normaloff/>
-    </iconset>
+    <iconset resource="res.qrc">
+     <normaloff>:/new/resources/SVG PINO/nuovo.svg</normaloff>:/new/resources/SVG PINO/nuovo.svg</iconset>
    </property>
    <property name="text">
-    <string>&amp;Nuovo</string>
+    <string>&amp;Nuova VM...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
@@ -2071,6 +2072,18 @@
    </property>
    <property name="toolTip">
     <string>Resetta macchina virtuale selezionata</string>
+   </property>
+  </action>
+  <action name="toolbarNuova">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/new/resources/SVG PINO/nuovo.svg</normaloff>:/new/resources/SVG PINO/nuovo.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Nuova VM</string>
+   </property>
+   <property name="toolTip">
+    <string>Crea macchina virtuale da golden copy</string>
    </property>
   </action>
  </widget>

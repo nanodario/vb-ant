@@ -32,7 +32,7 @@ class CloneDialog : public QDialog
 	Q_OBJECT
 
 	public:
-		CloneDialog(MainWindow *destination);
+		CloneDialog(MainWindow *destination, bool newMachine = false);
 		virtual ~CloneDialog();
 		
 	public slots:
@@ -41,6 +41,7 @@ class CloneDialog : public QDialog
 	private:
 		Ui_clone_machine *ui;
 		MainWindow *destination;
+		bool newMachine;
 };
 
 #endif //INFODIALOG_H
