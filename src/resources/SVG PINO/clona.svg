@@ -3,8 +3,11 @@
 <svg version="1.1" id="Livello_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
 <g>
-	<path fill="#E6E6E5" d="M47.5,63H7.8V20.9L20,8.8h27.5V63z M9.7,61.1h35.8V10.7H20.8L9.7,21.7V61.1z"/>
-	<polygon fill="#E6E6E5" points="56.2,55.3 48.5,55.3 48.5,53.3 54.3,53.3 54.3,2.9 29.5,2.9 24.9,7.5 23.6,6.1 28.7,1 56.2,1 	"/>
-	<polygon fill="#E6E6E5" points="21.3,22.3 8.8,22.3 8.8,20.4 19.4,20.4 19.4,9.7 21.3,9.7 	"/>
+	<path fill="#E6E6E5" stroke="#E6E6E5" stroke-width="2" stroke-miterlimit="10" d="M47,62H8.6V21.3L20.4,9.5H47V62z M10.4,60.2
+		h34.6V11.4H21.2L10.4,22V60.2z"/>
+	<polygon fill="#E6E6E5" stroke="#E6E6E5" stroke-width="2" stroke-miterlimit="10" points="55.4,54.5 48,54.5 48,52.6 53.6,52.6 
+		53.6,3.8 29.6,3.8 25.1,8.3 23.9,6.9 28.8,2 55.4,2 	"/>
+	<polygon fill="#E6E6E5" stroke="#E6E6E5" stroke-width="2" stroke-miterlimit="10" points="21.6,22.6 9.5,22.6 9.5,20.8 19.8,20.8 
+		19.8,10.4 21.6,10.4 	"/>
 </g>
 </svg>

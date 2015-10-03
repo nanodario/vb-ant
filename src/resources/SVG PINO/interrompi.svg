@@ -1,75 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- Generator: Adobe Illustrator 18.1.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   version="1.1"
-   id="Livello_1"
-   x="0px"
-   y="0px"
-   viewBox="0 0 64 64"
-   enable-background="new 0 0 64 64"
-   xml:space="preserve"
-   inkscape:version="0.48.4 r9939"
-   width="100%"
-   height="100%"
-   sodipodi:docname="interrompi.svg"><metadata
-     id="metadata3037"><rdf:RDF><cc:Work
-         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><defs
-     id="defs3035" /><sodipodi:namedview
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1"
-     objecttolerance="10"
-     gridtolerance="10"
-     guidetolerance="10"
-     inkscape:pageopacity="0"
-     inkscape:pageshadow="2"
-     inkscape:window-width="1400"
-     inkscape:window-height="973"
-     id="namedview3033"
-     showgrid="true"
-     inkscape:zoom="2.8284271"
-     inkscape:cx="17.230435"
-     inkscape:cy="-10.42448"
-     inkscape:window-x="-2"
-     inkscape:window-y="24"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="g3025" /><g
-     id="g3025"><rect
-       x="22.750782"
-       y="23.299999"
-       width="1.9"
-       height="17.4"
-       id="rect3027"
-       style="fill:#e6e6e6" /><rect
-       x="38.249828"
-       y="23.299999"
-       width="1.9"
-       height="17.4"
-       id="rect3029"
-       style="fill:#e6e6e6" /><path
-       fill="#E6E6E6"
-       d="M32,63c-8.3,0-16.1-3.2-21.9-9.1C4.2,48.1,1,40.3,1,32c0-8.3,3.2-16.1,9.1-21.9C15.9,4.2,23.7,1,32,1   c8.3,0,16.1,3.2,21.9,9.1C59.8,15.9,63,23.7,63,32c0,8.3-3.2,16.1-9.1,21.9C48.1,59.8,40.3,63,32,63z M32,2.9   c-7.8,0-15.1,3-20.5,8.5C6,16.9,2.9,24.2,2.9,32s3,15.1,8.5,20.5c5.5,5.5,12.8,8.5,20.5,8.5s15.1-3,20.5-8.5   c5.5-5.5,8.5-12.8,8.5-20.5s-3-15.1-8.5-20.5C47.1,6,39.8,2.9,32,2.9z"
-       id="path3031" /><rect
-       style="fill:#e6e6e6"
-       id="rect3039"
-       height="17.4"
-       width="1.9"
-       y="-40.150002"
-       x="23.300781"
-       transform="matrix(0,1,-1,0,0,0)" /><rect
-       style="fill:#e6e6e6"
-       id="rect3041"
-       height="17.4"
-       width="1.9"
-       y="-40.150002"
-       x="38.795311"
-       transform="matrix(0,1,-1,0,0,0)" /></g></svg>
+<svg version="1.1" id="Livello_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
+<g>
+	<path fill="#E6E6E6" stroke="#E6E6E6" stroke-width="2" stroke-miterlimit="10" d="M32,62c-8,0-15.6-3.1-21.2-8.8
+		C5.1,47.6,2,40,2,32s3.1-15.6,8.8-21.2C16.4,5.1,24,2,32,2s15.6,3.1,21.2,8.8C58.9,16.4,62,24,62,32s-3.1,15.6-8.8,21.2
+		C47.6,58.9,40,62,32,62z M32,3.8c-7.5,0-14.6,2.9-19.8,8.2C6.8,17.4,3.8,24.5,3.8,32s2.9,14.6,8.2,19.8c5.3,5.3,12.4,8.2,19.8,8.2
+		c7.5,0,14.6-2.9,19.8-8.2C57.1,46.5,60,39.5,60,32s-2.9-14.6-8.2-19.8C46.6,6.8,39.5,3.8,32,3.8z"/>
+</g>
+<path fill="#E6E6E6" stroke="#E6E6E6" stroke-width="2" stroke-miterlimit="10" d="M41.1,22.9v18.2H22.9V22.9H41.1 M43,21H21V43H43
+	V21L43,21z"/>
+</svg>

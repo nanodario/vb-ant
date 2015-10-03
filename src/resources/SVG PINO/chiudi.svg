@@ -3,9 +3,9 @@
 <svg version="1.1" id="Livello_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
 <g>
-	<path fill="#414141" d="M32,62.5c-17.1,0-31-13.9-31-31C1,22.4,5,13.9,11.9,8l1.3,1.5C6.7,15,2.9,23,2.9,31.5
-		c0,16,13,29.1,29.1,29.1s29.1-13,29.1-29.1c0-8.5-3.7-16.6-10.2-22.1L52.1,8C59,13.9,63,22.4,63,31.5C63,48.6,49.1,62.5,32,62.5z"
-		/>
-	<rect x="31" y="1.5" fill="#414141" width="1.9" height="25.4"/>
+	<path fill="#E6E6E5" stroke="#E6E6E5" stroke-width="2" stroke-miterlimit="10" d="M32,61.5c-16.5,0-30-13.5-30-30
+		c0-8.8,3.9-17,10.5-22.7l1.3,1.5c-6.3,5.3-10,13.1-10,21.3C3.8,47,16.4,59.7,32,59.7s28.2-12.6,28.2-28.2c0-8.2-3.6-16.1-9.9-21.4
+		l1.2-1.4C58.1,14.5,62,22.7,62,31.5C62,48.1,48.5,61.5,32,61.5z"/>
+	<rect x="31" y="2.5" fill="#E6E6E5" stroke="#E6E6E5" stroke-width="2" stroke-miterlimit="10" width="1.8" height="24.6"/>
 </g>
 </svg>

@@ -471,6 +471,7 @@ IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *
 		progress->GetCompleted(&progress_completed);
 		progress->GetPercent(&percent);
 		p.ui->progressBar->setValue(percent);
+		p.repaint();
 		usleep(750000);
 	} while(!progress_completed);
 
@@ -1152,6 +1153,7 @@ bool MachineBridge::start()
 			progress->GetCompleted(&progress_completed);
 			progress->GetPercent(&percent);
 			p.ui->progressBar->setValue(percent);
+			p.repaint();
 			usleep(750000);
 		} while(!progress_completed);
 		
@@ -1198,6 +1200,7 @@ bool MachineBridge::stop(bool force)
 			progress->GetCompleted(&progress_completed);
 			progress->GetPercent(&percent);
 			p.ui->progressBar->setValue(percent);
+			p.repaint();
 			usleep(750000);
 		} while(!progress_completed);
 		

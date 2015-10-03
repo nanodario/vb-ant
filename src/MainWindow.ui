@@ -1848,7 +1848,7 @@
   <action name="actionClona">
    <property name="icon">
     <iconset resource="res.qrc">
-     <normaloff>:/new/resources/SVG PINO/clona.svg</normaloff>:/new/resources/SVG PINO/clona.svg</iconset>
+     <normaloff>:/clone/resources/SVG PINO/clona.svg</normaloff>:/clone/resources/SVG PINO/clona.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Clona VM...</string>
@@ -1965,7 +1965,7 @@
   <action name="toolbarClona">
    <property name="icon">
     <iconset resource="res.qrc">
-     <normaloff>:/new/resources/SVG PINO/clona.svg</normaloff>:/new/resources/SVG PINO/clona.svg</iconset>
+     <normaloff>:/clone/resources/SVG PINO/clona.svg</normaloff>:/clone/resources/SVG PINO/clona.svg</iconset>
    </property>
    <property name="text">
     <string>Clona VM...</string>
