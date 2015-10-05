@@ -536,9 +536,9 @@ bool IfacesTable::setStatus(int iface, bool checked)
 				if(checked &&
 					(ifaces[iface]->attachmentType != NetworkAttachmentType::Null
 					&& ifaces[iface]->attachmentType != NetworkAttachmentType::NAT))
-					a->comboBox->setEnabled(true);
+					a->setEnabled(true);
 				else
-					a->comboBox->setEnabled(false);
+					a->setEnabled(false);
 
 				break;
 			}
