@@ -493,7 +493,19 @@ void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
 VMTabSettings *MainWindow::addMachine(IMachine *m)
 {
 	if(m == NULL)
+	{
+		QMessageBox qm(QMessageBox::Critical, "Errore", "Errore durante la creazione della macchina virtuale", QMessageBox::Close, this);
+		qm.setPalette(palette());
+		for(int i = 0; i < qm.buttons().size(); i++)
+		{
+			switch(qm.standardButton(qm.buttons()[i]))
+			{
+				case QDialogButtonBox::Close: qm.buttons()[i]->setText("Chiudi"); break;
+			}
+		}
+		qm.exec();
 		return NULL;
+	}
 
 	OSBridge::unloadNbdModule();
 	OSBridge::loadNbdModule(machines_vec.size() + 1);
