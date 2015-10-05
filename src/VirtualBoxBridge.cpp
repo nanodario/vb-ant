@@ -403,7 +403,7 @@ std::vector<nsCOMPtr<INATNetwork> > VirtualBoxBridge::getNatNetworks()
 
 IMachine *VirtualBoxBridge::newVM(QString qName)
 {
-	nsresult rc = S_OK;
+	nsresult rc = NS_OK;
 
 	bool fExecute = true;
 	bool import_done = false;

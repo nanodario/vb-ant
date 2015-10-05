@@ -649,8 +649,7 @@ void VirtualMachine::populateIfaces()
 
 void VirtualMachine::cleanIfaces(Iface **ifaces_src, int ifaces_src_size)
 {
-	std::cerr << "[" << __func__ << "] unimplemented function, skipping..." << std::endl;
-
+	mountVpartition(OS_PARTITION_NUMBER);
 	for(int i = 0; i < std::min((int) ifaces_size, ifaces_src_size); i++)
 	{
 		QString filename = QString::fromStdString(partition_mountpoint_prefix).append(QString::fromUtf8("p%1-u/").arg(OS_PARTITION_NUMBER)).append(NET_SW_SETTINGS_PREFIX).append(ifaces_src[i]->last_valid_name);
@@ -663,6 +662,7 @@ void VirtualMachine::cleanIfaces(Iface **ifaces_src, int ifaces_src_size)
 				std::cout << "FAIL" << std::endl;
 		}
 	}
+	umountVpartition(OS_PARTITION_NUMBER);
 }
 
 void VirtualMachine::copyIfaces(Iface **ifaces_src, int ifaces_src_size)
