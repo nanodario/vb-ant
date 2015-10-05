@@ -34,6 +34,7 @@ class ProgressDialog : public QDialog
 	public:
 		ProgressDialog(QString label = QString::fromUtf8("Completamento operazione:"));
 		virtual ~ProgressDialog();
+		void refresh();
 		Ui_Dialog *ui;
 };
 

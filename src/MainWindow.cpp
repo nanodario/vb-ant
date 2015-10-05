@@ -80,7 +80,7 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 		ui->vm_tabs->addTab(vmSettings, tabname);
 		VMTabSettings_vec.push_back(vmSettings);
 		p.ui->progressBar->setValue(((i+1)*100)/machines_vec.size());
-		p.repaint();
+		p.refresh();
 	}
 	p.ui->label->setText("Caricamento completato");
 	p.ui->progressBar->setValue(100);

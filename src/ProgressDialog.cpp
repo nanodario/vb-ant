@@ -38,3 +38,11 @@ ProgressDialog::~ProgressDialog()
 {
 	delete ui;
 }
+
+void ProgressDialog::refresh()
+{
+	ui->label->repaint();
+	ui->progressBar->repaint();
+	repaint();
+}
+
