@@ -64,6 +64,8 @@ class MainWindow : public QMainWindow
 		void slotRemove();
 		void slotStartAll();
 		void slotInterrompiAll();
+		void slotEnableAll();
+		void slotDisableAll();
 		void slotStart();
 		void slotPause();
 		void slotReset();

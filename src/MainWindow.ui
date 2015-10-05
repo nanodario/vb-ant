@@ -1300,6 +1300,9 @@
     <addaction name="actionAvviaAll"/>
     <addaction name="actionInterrompiAll"/>
     <addaction name="separator"/>
+    <addaction name="actionAbilitaAll"/>
+    <addaction name="actionDisabilitaAll"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuMacchina">
@@ -1739,11 +1742,8 @@
    <property name="contextMenuPolicy">
     <enum>Qt::NoContextMenu</enum>
    </property>
-   <property name="acceptDrops">
-    <bool>false</bool>
-   </property>
    <property name="windowTitle">
-    <string>toolBar</string>
+    <string>Avvio rapido</string>
    </property>
    <property name="movable">
     <bool>false</bool>
@@ -2084,6 +2084,16 @@
    </property>
    <property name="toolTip">
     <string>Crea macchina virtuale da golden copy</string>
+   </property>
+  </action>
+  <action name="actionAbilitaAll">
+   <property name="text">
+    <string>Abilita tutte</string>
+   </property>
+  </action>
+  <action name="actionDisabilitaAll">
+   <property name="text">
+    <string>Disabilita tutte</string>
    </property>
   </action>
  </widget>

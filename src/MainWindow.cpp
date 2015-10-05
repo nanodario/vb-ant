@@ -96,6 +96,8 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionElimina, SIGNAL(triggered(bool)), this, SLOT(slotRemove()));
 	connect(ui->actionAvviaAll, SIGNAL(triggered(bool)), this, SLOT(slotStartAll()));
 	connect(ui->actionInterrompiAll, SIGNAL(triggered(bool)), this, SLOT(slotInterrompiAll()));
+	connect(ui->actionAbilitaAll, SIGNAL(triggered(bool)), this, SLOT(slotEnableAll()));
+	connect(ui->actionDisabilitaAll, SIGNAL(triggered(bool)), this, SLOT(slotDisableAll()));
 	connect(ui->actionAvvia, SIGNAL(triggered(bool)), this, SLOT(slotStart()));
 	connect(ui->actionPausa, SIGNAL(triggered(bool)), this, SLOT(slotPause()));
 	connect(ui->actionReset, SIGNAL(triggered(bool)), this, SLOT(slotReset()));
@@ -325,6 +327,32 @@ void MainWindow::slotInterrompiAll()
 		   machineState == MachineState::Paused ||
 		   machineState == MachineState::Starting)
 			VMTabSettings_vec.at(i)->vm->stop();
+	}
+}
+
+void MainWindow::slotEnableAll()
+{
+	for(int i = 0; i < ui->vm_tabs->count(); i++)
+	{
+		uint32_t machineState = VMTabSettings_vec.at(i)->machine->getState();
+
+		if(machineState != MachineState::Running &&
+			machineState != MachineState::Paused &&
+			machineState != MachineState::Starting)
+			VMTabSettings_vec.at(i)->vm_enabled->setChecked(true);
+	}
+}
+
+void MainWindow::slotDisableAll()
+{
+	for(int i = 0; i < ui->vm_tabs->count(); i++)
+	{
+		uint32_t machineState = VMTabSettings_vec.at(i)->machine->getState();
+		
+		if(machineState != MachineState::Running &&
+			machineState != MachineState::Paused &&
+			machineState != MachineState::Starting)
+			VMTabSettings_vec.at(i)->vm_enabled->setChecked(false);
 	}
 }
 
