@@ -42,7 +42,7 @@
 
 VirtualMachine::VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix)
 : machine(machine), ifaces_size(0), ifaces(NULL), vhd_mountpoint(vhd_mountpoint)
-, partition_mountpoint_prefix(partition_mountpoint_prefix)
+, partition_mountpoint_prefix(partition_mountpoint_prefix), vhd_mounted(false)
 {
 	populateIfaces();
 }
@@ -54,20 +54,16 @@ VirtualMachine::~VirtualMachine()
 	
 	free(ifaces);
 	
-	while(mounted_partitions_vec.size() > 0)
-	{
-		int i = mounted_partitions_vec.back().find_last_of('p');
-		umountVpartition(atoi(mounted_partitions_vec.back().substr(i).c_str()));
-		mounted_partitions_vec.pop_back();
-	}
+	umountVHD();
 }
 
 bool VirtualMachine::mountVHD()
 {
-	if(mounted_partitions_vec.size() == 0)
+	if(!vhd_mounted)
 	{
 		std::cout << "Mounting " << machine->getHardDiskFilePath().toStdString() << " on " << vhd_mountpoint << std::endl;
-		return OSBridge::mountVHD(machine->getHardDiskFilePath().toStdString(), vhd_mountpoint);
+		vhd_mounted = OSBridge::mountVHD(machine->getHardDiskFilePath().toStdString(), vhd_mountpoint);
+		return vhd_mounted;
 	}
 
 	return true;
@@ -75,21 +71,26 @@ bool VirtualMachine::mountVHD()
 
 bool VirtualMachine::umountVHD()
 {
+	if(!vhd_mounted)
+		return true;
+
 	while(mounted_partitions_vec.size() > 0)
 	{
 		int i = mounted_partitions_vec.back().find_last_of('p');
-		umountVpartition(atoi(mounted_partitions_vec.back().substr(i).c_str()));
+		if(umountVpartition(atoi(mounted_partitions_vec.back().substr(i).c_str())))
+			mounted_partitions_vec.pop_back();
+		else
+			return false;
 	}
 
 	std::cout << "Unmounting " << machine->getHardDiskFilePath().toStdString() << " from " << vhd_mountpoint << std::endl;
-	return OSBridge::umountVHD(vhd_mountpoint);
+	vhd_mounted = !OSBridge::umountVHD(vhd_mountpoint);
+	return !vhd_mounted;
 }
 
 bool VirtualMachine::mountVpartition(int index, bool readonly)
 {
-	if(mounted_partitions_vec.size() == 0)
-		if(!mountVHD())
-			return false;
+	mountVHD();
 
 	std::stringstream partition; partition << vhd_mountpoint << "p" << index;
 	std::stringstream partition_mountpoint;	partition_mountpoint << partition_mountpoint_prefix << "p" << index;
@@ -103,7 +104,7 @@ bool VirtualMachine::mountVpartition(int index, bool readonly)
 			return true;
 		}
 
-	if(OSBridge::mountVpartition(partition.str(), partition_mountpoint.str(), partition_usermountpoint.str()), readonly)
+	if(OSBridge::mountVpartition(partition.str(), partition_mountpoint.str(), partition_usermountpoint.str(), readonly))
 	{
 		mounted_partitions_vec.push_back(partition.str());
 		return true;
@@ -119,22 +120,18 @@ bool VirtualMachine::umountVpartition(int index)
 	std::stringstream usermpoint; usermpoint << partition_mountpoint_prefix << "p" << index << "-u";
 	
 	for(int i = 0; i < mounted_partitions_vec.size(); i++)
-	{
 		if(mounted_partitions_vec.at(i) == partition.str())
 		{
 			std::cout << "Unmounting " << partition.str() << std::endl;
-			if(OSBridge::umountVpartition(usermpoint.str()) && OSBridge::umountVpartition(mpoint.str()))
-			{
+			OSBridge::umountVpartition(usermpoint.str());
+			if(OSBridge::umountVpartition(mpoint.str()))
 				mounted_partitions_vec.erase(mounted_partitions_vec.begin() + i);
-				break;
-			}
+			break;
 		}
-	}
 
 	if(mounted_partitions_vec.size() == 0)
-		if(!umountVHD())
-			return false;
-	
+		umountVHD();
+
 	return true;	
 }
 

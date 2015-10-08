@@ -106,6 +106,7 @@ class VirtualMachine : QObject
 		std::string vhd_mountpoint;
 		std::string partition_mountpoint_prefix;
 		std::vector<std::string> mounted_partitions_vec;
+		bool vhd_mounted;
 
 	signals:
 		void settingsChanged(VirtualMachine *vm);

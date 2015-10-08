@@ -277,20 +277,26 @@ int execute_cmd(int argc, char **argv)
 	}
 	else if(pid == 0)
 	{
+		int local_errno = 0;
+
 		if(execvp(*argv, argv) < 0)
 		{
-			std::cerr << "*** " << getpid() << " *** ERROR: exec() failed" << std::endl;
-			return 2;
+			local_errno = errno;
+			std::cerr << "*** " << getpid() << " *** ERROR: exec() failed. Errno: " << local_errno << std::endl;
 		}
+
+		exit(local_errno);
 	}
 	else
 	{
 		while(wait(&status) != pid);
 #ifdef DEBUG_FLAG
-		std::cout << "Return value: " << status << std::endl;
+		std::cout << "Return value (" << pid << "): " << (WIFEXITED(status) ? WEXITSTATUS(status) : status) << std::endl;
 #endif
 	}
 
+	if(WIFEXITED(status))
+		return WEXITSTATUS(status);
 	return status;
 }
 
@@ -519,7 +525,7 @@ int main(int argc, char **argv)
 
 #ifdef DEBUG_FLAG
 	if(retval != 0)
-		std::cerr << "*** " << getpid() << " *** ERROR: " << strerror(retval) << std::endl;
+		std::cerr << "*** [" << argv[0] << " (" << getpid() << ")] *** ERROR: " << strerror(retval) << std::endl;
 #endif
 
 	return retval;
