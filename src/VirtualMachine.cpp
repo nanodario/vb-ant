@@ -236,7 +236,7 @@ QString VirtualMachine::getIfaceName(uint32_t iface)
 		while(!file.atEnd())
 		{
 			QString line = file.readLine();
-			if(line.toUpper().contains(match))
+			if(!line.trimmed().startsWith('#') && line.toUpper().contains(match))
 			{
 				int ifacename_index_begin = line.lastIndexOf(QString::fromUtf8("NAME="));
 				int ifacename_index_end = QString::fromStdString(line.toStdString().substr(ifacename_index_begin + 6)).lastIndexOf(QString::fromUtf8("\""));
