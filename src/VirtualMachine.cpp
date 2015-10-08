@@ -564,6 +564,8 @@ bool VirtualMachine::saveSettings()
 		succeeded = false;
 	}
 
+	emit settingsChanged(this);
+
 	if(!machine->unlockMachine())
 		return false;
 
@@ -591,6 +593,7 @@ bool VirtualMachine::saveSettingsRunTime()
 		}
 	}
 
+	emit settingsChanged(this);
 	return succeeded;
 }
 

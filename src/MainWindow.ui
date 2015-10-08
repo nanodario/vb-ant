@@ -1303,6 +1303,8 @@
     <addaction name="actionAbilitaAll"/>
     <addaction name="actionDisabilitaAll"/>
     <addaction name="separator"/>
+    <addaction name="actionMostraRiepilogo"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuMacchina">
@@ -2094,6 +2096,14 @@
   <action name="actionDisabilitaAll">
    <property name="text">
     <string>Disabilita tutte</string>
+   </property>
+  </action>
+  <action name="actionMostraRiepilogo">
+   <property name="text">
+    <string>Mostra riepilogo rete</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>

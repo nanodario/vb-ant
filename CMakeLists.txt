@@ -62,6 +62,7 @@ qt4_wrap_ui(ui_src
 	"src/CloneDialog.ui"
 	"src/ProgressDialog.ui"
 	"src/info_dialog.ui"
+	"src/SummaryDialog.ui"
 )
 
 qt4_add_resources(ui_res "src/res.qrc")
@@ -75,6 +76,7 @@ set(Reti_SRCS
 	"src/MainWindow.cpp"
 	"src/OSBridge.cpp"
 	"src/ProgressDialog.cpp"
+	"src/SummaryDialog.cpp"
 	"src/VirtualBoxBridge.cpp"
 	"src/VirtualMachine.cpp"
 	"src/VMSettings.cpp"

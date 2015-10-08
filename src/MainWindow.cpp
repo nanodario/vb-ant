@@ -40,6 +40,7 @@
 #include "OSBridge.h"
 #include "CloneDialog.h"
 #include "ProgressDialog.h"
+#include "SummaryDialog.h"
 
 MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 : QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge()), machines_vec(vboxbridge->getMachines(this))
@@ -85,6 +86,14 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	p.ui->label->setText("Caricamento completato");
 	p.ui->progressBar->setValue(100);
 
+	summaryDialog = new SummaryDialog(this);
+
+	for (int i = 0; i < VMTabSettings_vec.size(); i++)
+	{
+		connect(VMTabSettings_vec.at(i)->vm, SIGNAL(settingsChanged(VirtualMachine*)), summaryDialog, SLOT(refresh()));
+		connect(this, SIGNAL(machinesPoolChanged()), summaryDialog, SLOT(populateComboBox()));
+	}
+
 	connect(ui->actionInfo_su, SIGNAL(triggered(bool)), this, SLOT(slotInfo()));
 // 	connect(ui->actionopen, SIGNAL(triggered(bool)), this, SLOT(slotActionOpen()));
 // 	connect(ui->actionSave, SIGNAL(triggered(bool)), this, SLOT(slotActionSave()));
@@ -98,6 +107,7 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionInterrompiAll, SIGNAL(triggered(bool)), this, SLOT(slotInterrompiAll()));
 	connect(ui->actionAbilitaAll, SIGNAL(triggered(bool)), this, SLOT(slotEnableAll()));
 	connect(ui->actionDisabilitaAll, SIGNAL(triggered(bool)), this, SLOT(slotDisableAll()));
+	connect(ui->actionMostraRiepilogo, SIGNAL(triggered(bool)), this, SLOT(slotShowSummary()));
 	connect(ui->actionAvvia, SIGNAL(triggered(bool)), this, SLOT(slotStart()));
 	connect(ui->actionPausa, SIGNAL(triggered(bool)), this, SLOT(slotPause()));
 	connect(ui->actionReset, SIGNAL(triggered(bool)), this, SLOT(slotReset()));
@@ -144,6 +154,9 @@ MainWindow::~MainWindow()
 	if(stat(tmpdir_prefix.str().c_str(), &s) >= 0 && ((s.st_mode & S_IFMT) == S_IFDIR))
 		rmdir(tmpdir_prefix.str().c_str());
 
+	summaryDialog->hide(); //FIXME
+
+	delete summaryDialog;
 	delete vboxbridge;
 	delete ui;
 }
@@ -356,6 +369,13 @@ void MainWindow::slotDisableAll()
 	}
 }
 
+void MainWindow::slotShowSummary()
+{
+	summaryDialog->refresh();
+	summaryDialog->show();
+	summaryDialog->raise();
+}
+
 void MainWindow::slotStart()
 {
 	requestedACPIstop = false;
@@ -441,12 +461,14 @@ void MainWindow::slotNew()
 {
 	CloneDialog c(this, true);
 	c.exec();
+	emit machinesPoolChanged();
 }
 
 void MainWindow::slotClone()
 {
 	CloneDialog c(this);
 	c.exec();
+	emit machinesPoolChanged();
 }
 
 void MainWindow::launchCreateProcess(QString qName, bool reInitIfaces)
@@ -565,6 +587,7 @@ void MainWindow::slotRemove()
 			delete v;
 			delete mb;
 		}
+		emit machinesPoolChanged();
 	}
 }
 

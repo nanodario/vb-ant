@@ -32,6 +32,7 @@
 #include "InfoDialog.h"
 #include "VMTabSettings.h"
 #include "VirtualBoxBridge.h"
+#include "SummaryDialog.h"
 
 class Ui_MainWindow;
 class Ui_Info_dialog;
@@ -39,6 +40,7 @@ class QFile;
 
 class MainWindow : public QMainWindow
 {
+	friend class SummaryDialog;
 	Q_OBJECT
 	
 	public:
@@ -66,6 +68,7 @@ class MainWindow : public QMainWindow
 		void slotInterrompiAll();
 		void slotEnableAll();
 		void slotDisableAll();
+		void slotShowSummary();
 		void slotStart();
 		void slotPause();
 		void slotReset();
@@ -85,8 +88,12 @@ class MainWindow : public QMainWindow
 		std::vector<VMTabSettings*> VMTabSettings_vec;
 		std::vector<MachineBridge*> machines_vec;
 		InfoDialog infoDialog;
+		SummaryDialog *summaryDialog;
 		QString fileName;
 		bool requestedACPIstop;
+
+	signals:
+		void machinesPoolChanged();
 };
 
 #endif //MAINWINDOW_H

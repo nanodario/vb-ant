@@ -45,12 +45,16 @@ typedef enum
 
 class MainWindow;
 class VMTabSettings;
+class SummaryDialog;
 
-class VirtualMachine
+class VirtualMachine : QObject
 {
 	friend class MainWindow;
 	friend class VMTabSettings;
-	
+	friend class SummaryDialog;
+
+	Q_OBJECT;
+
 	public:
 		VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix);
 		~VirtualMachine();
@@ -102,6 +106,9 @@ class VirtualMachine
 		std::string vhd_mountpoint;
 		std::string partition_mountpoint_prefix;
 		std::vector<std::string> mounted_partitions_vec;
+
+	signals:
+		void settingsChanged(VirtualMachine *vm);
 };
 
 #endif //VIRTUALMACHINE_H

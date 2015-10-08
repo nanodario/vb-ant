@@ -32,6 +32,7 @@
 #include "IfacesTable.h"
 #include "VirtualMachine.h"
 #include "VirtualBoxBridge.h"
+#include "SummaryDialog.h"
 
 class MainWindow;
 
@@ -40,6 +41,7 @@ class VMTabSettings : public QWidget
 	friend class MainWindow;
 	friend class IfacesTable;
 	friend class AttachmentDataWidget;
+	friend class SummaryDialog;
 
 	Q_OBJECT
 	
