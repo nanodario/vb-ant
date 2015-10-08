@@ -20,6 +20,7 @@
  */
 
 #include "OSBridge.h"
+#include "MainWindow.h"
 
 #include <stddef.h>
 #include <stdio.h>
@@ -39,6 +40,9 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <QMessageBox>
+#include <QDialogButtonBox>
+#include <QAbstractButton>
 
 // #define USE_SUDO
 #define GRAPHIC_SUDO "kdesudo"
@@ -75,23 +79,53 @@ int OSBridge::execute_cmd(int argc, char **argv, bool from_path)
 	}
 	else if(pid == 0)
 	{
+		int retval = 0, local_errno = 0;
 		if(from_path)
-			if(execvp(*argv_cmd, argv_cmd) < 0)
-				std::cerr << "*** ERROR: execvp() failed" << std::endl;
+			retval = execvp(*argv_cmd, argv_cmd);
 		else
-			if(execv(*argv_cmd, argv_cmd) < 0)
-				std::cerr << "*** ERROR: execv() failed" << std::endl;
-		exit(2);
+			retval = execv(*argv_cmd, argv_cmd);
+
+		local_errno = errno;
+		if(retval < 0)
+			std::cerr << "*** ERROR: execv" << (from_path ? "p" : "") << "() failed. Errno: " << local_errno << std::endl;
+
+		exit(local_errno);
 	}
 	else
 	{
 		while(wait(&status) != pid);
 #ifdef DEBUG_FLAG
-		std::cout << "*** Child process (pid: " << pid << ", ppid: " << getppid() << ") terminated. Return value: " << status << std::endl;
+		std::cout << "*** Child process (pid: " << pid << ", ppid: " << getppid() << ") terminated.";
+#endif
+		if(WIFEXITED(status) && WEXITSTATUS(status) != 0)
+		{
+#ifdef DEBUG_FLAG
+			std::cout << " Return value: " << strerror(WEXITSTATUS(status)) << " (" << WEXITSTATUS(status) << ")";
+#endif
+			if(WEXITSTATUS(status) == ENOENT)
+			{
+				QMessageBox qm(QMessageBox::Critical, "Errore", "Errore: qemu-nbd non trovato.\nAssicurarsi che sia installato e di avere i privilegi per eseguirlo", QMessageBox::Close);
+				qm.setPalette(MainWindow::getPalette());
+				for(int i = 0; i < qm.buttons().size(); i++)
+				{
+					switch(qm.standardButton(qm.buttons()[i]))
+					{
+						case QDialogButtonBox::Close: qm.buttons()[i]->setText("Chiudi"); break;
+					}
+				}
+				qm.exec();
+				exit(ENOENT);
+			}
+		}
+#ifdef DEBUG_FLAG
+		std::cout << std::endl;
 #endif
 	}
-	
-	return status;
+
+	if(WIFEXITED(status))
+		return WEXITSTATUS(status);
+	else
+		return status;
 }
 
 bool OSBridge::checkNbdModule()

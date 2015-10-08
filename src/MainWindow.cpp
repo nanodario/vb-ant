@@ -42,11 +42,21 @@
 #include "ProgressDialog.h"
 #include "SummaryDialog.h"
 
+static QPalette __palette;
+
+QPalette MainWindow::getPalette()
+{
+	return __palette;
+}
+
 MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
-: QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge()), machines_vec(vboxbridge->getMachines(this))
+: QMainWindow(parent), ui(new Ui_MainWindow), vboxbridge(new VirtualBoxBridge())
+, machines_vec(vboxbridge->getMachines(this))
 {
 	VMTabSettings_vec.clear();
 	ui->setupUi(this);
+	
+	__palette = palette();
 
 	if(OSBridge::checkNbdModule())
 		OSBridge::unloadNbdModule();

@@ -24,6 +24,7 @@
 
 #include <libkmod.h>
 #include <string>
+#include <QObject>
 
 class OSBridge
 {

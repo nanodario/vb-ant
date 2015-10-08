@@ -49,6 +49,7 @@ class MainWindow : public QMainWindow
 		void launchCreateProcess(QString qName, bool reInitIfaces);
 		void launchCloneProcess(QString qName, bool reInitIfaces);
 		VirtualBoxBridge *vboxbridge;
+		static QPalette getPalette();
 		
 	protected:
 		void closeEvent(QCloseEvent *event);
