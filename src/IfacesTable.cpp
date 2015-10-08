@@ -296,6 +296,8 @@ void AttachmentDataWidget::refreshWidget()
 				comboBox->addItem(host_ifaces_vec.at(i));
 
 			comboBox->setEditable(true);
+			comboBox->setAutoCompletion(true);
+			comboBox->setAutoCompletionCaseSensitivity(Qt::CaseSensitive);
 			comboBox->lineEdit()->connect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
 			break;
 		}
@@ -326,6 +328,8 @@ void AttachmentDataWidget::refreshWidget()
 				comboBox->addItem(generic_drivers_vec.at(i));
 			
 			comboBox->setEditable(true);
+			comboBox->setAutoCompletion(true);
+			comboBox->setAutoCompletionCaseSensitivity(Qt::CaseSensitive);
 			comboBox->lineEdit()->connect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
 			break;
 		}
@@ -335,12 +339,12 @@ void AttachmentDataWidget::refreshWidget()
 		case NetworkAttachmentType::NAT:
 		{
 			comboBox->clear();
-			comboBox->setEnabled(false);
+			setEnabled(false);
 			return;
 		}
 		
 	}
-	comboBox->setEnabled(true);
+	setEnabled(true);
 	refreshData();
 }
 
@@ -433,8 +437,7 @@ int IfacesTable::setIface(int iface, bool enabled, QString mac, bool cableConnec
 #endif
 {
 	blockSignals(true);
-// 	disconnect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
-	
+
 	if(ifaces[iface] == NULL)
 	{
 #ifdef CONFIGURABLE_IP
@@ -480,7 +483,6 @@ int IfacesTable::setIface(int iface, bool enabled, QString mac, bool cableConnec
 			item(iface, col)->setTextAlignment(Qt::AlignCenter);
 	}
 
-	setStatus(iface, ifaces[iface]->enabled);
 	setMac(iface, ifaces[iface]->mac);
 	setCableConnected(iface, ifaces[iface]->cableConnected);
 	setName(iface, ifaces[iface]->name);
@@ -490,9 +492,10 @@ int IfacesTable::setIface(int iface, bool enabled, QString mac, bool cableConnec
 #endif
 	setAttachmentType(iface, ifaces[iface]->attachmentType);
 	setAttachmentData(iface, ifaces[iface]->attachmentData);
-	
+	setStatus(iface, ifaces[iface]->enabled);
+
 	blockSignals(false);
-// 	connect(this, SIGNAL(cellChanged(int,int)), this, SLOT(cellChangedSlot(int,int)));
+
 	attachmentComboBox->add_connection();
 	attachmentDataWidget->add_connection();
 
