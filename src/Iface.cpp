@@ -402,7 +402,7 @@ QString Iface::formatMac(QString mac)
 	return QString::fromUtf8("");
 }
 
-#ifdef CONFIGURABLE_IP
+#if defined(CONFIGURABLE_IP) && defined(VALIDATE_IP)
 bool Iface::isValidIPv4(QString ip)
 {
 	if (ip.length() == 0)

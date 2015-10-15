@@ -137,6 +137,18 @@ else()
 	endif()
 endif()
 
+option(VALIDATE_IP "Enable IP and subnet mask validation" OFF)
+if(${CONFIGURABLE_IP})
+	if(${VALIDATE_IP})
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVALIDATE_IP")
+		message("-- IP validation: enabled")
+	else()
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -UVALIDATE_IP")
+		message("-- IP validation: disabled")
+	endif()
+endif()
+
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fshort-wchar -std=c++0x")
 
 if(${DEBUG})

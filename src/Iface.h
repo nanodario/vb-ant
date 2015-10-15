@@ -52,13 +52,21 @@ class Iface
 		static bool isValidMac(QString mac);
 		static bool isValidAttachmentType(uint32_t attachmentType);
 #ifdef CONFIGURABLE_IP
-		static bool isValidIPv4(QString ip);
-#ifdef ENABLE_IPv6
-		static bool isValidIPv6(QString ip);
-#endif
-		static bool isValidSubnetMask(QString subnetMask, QString ip = QString::fromUtf8(""));
 		static int subnetSizeFromSubnetMask(QString qSubnetMask);
-#endif
+  #ifdef VALIDATE_IP
+		static bool isValidIPv4(QString ip);
+    #ifdef ENABLE_IPv6
+		static bool isValidIPv6(QString ip);
+    #endif
+		static bool isValidSubnetMask(QString subnetMask, QString ip = QString::fromUtf8(""));
+  #else //VALIDATE_IP
+		static bool isValidIPv4(QString ip) { return true; };
+    #ifdef ENABLE_IPv6
+		static bool isValidIPv6(QString ip) { return true; };
+    #endif
+		static bool isValidSubnetMask(QString subnetMask, QString ip = QString::fromUtf8("")) { return true; };
+  #endif //VALIDATE_IP
+#endif//CONFIGURABLE_IP
 
 		inline bool operator==(const Iface *i) const { return mac == i->mac; };
 		inline bool operator!=(const Iface *i) const { return !operator==(i); };
