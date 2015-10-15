@@ -99,12 +99,17 @@ message("-- Program name: ${PROGRAM_NAME}")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROGRAM_NAME=\"\\\"${PROGRAM_NAME}\\\"\"")
 
-if(DEFINED ENV{OS_PARTITION_NUMBER})
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=\"$ENV{OS_PARTITION_NUMBER}\"")
-	message("-- OS partition number: $ENV{OS_PARTITION_NUMBER}")
+set(OS_PARTITION_NUMBER 2 CACHE STRING "Selects guest OS partition number")
+option(OS_PARTITION_NUMBER "Selects guest OS partition number" 2)
+if("${OS_PARTITION_NUMBER}" STREQUAL "")
+	set(OS_PARTITION_NUMBER "2")
+endif()
+
+if(OS_PARTITION_NUMBER MATCHES "^0$" AND NOT OS_PARTITION_NUMBER MATCHES "^[[:digit:]]*$")
+	message(FATAL_ERROR "OS_PARTITION_NUMBER must be a number greater than 0")
 else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=\"1\"")
-	message("-- OS partition number: 1")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOS_PARTITION_NUMBER=\"${OS_PARTITION_NUMBER}\"")
+	message("-- OS partition number: ${OS_PARTITION_NUMBER}")
 endif()
 
 option(DEBUG "Enable debug output" OFF)
