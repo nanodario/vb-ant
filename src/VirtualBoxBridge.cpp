@@ -361,14 +361,25 @@ std::vector<QString> VirtualBoxBridge::getGenericDriversList()
 	return genericDrivers_vec;
 }
 
+bool VirtualBoxBridge::isNewGenericDriver(QString qGenericDriver)
+{
+	std::vector<QString> genericDriversList = getGenericDriversList();
+
+	for(int i = 0; i < genericDriversList.size(); i++)
+		if(genericDriversList.at(i) == qGenericDriver)
+			return false;
+
+	return true;
+}
+
 std::vector<QString> VirtualBoxBridge::getInternalNetworkList()
 {
 	std::vector<QString> internalNetworks_vec;
 	short unsigned int **internalNetworks;
 	uint32_t internalNetworks_size;
-	
+
 	virtualBox->GetInternalNetworks(&internalNetworks_size, &internalNetworks);
-	
+
 	for(int i = 0; i < internalNetworks_size; i++)
 	{
 		int j;
@@ -381,10 +392,21 @@ std::vector<QString> VirtualBoxBridge::getInternalNetworkList()
 
 		QString qstr = QString::fromUtf8(str);
 		internalNetworks_vec.push_back(qstr);
-		
+
 		free(str);
 	}
 	return internalNetworks_vec;
+}
+
+bool VirtualBoxBridge::isNewInternalNetwork(QString qInternalNetwork)
+{
+	std::vector<QString> internalNetwork = getInternalNetworkList();
+
+	for(int i = 0; i < internalNetwork.size(); i++)
+		if(internalNetwork.at(i) == qInternalNetwork)
+			return false;
+
+	return true;
 }
 
 std::vector<nsCOMPtr<INATNetwork> > VirtualBoxBridge::getNatNetworks()

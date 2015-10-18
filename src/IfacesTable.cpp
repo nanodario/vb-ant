@@ -253,9 +253,6 @@ void AttachmentDataWidget::refreshWidget()
 	{
 		case NetworkAttachmentType::NATNetwork:
 		{
-			if(comboBox->isEditable())
-				comboBox->lineEdit()->disconnect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
-
 			std::vector<nsCOMPtr<INATNetwork> > natNetworks_vec = destination->vboxbridge->getNatNetworks();
 			comboBox->clear();
 
@@ -265,15 +262,10 @@ void AttachmentDataWidget::refreshWidget()
 				natNetworks_vec.at(i)->GetNetworkName(getter_Copies(name));
 				comboBox->addItem(returnQStringValue(name));
 			}
-
-			comboBox->setEditable(false);
 			break;
 		}
 		case NetworkAttachmentType::Bridged:
 		{
-			if(comboBox->isEditable())
-				comboBox->lineEdit()->disconnect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
-
 			std::vector<nsCOMPtr<IHostNetworkInterface> > host_ifaces_vec = destination->vboxbridge->getHostNetworkInterfaces();
 			comboBox->clear();
 
@@ -283,8 +275,6 @@ void AttachmentDataWidget::refreshWidget()
 				host_ifaces_vec.at(i)->GetName(getter_Copies(name));
 				comboBox->addItem(returnQStringValue(name));
 			}
-
-			comboBox->setEditable(false);
 			break;
 		}
 		case NetworkAttachmentType::Internal:
@@ -294,18 +284,10 @@ void AttachmentDataWidget::refreshWidget()
 
 			for(int i = 0; i < host_ifaces_vec.size(); i++)
 				comboBox->addItem(host_ifaces_vec.at(i));
-
-			comboBox->setEditable(true);
-			comboBox->setAutoCompletion(true);
-			comboBox->setAutoCompletionCaseSensitivity(Qt::CaseSensitive);
-			comboBox->lineEdit()->connect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
 			break;
 		}
 		case NetworkAttachmentType::HostOnly:
 		{
-			if(comboBox->isEditable())
-				comboBox->lineEdit()->disconnect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
-
 			std::vector<nsCOMPtr<IHostNetworkInterface> > hostOnly_ifaces_vec = destination->vboxbridge->getHostOnlyInterfaces();
 			comboBox->clear();
 
@@ -315,8 +297,6 @@ void AttachmentDataWidget::refreshWidget()
 				((nsCOMPtr<IHostNetworkInterface>) hostOnly_ifaces_vec.at(i))->GetName(getter_Copies(name));
 				comboBox->addItem(returnQStringValue(name));
 			}
-
-			comboBox->setEditable(false);
 			break;
 		}
 		case NetworkAttachmentType::Generic:
@@ -326,7 +306,38 @@ void AttachmentDataWidget::refreshWidget()
 			
 			for(int i = 0; i < generic_drivers_vec.size(); i++)
 				comboBox->addItem(generic_drivers_vec.at(i));
-			
+			break;
+		}
+		default:
+			std::cout << "NetworkAttachmentType::" << destination->ifaces[row]->attachmentType << " is an unknown attachment type" << std::endl;
+		case NetworkAttachmentType::Null:
+		case NetworkAttachmentType::NAT:
+		{
+			comboBox->clear();
+			break;
+		}
+		
+	}
+	refreshData();
+	refreshStatus();
+}
+
+void AttachmentDataWidget::refreshStatus() //FIXME
+{
+	switch(destination->ifaces[row]->attachmentType)
+	{
+		case NetworkAttachmentType::NATNetwork:
+		case NetworkAttachmentType::Bridged:
+		case NetworkAttachmentType::HostOnly:
+		{
+			if(comboBox->isEditable())
+				comboBox->lineEdit()->disconnect(comboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(editingFinishedSlot()));
+			comboBox->setEditable(false);
+			break;
+		}
+		case NetworkAttachmentType::Internal:
+		case NetworkAttachmentType::Generic:
+		{
 			comboBox->setEditable(true);
 			comboBox->setAutoCompletion(true);
 			comboBox->setAutoCompletionCaseSensitivity(Qt::CaseSensitive);
@@ -337,18 +348,13 @@ void AttachmentDataWidget::refreshWidget()
 			std::cout << "NetworkAttachmentType::" << destination->ifaces[row]->attachmentType << " is an unknown attachment type" << std::endl;
 		case NetworkAttachmentType::Null:
 		case NetworkAttachmentType::NAT:
-		{
-			comboBox->clear();
 			setEnabled(false);
 			return;
-		}
-		
 	}
 	setEnabled(true);
-	refreshData();
 }
 
-void AttachmentDataWidget::refreshData() //FIXME
+void AttachmentDataWidget::refreshData()
 {
 	QString selected_entry;
 	switch(destination->ifaces[row]->attachmentType)
@@ -676,6 +682,7 @@ bool IfacesTable::setAttachmentType(int iface, uint32_t attachmentType)
 		attachmentDataWidget->remove_connection();
 		attachmentComboBox->comboBox->setCurrentIndex(ifaces[iface]->attachmentType);
 		attachmentDataWidget->refreshWidget();
+		attachmentDataWidget->refreshStatus();
 		attachmentDataWidget->add_connection();
 		attachmentComboBox->add_connection();
 		return true;
@@ -687,16 +694,39 @@ bool IfacesTable::setAttachmentType(int iface, uint32_t attachmentType)
 bool IfacesTable::setAttachmentData(int iface, QString attachmentData)
 {
 	ifaces[iface]->setAttachmentData(attachmentData);
-	QString new_attachmentData = ifaces[iface]->attachmentData;
-	
-	AttachmentComboBox *attachmentComboBox = (AttachmentComboBox *)cellWidget(iface, COLUMN_IFACE_TYPE);
-	uint32_t attachmentType = attachmentComboBox->comboBox->currentIndex();
+	QString new_attachmentData = ifaces[iface]->attachmentData;	
 
-	if(attachmentType == NetworkAttachmentType::Internal ||
-	   attachmentType == NetworkAttachmentType::Generic)
-		((AttachmentDataWidget *)cellWidget(iface, COLUMN_IFACE_TYPE_DATA))->comboBox->lineEdit()->setText(new_attachmentData);
+	AttachmentDataWidget *attachmentDataWidget = (AttachmentDataWidget *)cellWidget(iface, COLUMN_IFACE_TYPE_DATA);
+// 	AttachmentComboBox *attachmentComboBox = (AttachmentComboBox *)cellWidget(iface, COLUMN_IFACE_TYPE);
+	if((ifaces[iface]->attachmentType == NetworkAttachmentType::Internal && vboxbridge->isNewInternalNetwork(attachmentData)) ||
+		(ifaces[iface]->attachmentType == NetworkAttachmentType::Generic && vboxbridge->isNewGenericDriver(attachmentData)))
+	{
+		bool inserted = false;
+		for(int i = 0; i < attachmentDataWidget->comboBox->count(); i++)
+		{
+			if(attachmentDataWidget->comboBox->itemText(i) == attachmentData)
+			{
+				inserted = true;
+				break;
+			}
+		}
+
+		if(!inserted)
+		{
+			attachmentDataWidget->comboBox->blockSignals(true);
+			attachmentDataWidget->comboBox->addItem(attachmentData);
+			attachmentDataWidget->comboBox->blockSignals(false);
+		}
+	}
+
+// 	uint32_t attachmentType = attachmentComboBox->comboBox->currentIndex();
+//
+// 	if(attachmentType == NetworkAttachmentType::Internal ||
+// 	   attachmentType == NetworkAttachmentType::Generic)
+// 		((AttachmentDataWidget *)cellWidget(iface, COLUMN_IFACE_TYPE_DATA))->comboBox->lineEdit()->setText(new_attachmentData);
 // 	emit sigIfaceChange(iface, IFACE_ATTACHMENT_DATA, &new_attachmentData);
 
+	attachmentDataWidget->refreshStatus();
 	return true;
 }
 
