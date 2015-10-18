@@ -639,6 +639,7 @@ bool IfacesTable::setIp(int iface, QString ip)
 	{
 		QString new_ip = ifaces[iface]->ip;
 		item(iface, COLUMN_IP)->setText(new_ip);
+#ifdef VALIDATE_IP
 		if(ifaces[iface]->subnetMask.length() > 0)
 		{
 			if(ifaces[iface]->subnetMask.split(".").size() == 4)
@@ -646,6 +647,7 @@ bool IfacesTable::setIp(int iface, QString ip)
 			else
 				setSubnetMask(iface, ifaces[iface]->subnetMask);
 		}
+#endif
 // 		emit sigIfaceChange(iface, IFACE_IP, &new_ip);
 	}
 	else

@@ -33,7 +33,6 @@
 
 static QString subnetMaskFromSubnetSize(int subnetSize)
 {
-	int i;
 	typedef union
 	{
 		uint64_t subnetMask_ipv6[2];
@@ -44,7 +43,7 @@ static QString subnetMaskFromSubnetSize(int subnetSize)
 	subnetMask_t subnetMask;
 	subnetMask.subnetMask_ipv6[0] = subnetMask.subnetMask_ipv6[1] = 0;
 
-	for (i = 31; i > (31 - subnetSize); i--)
+	for (int i = 31; i > (31 - subnetSize); i--)
 		subnetMask.subnetMask_ipv4[0] |= 1 << i;
 
 	std::stringstream ss;
@@ -185,6 +184,7 @@ bool Iface::setSubnetMask(QString _subnetMask)
 {
 	if(isValidSubnetMask(_subnetMask, ip))
 	{
+#ifdef VALIDATE_IP
 		if(_subnetMask.length() == 0)
 			subnetMask = _subnetMask;
 		else if(_subnetMask.split(".").count() == 1
@@ -194,6 +194,7 @@ bool Iface::setSubnetMask(QString _subnetMask)
 		)
 			subnetMask = subnetMaskFromSubnetSize(_subnetMask.toInt());
 		else
+#endif
 			subnetMask = _subnetMask;
 		return true;
 	}
@@ -450,13 +451,6 @@ bool Iface::isValidIPv4(QString ip)
 	return true;
 }
 
-#ifdef ENABLE_IPv6
-bool Iface::isValidIPv6(QString ip)
-{
-	return std::regex_match (ip.toStdString().c_str(), std::regex(IPV6_REGEX));
-}
-#endif
-
 bool Iface::isValidSubnetMask(QString subnetMask, QString ip)
 {
 	if (subnetMask.length() == 0)
@@ -500,6 +494,14 @@ bool Iface::isValidSubnetMask(QString subnetMask, QString ip)
 	return false;
 }
 #endif
+
+#if defined(CONFIGURABLE_IP) && defined(ENABLE_IPv6)
+bool Iface::isValidIPv6(QString ip)
+{
+	return std::regex_match (ip.toStdString().c_str(), std::regex(IPV6_REGEX));
+}
+#endif
+
 
 Iface *Iface::copyIface()
 {
