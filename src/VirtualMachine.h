@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -46,12 +46,14 @@ typedef enum
 class MainWindow;
 class VMTabSettings;
 class SummaryDialog;
+class VMSettings;
 
 class VirtualMachine : QObject
 {
 	friend class MainWindow;
 	friend class VMTabSettings;
 	friend class SummaryDialog;
+	friend class VMSettings;
 
 	Q_OBJECT;
 

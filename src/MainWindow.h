@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -33,6 +33,7 @@
 #include "VMTabSettings.h"
 #include "VirtualBoxBridge.h"
 #include "SummaryDialog.h"
+#include "VMSettings.h"
 
 class Ui_MainWindow;
 class Ui_Info_dialog;
@@ -92,6 +93,7 @@ class MainWindow : public QMainWindow
 		SummaryDialog *summaryDialog;
 		QString fileName;
 		bool requestedACPIstop;
+		std::vector<VMSettings*> VMSettings_vec;
 
 	signals:
 		void machinesPoolChanged();

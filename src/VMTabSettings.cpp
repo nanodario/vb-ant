@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -21,6 +21,7 @@
 
 #include "VMTabSettings.h"
 #include "VirtualBoxBridge.h"
+#include "VMSettings.h"
 #include <QTabWidget>
 
 #include <QString>
@@ -36,7 +37,7 @@
 #include <iostream>
 
 VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBridge *vboxbridge, MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix) : QWidget(parent)
-, vm_name(tabname), vboxbridge(vboxbridge), machine(machine), vm(new VirtualMachine(machine, vhd_mountpoint, partition_mountpoint_prefix))
+, vm_name(tabname), vboxbridge(vboxbridge), machine(machine), vm(new VirtualMachine(machine, vhd_mountpoint, partition_mountpoint_prefix)), vmSettings(new VMSettings(vm))
 {
 	setObjectName(tabname);
 

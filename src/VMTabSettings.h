@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -33,6 +33,7 @@
 #include "VirtualMachine.h"
 #include "VirtualBoxBridge.h"
 #include "SummaryDialog.h"
+#include "VMSettings.h"
 
 class MainWindow;
 
@@ -65,6 +66,7 @@ class VMTabSettings : public QWidget
 		Iface **ifaces;
 		VirtualBoxBridge *vboxbridge;
 		MachineBridge *machine;
+		VMSettings *vmSettings;
 		
 	private slots:
 		void clickedSlot(QAbstractButton*);

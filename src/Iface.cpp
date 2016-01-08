@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -135,6 +135,20 @@ Iface::Iface(bool enabled, QString mac, bool cableConnected, uint32_t attachment
 #ifdef CONFIGURABLE_IP
 	setIp(ip);
 	setSubnetMask(subnetMask);
+#endif
+}
+
+Iface::Iface(serializable_iface_t serializable_iface)
+: enabled(serializable_iface.enabled), cableConnected(serializable_iface.cableConnected)
+{
+	setName(QString::fromUtf8(serializable_iface.name));
+	last_valid_name = QString::fromUtf8(serializable_iface.last_valid_name);
+	setMac(QString::fromUtf8(serializable_iface.mac));
+	setAttachmentType(serializable_iface.attachmentType);
+	setAttachmentData(QString::fromUtf8(serializable_iface.attachmentData));
+#ifdef CONFIGURABLE_IP
+	setIp(serializable_iface.ip);
+	setSubnetMask(serializable_iface.subnetMask);
 #endif
 }
 
@@ -510,6 +524,27 @@ Iface *Iface::copyIface()
 #else
 	return new Iface(enabled, mac, cableConnected, attachmentType, attachmentData, name);
 #endif
+}
+
+serializable_iface_t Iface::getSerializableIface()
+{
+	serializable_iface_t serializable_iface;
+	memset(&serializable_iface, 0, sizeof(serializable_iface_t));
+	strcpy(serializable_iface.last_valid_name, last_valid_name.toStdString().c_str());
+	strcpy(serializable_iface.name, name.toStdString().c_str());
+	strcpy(serializable_iface.mac, mac.toStdString().c_str());
+	strcpy(serializable_iface.attachmentData, attachmentData.toStdString().c_str());
+
+#ifdef CONFIGURABLE_IP	
+	strcpy(serializable_iface.ip, ip.toStdString().c_str());
+	strcpy(serializable_iface.subnetMask, subnetMask.toStdString().c_str());
+#endif
+	
+	serializable_iface.attachmentType = attachmentType;
+	serializable_iface.cableConnected = cableConnected;
+	serializable_iface.enabled = enabled;
+	
+	return serializable_iface;
 }
 
 bool Iface::isValidAttachmentType(uint32_t _attachmentType)

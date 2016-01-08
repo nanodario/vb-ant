@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -28,6 +28,16 @@
 #include <stdint.h>
 #include "VirtualBoxBridge.h"
 
+typedef struct
+{
+	char last_valid_name[1024], name[1024], mac[60], attachmentData[1024];
+#ifdef CONFIGURABLE_IP
+	char ip[1024], subnetMask[1024];
+#endif
+	uint32_t attachmentType;
+	bool enabled, cableConnected;
+} serializable_iface_t;
+
 class Iface
 {
 	public:
@@ -36,6 +46,7 @@ class Iface
 #else
 		Iface(bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString attachmentData = "", QString name = "");
 #endif
+		Iface(serializable_iface_t serializable_iface);
 		
 		virtual ~Iface();
 		bool setName(QString name);
@@ -68,6 +79,7 @@ class Iface
 		inline bool operator==(const Iface *i) const { return mac == i->mac; };
 		inline bool operator!=(const Iface *i) const { return !operator==(i); };
 		Iface *copyIface();
+		serializable_iface_t getSerializableIface();
 		
 		QString last_valid_name, name, mac, attachmentData;
 #ifdef CONFIGURABLE_IP

@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -86,10 +86,11 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 		std::stringstream mountpoint_ss; mountpoint_ss << "/dev/nbd" << i;
 		std::stringstream partition_mountpoint_prefix_ss; partition_mountpoint_prefix_ss << tmpdir_prefix.str() << "/nbd" << i;
 
-		VMTabSettings *vmSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(i), mountpoint_ss.str(), partition_mountpoint_prefix_ss.str());
-	
-		ui->vm_tabs->addTab(vmSettings, tabname);
-		VMTabSettings_vec.push_back(vmSettings);
+		VMTabSettings *vmTabSettings = new VMTabSettings(ui->vm_tabs, tabname, vboxbridge, machines_vec.at(i), mountpoint_ss.str(), partition_mountpoint_prefix_ss.str());
+
+		ui->vm_tabs->addTab(vmTabSettings, tabname);
+		VMTabSettings_vec.push_back(vmTabSettings);
+		VMSettings_vec.push_back(vmTabSettings->vmSettings);
 		p.ui->progressBar->setValue(((i+1)*100)/machines_vec.size());
 		p.refresh();
 	}
