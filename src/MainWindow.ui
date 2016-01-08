@@ -1734,6 +1734,10 @@
     <addaction name="actionPausa"/>
     <addaction name="actionReset"/>
     <addaction name="actionInterrompi"/>
+    <addaction name="separator"/>
+    <addaction name="actionVMLoad"/>
+    <addaction name="actionVMSave"/>
+    <addaction name="actionVMSaveAs"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuMacchina"/>
@@ -2104,6 +2108,21 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionVMSave">
+   <property name="text">
+    <string>Salva configurazione VM</string>
+   </property>
+  </action>
+  <action name="actionVMLoad">
+   <property name="text">
+    <string>Carica configurazione VM...</string>
+   </property>
+  </action>
+  <action name="actionVMSaveAs">
+   <property name="text">
+    <string>Salva configurazione VM come...</string>
    </property>
   </action>
  </widget>

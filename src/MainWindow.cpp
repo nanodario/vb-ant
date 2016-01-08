@@ -134,6 +134,10 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->toolbarReset, SIGNAL(triggered(bool)), ui->actionReset, SIGNAL(triggered(bool)));
 	connect(ui->toolbarInterrompi, SIGNAL(triggered(bool)), ui->actionInterrompi, SIGNAL(triggered(bool)));
 
+	connect(ui->actionVMLoad, SIGNAL(triggered(bool)), this, SLOT(slotVMLoad()));
+	connect(ui->actionVMSave, SIGNAL(triggered(bool)), this, SLOT(slotVMSave()));
+	connect(ui->actionVMSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotVMSaveAs()));
+	
 	ui->retranslateUi(this);
 	setWindowTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
 	ui->menuFile->setTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
@@ -279,6 +283,44 @@ bool MainWindow::slotActionSaveAs()
 // 	return true;
 }
 #endif
+
+bool MainWindow::slotVMSave()
+{
+	if (VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName.isEmpty())
+		return slotVMSaveAs();
+	
+	bool write_done = VMSettings_vec.at(ui->vm_tabs->currentIndex())->save();
+	if (!write_done)
+	{
+		QMessageBox::critical(this, "Errore di salvataggio",
+				      "Impossibile scrivere sul file " + VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName);
+		return false;
+	}
+	
+	return write_done;
+	
+}
+
+bool MainWindow::slotVMSaveAs()
+{
+	const QString selectedFileName = QFileDialog::getSaveFileName(this, "Salva documento", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vm-ant)");
+	
+	if (selectedFileName.isEmpty())
+		return false;
+	
+	VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName = selectedFileName;
+	return slotVMSave();
+}
+
+void MainWindow::slotVMLoad()
+{
+	const QString selectedFileName = QFileDialog::getOpenFileName(this, "Apri documento", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vm-ant)");
+
+	if (selectedFileName.isEmpty() || !queryClose())
+		return;
+
+	VMSettings_vec.at(ui->vm_tabs->currentIndex())->load();
+}
 
 void MainWindow::slotInfo()
 {

@@ -78,7 +78,10 @@ class MainWindow : public QMainWindow
 // 		void slotSettings();
 		void slotStateChange(MachineBridge *machine, uint32_t state);
 		void slotNetworkAdapterChange(MachineBridge *machine, INetworkAdapter *nic);
-
+		void slotVMLoad();
+		bool slotVMSave();
+		bool slotVMSaveAs();
+		
 	private:
 		bool queryClose();
 		bool loadFile(const QString &path);
