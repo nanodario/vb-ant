@@ -70,6 +70,7 @@ qt4_add_resources(ui_res "src/res.qrc")
 
 set(Reti_SRCS
 	"src/CloneDialog.cpp"
+	"src/crc32.cpp"
 	"src/Iface.cpp"
 	"src/IfacesTable.cpp"
 	"src/InfoDialog.cpp"

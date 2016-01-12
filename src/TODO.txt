@@ -5,7 +5,7 @@ OK	Salvataggio impostazioni IP su macchina virtuale
 OK	Salvataggio impostazioni della singola macchina su file
 	Salvataggio impostazioni parco macchine su file
 
-	Aggiungere checksum su salvataggio impostazioni singola macchina
+OK	Aggiungere checksum su salvataggio impostazioni singola macchina
 
 OK	Gestire comportamento (pausa/stop) delle macchine virtuali
 OK	Sincronizzazione impostazioni di rete con macchina virtuale avviata

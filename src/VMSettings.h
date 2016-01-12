@@ -26,9 +26,10 @@
 
 /**
  * Settings format for machine save file:
- * header [2045 B]:
+ * header [2055 B]:
  * 	   machine name 		[1024 B]
  * 	   machine uuid 		[1024 B]
+ * 	   ifaces checksum 		[  10 B]
  * 	   number of ifaces 		[   1 B]
  * ifaces #1 data (each iface) [3138 B or 5186 B]:
  * 	   last valid iface name 	[1024 B]
@@ -45,13 +46,14 @@
  * ifaces #2 data (each iface) [3138 B or 5186 B]
  * ifaces #n data (each iface) [3138 B or 5186 B]
  *
- * A machine with 8 iface has a 43533 B (or 27149 B without IP support) settings file
+ * A machine with 8 iface has a 43543 B (or 27159 B without IP support) settings file
  */
 
 typedef struct
 {
 	char machine_name[1024];
 	char machine_uuid[1024];
+	char ifaces_checksum[10];
 	uint8_t serializable_iface_size;
 } serializable_settings_t;
 

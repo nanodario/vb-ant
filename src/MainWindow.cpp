@@ -340,16 +340,17 @@ void MainWindow::slotVMLoad()
 		switch (qm.exec())
 		{
 			case QMessageBox::No:
+			case QMessageBox::Abort:
 				return;
 			case QMessageBox::Yes:
-			{
-				if(!VMSettings_vec.at(ui->vm_tabs->currentIndex())->load(selectedFileName))
-					return;
-				VMSettings_vec.at(ui->vm_tabs->currentIndex())->restore();
 				break;
-			}
 		}
 	}
+
+	if(!VMSettings_vec.at(ui->vm_tabs->currentIndex())->load(selectedFileName))
+		return;
+
+	VMSettings_vec.at(ui->vm_tabs->currentIndex())->restore();
 }
 
 void MainWindow::slotInfo()

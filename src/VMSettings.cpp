@@ -20,8 +20,14 @@
  */
 
 #include "VMSettings.h"
+#include "crc32.h"
 #include <malloc.h>
 #include <QFile>
+
+static int toupper_wrapper(int c)
+{
+	return std::toupper((unsigned char) c);
+}
 
 VMSettings::VMSettings(VirtualMachine *vm)
 : fileName(""), vm(vm), savedIfaces(NULL), savedIfaces_size(0)
@@ -67,6 +73,7 @@ bool VMSettings::save(QString selected_filename)
 	if(selected_filename.isEmpty())
 		selected_filename = fileName;
 
+	CRC32 crc32;
 	char *serializedIfaces = NULL;
 	uint32_t size = serialize(&serializedIfaces);
 
@@ -74,6 +81,13 @@ bool VMSettings::save(QString selected_filename)
 
 	QFile file(selected_filename);
 	fileName = selected_filename;
+
+	//Calculate CRC32 of ifaces settings
+		
+	std::string ifaces_checksum_str = crc32(serializedIfaces, savedIfaces_size * sizeof(serializable_iface_t));
+	std::transform(ifaces_checksum_str.begin(), ifaces_checksum_str.end(), ifaces_checksum_str.begin(), toupper_wrapper);
+
+	strcpy(serializable_settings.ifaces_checksum, ifaces_checksum_str.c_str());
 	
 	if(file.open(QIODevice::WriteOnly))
 	{
@@ -138,8 +152,16 @@ bool VMSettings::load(QString selected_filename)
 	else
 		return false;
 
-	uint8_t savedIfaces_size = deserialize(serializedIfaces, serializable_settings.serializable_iface_size);
+	//Check CRC32 of saved ifaces settings
+	CRC32 crc32;
+	
+	std::string ifaces_checksum_str = crc32(serializedIfaces, savedIfaces_size * sizeof(serializable_iface_t));
+	std::transform(ifaces_checksum_str.begin(), ifaces_checksum_str.end(), ifaces_checksum_str.begin(), toupper_wrapper);
 
+	if(strcmp(serializable_settings.ifaces_checksum, ifaces_checksum_str.c_str()))
+		return false;
+
+	savedIfaces_size = deserialize(serializedIfaces, serializable_settings.serializable_iface_size);
 	return true;
 }
 
