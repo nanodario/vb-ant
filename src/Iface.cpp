@@ -139,17 +139,8 @@ Iface::Iface(bool enabled, QString mac, bool cableConnected, uint32_t attachment
 }
 
 Iface::Iface(serializable_iface_t serializable_iface)
-: enabled(serializable_iface.enabled), cableConnected(serializable_iface.cableConnected)
 {
-	setName(QString::fromUtf8(serializable_iface.name));
-	last_valid_name = QString::fromUtf8(serializable_iface.last_valid_name);
-	setMac(QString::fromUtf8(serializable_iface.mac));
-	setAttachmentType(serializable_iface.attachmentType);
-	setAttachmentData(QString::fromUtf8(serializable_iface.attachmentData));
-#ifdef CONFIGURABLE_IP
-	setIp(serializable_iface.ip);
-	setSubnetMask(serializable_iface.subnetMask);
-#endif
+	applyFromSerializableIface(serializable_iface);
 }
 
 Iface::~Iface()
@@ -545,6 +536,21 @@ serializable_iface_t Iface::getSerializableIface()
 	serializable_iface.enabled = enabled;
 	
 	return serializable_iface;
+}
+
+void Iface::applyFromSerializableIface(serializable_iface_t serializable_iface)
+{
+	enabled = serializable_iface.enabled;
+	cableConnected = serializable_iface.cableConnected;
+	setName(QString::fromUtf8(serializable_iface.name));
+	last_valid_name = QString::fromUtf8(serializable_iface.last_valid_name);
+	setMac(QString::fromUtf8(serializable_iface.mac));
+	setAttachmentType(serializable_iface.attachmentType);
+	setAttachmentData(QString::fromUtf8(serializable_iface.attachmentData));
+#ifdef CONFIGURABLE_IP
+	setIp(serializable_iface.ip);
+	setSubnetMask(serializable_iface.subnetMask);
+#endif
 }
 
 bool Iface::isValidAttachmentType(uint32_t _attachmentType)

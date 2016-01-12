@@ -296,18 +296,21 @@ bool MainWindow::slotVMSave()
 				      "Impossibile scrivere sul file " + VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName);
 		return false;
 	}
-	
+
 	return write_done;
-	
 }
 
 bool MainWindow::slotVMSaveAs()
 {
-	const QString selectedFileName = QFileDialog::getSaveFileName(this, "Salva documento", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vm-ant)");
-	
+	QString selectedFileName;
+	if (VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName.isEmpty())
+		selectedFileName = QFileDialog::getSaveFileName(this, "Salva documento", VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->machine->getName(), "Machine VB-Ant file (*.vm-ant)");
+	else
+		selectedFileName = QFileDialog::getSaveFileName(this, "Salva documento", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vm-ant)");
+
 	if (selectedFileName.isEmpty())
 		return false;
-	
+
 	VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName = selectedFileName;
 	return slotVMSave();
 }
@@ -319,7 +322,34 @@ void MainWindow::slotVMLoad()
 	if (selectedFileName.isEmpty() || !queryClose())
 		return;
 
-	VMSettings_vec.at(ui->vm_tabs->currentIndex())->load();
+	serializable_settings_t serializable_settings = VMSettings_vec.at(ui->vm_tabs->currentIndex())->read(selectedFileName);
+
+	if(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->getUUID() != serializable_settings.machine_uuid)
+	{
+		QMessageBox qm(QMessageBox::Warning, "Ripristino impostazioni", "Le impostazioni salvate non provengono dalla macchina selezionata.\nRipristinarle comunque?", QMessageBox::Yes | QMessageBox::No, this);
+		qm.setPalette(palette());
+		for(int i = 0; i < qm.buttons().size(); i++)
+		{
+			switch(qm.standardButton(qm.buttons()[i]))
+			{
+				case QDialogButtonBox::Yes: qm.buttons()[i]->setText(QString::fromUtf8("Sì")); break;
+				case QDialogButtonBox::No: qm.buttons()[i]->setText("No"); break;
+			}
+		}
+
+		switch (qm.exec())
+		{
+			case QMessageBox::No:
+				return;
+			case QMessageBox::Yes:
+			{
+				if(!VMSettings_vec.at(ui->vm_tabs->currentIndex())->load(selectedFileName))
+					return;
+				VMSettings_vec.at(ui->vm_tabs->currentIndex())->restore();
+				break;
+			}
+		}
+	}
 }
 
 void MainWindow::slotInfo()

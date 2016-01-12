@@ -74,6 +74,7 @@ VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBrid
 
 	refreshTable();
 	connect(ifaces_table, SIGNAL(sigIfaceChange(int, ifacekey_t, void*)), this, SLOT(slotIfaceChange(int, ifacekey_t, void*)));
+	connect(vm, SIGNAL(ifaceChanged(int)), ifaces_table, SLOT(slotRefreshIface(int)));
 }
 
 VMTabSettings::~VMTabSettings()

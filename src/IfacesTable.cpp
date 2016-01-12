@@ -754,6 +754,19 @@ QStringList IfacesTable::getIfaceInfo(int iface)
 	return iface_info;
 }
 
+void IfacesTable::slotRefreshIface(int iface)
+{
+	((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(ifaces[iface]->mac);
+	((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_CONNECTED))->checkbox->setCheckState(ifaces[iface]->cableConnected ? Qt::Checked : Qt::Unchecked);
+	item(iface, COLUMN_IFACE_NAME)->setText(ifaces[iface]->name);
+	item(iface, COLUMN_IP)->setText(ifaces[iface]->ip);
+	item(iface, COLUMN_SUBNETMASK)->setText(ifaces[iface]->subnetMask);
+	setAttachmentType(iface, ifaces[iface]->attachmentType);
+	setAttachmentData(iface, ifaces[iface]->attachmentData);
+
+	setStatus(iface, ifaces[iface]->enabled);
+}
+
 void IfacesTable::lockSettings()
 {
 	for(int iface = 0; iface < rowCount(); iface++)

@@ -735,6 +735,12 @@ bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *valu
 	return false;
 }
 
+void VirtualMachine::restoreSerializableIface(int iface, serializable_iface_t serializable_iface)
+{
+	ifaces[iface]->applyFromSerializableIface(serializable_iface);
+	emit ifaceChanged(iface);
+}
+
 bool VirtualMachine::operator==(VirtualMachine *vm)
 {
 // 	if (machine->getUUID() != vm->machine->getUUID())

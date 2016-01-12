@@ -26,13 +26,14 @@
 VMSettings::VMSettings(VirtualMachine *vm)
 : fileName(""), vm(vm), savedIfaces(NULL), savedIfaces_size(0)
 {
+	memset(&serializable_settings, 0, sizeof(serializable_settings_t));
+	strcpy(serializable_settings.machine_name, vm->machine->getName().toStdString().c_str());
+	strcpy(serializable_settings.machine_uuid, vm->machine->getUUID().toStdString().c_str());
 	backup();
 }
 
 VMSettings::~VMSettings()
 {
-	for(int i = 0; i < savedIfaces_size; i++)
-		free(savedIfaces[i]);
 	free(savedIfaces);
 }
 
@@ -43,21 +44,21 @@ bool VMSettings::operator==(VMSettings *s)
 
 void VMSettings::restore()
 {
-	vm->saveSettings();
 	for(int i = 0; i < savedIfaces_size; i++)
 	{
-		free(vm->ifaces[i]);
-		vm->ifaces[i] = savedIfaces[i];
+		if(vm->ifaces[i] != NULL)
+			vm->restoreSerializableIface(i, savedIfaces[i]);
+		else
+			vm->ifaces[i] = new Iface(savedIfaces[i]);
 	}
-
-	backup();
+	
 }
 
 void VMSettings::backup()
 {
-	savedIfaces = (Iface **)realloc(savedIfaces, vm->ifaces_size * sizeof(Iface*));
+	savedIfaces = (serializable_iface_t *)realloc(savedIfaces, vm->ifaces_size * sizeof(serializable_iface_t));
 	for(int i = 0; i < vm->ifaces_size; i++)
-		savedIfaces[i] = vm->ifaces[i]->copyIface();
+		savedIfaces[i] = vm->ifaces[i]->getSerializableIface();
 	savedIfaces_size = vm->ifaces_size;
 }
 
@@ -67,15 +68,12 @@ bool VMSettings::save(QString selected_filename)
 		selected_filename = fileName;
 
 	char *serializedIfaces = NULL;
-	uint32_t size = serialize(&serializedIfaces, savedIfaces);
+	uint32_t size = serialize(&serializedIfaces);
 
-	serializable_settings_t serializable_settings;
-	memset(&serializable_settings, 0, sizeof(serializable_settings_t));
-	strcpy(serializable_settings.machine_name, vm->machine->getName().toStdString().c_str());
-	strcpy(serializable_settings.machine_uuid, vm->machine->getUUID().toStdString().c_str());
 	serializable_settings.serializable_iface_size = savedIfaces_size;
 
 	QFile file(selected_filename);
+	fileName = selected_filename;
 	
 	if(file.open(QIODevice::WriteOnly))
 	{
@@ -89,6 +87,30 @@ bool VMSettings::save(QString selected_filename)
 		return false;
 }
 
+serializable_settings_t VMSettings::read(QString selected_filename)
+{
+	if(selected_filename.isEmpty())
+		selected_filename = fileName;
+
+	uint32_t bytes_read;
+	serializable_settings_t serializable_settings_tmp;
+
+	QFile file(selected_filename);
+	fileName = selected_filename;
+
+	if(file.open(QIODevice::ReadOnly))
+	{
+		bytes_read = file.read((char *)&serializable_settings_tmp, sizeof(serializable_settings_t));
+
+		file.close();
+		if(bytes_read == sizeof(serializable_settings_t))
+			return serializable_settings_tmp;
+	}
+
+	memset(&serializable_settings_tmp, 0, sizeof(serializable_settings_t));
+	return serializable_settings_tmp;
+}
+
 bool VMSettings::load(QString selected_filename)
 {
 	if(selected_filename.isEmpty())
@@ -96,10 +118,10 @@ bool VMSettings::load(QString selected_filename)
 
 	uint32_t bytes_read;
 	char *serializedIfaces;
-	serializable_settings_t serializable_settings;
 
 	QFile file(selected_filename);
-
+	fileName = selected_filename;
+	
 	if(file.open(QIODevice::ReadOnly))
 	{
 		uint32_t file_size = file.size();
@@ -116,42 +138,25 @@ bool VMSettings::load(QString selected_filename)
 	else
 		return false;
 
-	uint8_t savedIfaces_size = deserialize(&savedIfaces, serializedIfaces, serializable_settings.serializable_iface_size);
+	uint8_t savedIfaces_size = deserialize(serializedIfaces, serializable_settings.serializable_iface_size);
 
-	for(int i = 0; i < savedIfaces_size; i++)
-		printf("mac@%d: %s\n", i, savedIfaces[i]->mac.toStdString().c_str());
-	
-	
 	return true;
 }
 
-uint32_t VMSettings::serialize(char **dest, Iface **src)
+uint32_t VMSettings::serialize(char **dest)
 {
-// 	*dest = (char *)realloc(*dest, savedIfaces_size * sizeof(serializable_iface_t) + sizeof(uint8_t));
-// 	memcpy(*dest, &savedIfaces_size, sizeof(uint8_t));
 	*dest = (char *)realloc(*dest, savedIfaces_size * sizeof(serializable_iface_t));
 	for(int i = 0; i < savedIfaces_size; i++)
-	{
-		serializable_iface_t serializable_iface = src[i]->getSerializableIface();
-// 		memcpy((*dest + sizeof(uint8_t))+(i * sizeof(serializable_iface_t)), &serializable_iface, sizeof(serializable_iface_t));	
-		memcpy((*dest)+(i * sizeof(serializable_iface_t)), &serializable_iface, sizeof(serializable_iface_t));	
-	}
+		memcpy((*dest)+(i * sizeof(serializable_iface_t)), &savedIfaces[i], sizeof(serializable_iface_t));	
 
 	return savedIfaces_size * sizeof(serializable_iface_t);
 }
 
-uint8_t VMSettings::deserialize(Iface ***dest, char *src, uint8_t size)
+uint8_t VMSettings::deserialize(char *src, uint8_t size)
 {
-// 	uint8_t size = (uint8_t) (src[0]);
-// 	std::cout << "size: " << (int) size << std::endl;
-
-	serializable_iface_t serializable_iface;
-	*dest = (Iface **)realloc(*dest, size * sizeof(Iface*));
+	savedIfaces = (serializable_iface_t *)realloc(savedIfaces, size * sizeof(serializable_iface_t));
 	for(int i = 0; i < (int) size; i++)
-	{
-		memcpy(&serializable_iface, src+(i * sizeof(serializable_iface_t)), sizeof(serializable_iface_t));
-		(*dest)[i] = new Iface(serializable_iface);
-	}
+		memcpy(&(savedIfaces[i]), src+(i * sizeof(serializable_iface_t)), sizeof(serializable_iface_t));
 
 	return size;
 }

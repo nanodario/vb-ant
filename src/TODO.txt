@@ -2,8 +2,10 @@ OK	Aggiungere header GPLv2 ad ogni file
 OK	Clonazione nuova macchina da "golden copy"
 OK	Salvataggio impostazioni hardware su macchina virtuale
 OK	Salvataggio impostazioni IP su macchina virtuale
-	Salvataggio impostazioni della singola macchina su file
+OK	Salvataggio impostazioni della singola macchina su file
 	Salvataggio impostazioni parco macchine su file
+
+	Aggiungere checksum su salvataggio impostazioni singola macchina
 
 OK	Gestire comportamento (pausa/stop) delle macchine virtuali
 OK	Sincronizzazione impostazioni di rete con macchina virtuale avviata

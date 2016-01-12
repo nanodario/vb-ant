@@ -80,6 +80,7 @@ class Iface
 		inline bool operator!=(const Iface *i) const { return !operator==(i); };
 		Iface *copyIface();
 		serializable_iface_t getSerializableIface();
+		void applyFromSerializableIface(serializable_iface_t serializable_iface);
 		
 		QString last_valid_name, name, mac, attachmentData;
 #ifdef CONFIGURABLE_IP

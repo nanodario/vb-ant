@@ -65,16 +65,18 @@ class VMSettings
 		void restore();
 
 		bool save(QString selected_filename = "");
+		serializable_settings_t read(QString selected_filename = "");
 		bool load(QString selected_filename = "");
-
+		
 		bool operator==(VMSettings *s);
 		QString fileName;
+		serializable_settings_t serializable_settings;
 	private:
-		uint32_t serialize(char **dest, Iface **src);
-		uint8_t deserialize(Iface ***dest, char *src, uint8_t size);
+		uint32_t serialize(char **dest);
+		uint8_t deserialize(char *src, uint8_t size);
 
 		VirtualMachine *vm;
-		Iface **savedIfaces;
+		serializable_iface_t *savedIfaces;
 		uint8_t savedIfaces_size;
 };
 

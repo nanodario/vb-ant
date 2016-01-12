@@ -173,7 +173,10 @@ class IfacesTable : public QTableWidget
 
 	private slots:
 		void cellChangedSlot(int row, int column);
-		
+
+	public slots:
+		void slotRefreshIface(int iface);
+
 	protected:
 		Iface **ifaces;
 		QTableWidget *ifaces_table;
