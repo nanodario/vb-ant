@@ -138,9 +138,9 @@ Iface::Iface(bool enabled, QString mac, bool cableConnected, uint32_t attachment
 #endif
 }
 
-Iface::Iface(serializable_iface_t serializable_iface)
+Iface::Iface(settings_iface_t settings_iface)
 {
-	applyFromSerializableIface(serializable_iface);
+	applyFromSerializableIface(settings_iface);
 }
 
 Iface::~Iface()
@@ -517,39 +517,39 @@ Iface *Iface::copyIface()
 #endif
 }
 
-serializable_iface_t Iface::getSerializableIface()
+settings_iface_t Iface::getSerializableIface()
 {
-	serializable_iface_t serializable_iface;
-	memset(&serializable_iface, 0, sizeof(serializable_iface_t));
-	strcpy(serializable_iface.last_valid_name, last_valid_name.toStdString().c_str());
-	strcpy(serializable_iface.name, name.toStdString().c_str());
-	strcpy(serializable_iface.mac, mac.toStdString().c_str());
-	strcpy(serializable_iface.attachmentData, attachmentData.toStdString().c_str());
+	settings_iface_t settings_iface;
+	memset(&settings_iface, 0, sizeof(settings_iface_t));
+	strcpy(settings_iface.last_valid_name, last_valid_name.toStdString().c_str());
+	strcpy(settings_iface.name, name.toStdString().c_str());
+	strcpy(settings_iface.mac, mac.toStdString().c_str());
+	strcpy(settings_iface.attachmentData, attachmentData.toStdString().c_str());
 
 #ifdef CONFIGURABLE_IP	
-	strcpy(serializable_iface.ip, ip.toStdString().c_str());
-	strcpy(serializable_iface.subnetMask, subnetMask.toStdString().c_str());
+	strcpy(settings_iface.ip, ip.toStdString().c_str());
+	strcpy(settings_iface.subnetMask, subnetMask.toStdString().c_str());
 #endif
 	
-	serializable_iface.attachmentType = attachmentType;
-	serializable_iface.cableConnected = cableConnected;
-	serializable_iface.enabled = enabled;
+	settings_iface.attachmentType = attachmentType;
+	settings_iface.cableConnected = cableConnected;
+	settings_iface.enabled = enabled;
 	
-	return serializable_iface;
+	return settings_iface;
 }
 
-void Iface::applyFromSerializableIface(serializable_iface_t serializable_iface)
+void Iface::applyFromSerializableIface(settings_iface_t settings_iface)
 {
-	enabled = serializable_iface.enabled;
-	cableConnected = serializable_iface.cableConnected;
-	setName(QString::fromUtf8(serializable_iface.name));
-	last_valid_name = QString::fromUtf8(serializable_iface.last_valid_name);
-	setMac(QString::fromUtf8(serializable_iface.mac));
-	setAttachmentType(serializable_iface.attachmentType);
-	setAttachmentData(QString::fromUtf8(serializable_iface.attachmentData));
+	enabled = settings_iface.enabled;
+	cableConnected = settings_iface.cableConnected;
+	setName(QString::fromUtf8(settings_iface.name));
+	last_valid_name = QString::fromUtf8(settings_iface.last_valid_name);
+	setMac(QString::fromUtf8(settings_iface.mac));
+	setAttachmentType(settings_iface.attachmentType);
+	setAttachmentData(QString::fromUtf8(settings_iface.attachmentData));
 #ifdef CONFIGURABLE_IP
-	setIp(serializable_iface.ip);
-	setSubnetMask(serializable_iface.subnetMask);
+	setIp(settings_iface.ip);
+	setSubnetMask(settings_iface.subnetMask);
 #endif
 }
 

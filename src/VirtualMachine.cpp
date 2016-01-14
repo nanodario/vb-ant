@@ -735,9 +735,9 @@ bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *valu
 	return false;
 }
 
-void VirtualMachine::restoreSerializableIface(int iface, serializable_iface_t serializable_iface)
+void VirtualMachine::restoreSerializableIface(int iface, settings_iface_t settings_iface)
 {
-	ifaces[iface]->applyFromSerializableIface(serializable_iface);
+	ifaces[iface]->applyFromSerializableIface(settings_iface);
 	emit ifaceChanged(iface);
 }
 

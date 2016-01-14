@@ -36,7 +36,7 @@ typedef struct
 #endif
 	uint32_t attachmentType;
 	bool enabled, cableConnected;
-} serializable_iface_t;
+} settings_iface_t;
 
 class Iface
 {
@@ -46,7 +46,7 @@ class Iface
 #else
 		Iface(bool enabled = false, QString mac = "", bool cableConnected = false, uint32_t attachmentType = NetworkAttachmentType::Null, QString attachmentData = "", QString name = "");
 #endif
-		Iface(serializable_iface_t serializable_iface);
+		Iface(settings_iface_t settings_iface);
 		
 		virtual ~Iface();
 		bool setName(QString name);
@@ -79,8 +79,8 @@ class Iface
 		inline bool operator==(const Iface *i) const { return mac == i->mac; };
 		inline bool operator!=(const Iface *i) const { return !operator==(i); };
 		Iface *copyIface();
-		serializable_iface_t getSerializableIface();
-		void applyFromSerializableIface(serializable_iface_t serializable_iface);
+		settings_iface_t getSerializableIface();
+		void applyFromSerializableIface(settings_iface_t settings_iface);
 		
 		QString last_valid_name, name, mac, attachmentData;
 #ifdef CONFIGURABLE_IP

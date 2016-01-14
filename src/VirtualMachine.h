@@ -86,7 +86,7 @@ class VirtualMachine : QObject
 		void cleanIfaces(Iface **ifaces_src, int ifaces_src_size);
 		void copyIfaces(Iface **ifaces_src, int ifaces_src_size);
 		bool setNetworkAdapterData(int iface, ifacekey_t key, void *value_ptr);
-		void restoreSerializableIface(int iface, serializable_iface_t serializable_iface);
+		void restoreSerializableIface(int iface, settings_iface_t settings_iface);
 
 		Iface *getIfaceByName(QString name);
 		Iface *getIfaceByMAC(QString mac);

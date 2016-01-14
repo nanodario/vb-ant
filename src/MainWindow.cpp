@@ -322,34 +322,62 @@ void MainWindow::slotVMLoad()
 	if (selectedFileName.isEmpty() || !queryClose())
 		return;
 
-	serializable_settings_t serializable_settings = VMSettings_vec.at(ui->vm_tabs->currentIndex())->read(selectedFileName);
+	settings_header_t settings_header;
+	char *settings_ifaces;
+	
+	read_result_t read_result = VMSettings_vec.at(ui->vm_tabs->currentIndex())->read(&settings_header, &settings_ifaces, selectedFileName);
 
-	if(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->machine->getUUID() != serializable_settings.machine_uuid)
+	switch(read_result)
 	{
-		QMessageBox qm(QMessageBox::Warning, "Ripristino impostazioni", "Le impostazioni salvate non provengono dalla macchina selezionata.\nRipristinarle comunque?", QMessageBox::Yes | QMessageBox::No, this);
-		qm.setPalette(palette());
-		for(int i = 0; i < qm.buttons().size(); i++)
+		case E_INVALID_FILE:
+		case E_INVALID_HEADER:
 		{
-			switch(qm.standardButton(qm.buttons()[i]))
+			QMessageBox qm(QMessageBox::Critical, "Ripristino impostazioni", QString::fromUtf8("Il file selezionato non è valido."), QMessageBox::Ok, this);
+			qm.setPalette(palette());
+			qm.exec();
+			return;
+		}
+		case E_INVALID_CHECKSUM:
+		{
+			QMessageBox qm(QMessageBox::Warning, "Ripristino impostazioni", "Le impostazioni salvate potrebbero non essere valide.\nProvare a ripristinarle comunque?", QMessageBox::Yes | QMessageBox::No, this);
+			qm.setPalette(palette());
+			for(int i = 0; i < qm.buttons().size(); i++)
 			{
-				case QDialogButtonBox::Yes: qm.buttons()[i]->setText(QString::fromUtf8("Sì")); break;
-				case QDialogButtonBox::No: qm.buttons()[i]->setText("No"); break;
+				switch(qm.standardButton(qm.buttons()[i]))
+				{
+					case QDialogButtonBox::Yes: qm.buttons()[i]->setText(QString::fromUtf8("Sì")); break;
+					case QDialogButtonBox::No: qm.buttons()[i]->setText("No"); break;
+				}
 			}
-		}
 
-		switch (qm.exec())
-		{
-			case QMessageBox::No:
-			case QMessageBox::Abort:
-				return;
-			case QMessageBox::Yes:
+			if(qm.exec() == QMessageBox::Yes)
 				break;
+			return;
 		}
+		case E_MACHINE_MISMATCH:
+		{
+			QMessageBox qm(QMessageBox::Warning, "Ripristino impostazioni", "Le impostazioni salvate non provengono dalla macchina selezionata.\nRipristinarle comunque?", QMessageBox::Yes | QMessageBox::No, this);
+			qm.setPalette(palette());
+			for(int i = 0; i < qm.buttons().size(); i++)
+			{
+				switch(qm.standardButton(qm.buttons()[i]))
+				{
+					case QDialogButtonBox::Yes: qm.buttons()[i]->setText(QString::fromUtf8("Sì")); break;
+					case QDialogButtonBox::No: qm.buttons()[i]->setText("No"); break;
+				}
+			}
+
+			if(qm.exec() == QMessageBox::Yes)
+				break;
+			return;
+		}
+		case NO_ERROR:
+			break;
+		default:
+			return;
 	}
 
-	if(!VMSettings_vec.at(ui->vm_tabs->currentIndex())->load(selectedFileName))
-		return;
-
+	VMSettings_vec.at(ui->vm_tabs->currentIndex())->load(settings_header, settings_ifaces);
 	VMSettings_vec.at(ui->vm_tabs->currentIndex())->restore();
 }
 

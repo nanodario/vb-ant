@@ -54,8 +54,18 @@ typedef struct
 	char machine_name[1024];
 	char machine_uuid[1024];
 	char ifaces_checksum[10];
-	uint8_t serializable_iface_size;
-} serializable_settings_t;
+	uint8_t settings_iface_size;
+} settings_header_t;
+
+typedef enum
+{
+        NO_ERROR,
+        E_INVALID_HEADER,
+        E_INVALID_FILE,
+        E_MACHINE_MISMATCH,
+        E_INVALID_CHECKSUM,
+        E_UNKNOWN
+} read_result_t;
 
 class VMSettings
 {
@@ -67,18 +77,18 @@ class VMSettings
 		void restore();
 
 		bool save(QString selected_filename = "");
-		serializable_settings_t read(QString selected_filename = "");
-		bool load(QString selected_filename = "");
-		
+		read_result_t read(settings_header_t *settings_header, char **settings_ifaces, QString selected_filename);
+		void load(settings_header_t settings_header, char *settings_ifaces);
+
 		bool operator==(VMSettings *s);
 		QString fileName;
-		serializable_settings_t serializable_settings;
+		settings_header_t settings_header;
 	private:
 		uint32_t serialize(char **dest);
 		uint8_t deserialize(char *src, uint8_t size);
 
 		VirtualMachine *vm;
-		serializable_iface_t *savedIfaces;
+		settings_iface_t *savedIfaces;
 		uint8_t savedIfaces_size;
 };
 
