@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -24,6 +24,7 @@
 #include <QtGui/QApplication>
 #include "MainWindow.h"
 #include "OSBridge.h"
+#include "ZlibWrapper.h"
 
 int main(int argc, char** argv)
 {
@@ -34,6 +35,8 @@ int main(int argc, char** argv)
 		std::cout << "Module nbd loaded" << std::endl;
 	else
 		std::cout << "Module nbd not loaded" << std::endl;
+	
+	std::cout << "This program uses zlib version: " << ZlibWrapper::getZlibVersion().toStdString() << std::endl;
 	
 	MainWindow mw((args.count() < 2) ? QString() : args[1]);
 	mw.show();

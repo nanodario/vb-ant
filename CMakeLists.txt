@@ -84,6 +84,7 @@ set(Reti_SRCS
 	"src/VMSettings.cpp"
 	"src/VMTabSettings.cpp"
 	"src/UIMainEventListener.cpp"
+	"src/ZlibWrapper.cpp"
 )
 
 set(nbdtool_SRCS "src/nbdtool.cpp")
@@ -162,7 +163,7 @@ if(DEBUG)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 endif()
 
-set(SYSTEM_LIBS	"pthread" "kmod")
+set(SYSTEM_LIBS	"pthread" "kmod" "z")
 set(VBOX_LIB "/usr/lib/virtualbox/VBoxXPCOM.so")
 
 qt4_automoc(${Reti_SRCS})
