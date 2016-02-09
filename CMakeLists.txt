@@ -63,7 +63,8 @@ qt4_wrap_ui(ui_src
 	"src/CloneDialog.ui"
 	"src/ProgressDialog.ui"
 	"src/info_dialog.ui"
-	"src/SummaryDialog.ui"
+# 	"src/SummaryDialog.ui"
+	"src/MachinesDialog.ui"
 )
 
 qt4_add_resources(ui_res "src/res.qrc")
@@ -74,6 +75,7 @@ set(Reti_SRCS
 	"src/Iface.cpp"
 	"src/IfacesTable.cpp"
 	"src/InfoDialog.cpp"
+	"src/MachinesDialog.cpp"
 	"src/main.cpp"
 	"src/MainWindow.cpp"
 	"src/OSBridge.cpp"

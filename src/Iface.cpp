@@ -152,6 +152,7 @@ bool Iface::setName(QString _name)
 {
 	if(isValidName(_name, true))
 	{
+		last_valid_name = name;
 		name = _name;
 		return true;
 	}

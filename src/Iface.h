@@ -31,9 +31,10 @@
 typedef struct
 {
 	char last_valid_name[1024], name[1024], mac[60], attachmentData[1024];
-#ifdef CONFIGURABLE_IP
+
+/** These fields are included for compatibility, even if the flag CONFIGURABLE_IP is not defined */
 	char ip[1024], subnetMask[1024];
-#endif
+
 	uint32_t attachmentType;
 	bool enabled, cableConnected;
 } settings_iface_t;

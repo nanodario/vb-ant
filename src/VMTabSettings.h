@@ -35,10 +35,12 @@
 #include "SummaryDialog.h"
 #include "VMSettings.h"
 
+class MachinesDialog;
 class MainWindow;
 
 class VMTabSettings : public QWidget
 {
+	friend class MachinesDialog;
 	friend class MainWindow;
 	friend class IfacesTable;
 	friend class AttachmentDataWidget;
@@ -55,6 +57,10 @@ class VMTabSettings : public QWidget
 		void lockSettings();
 		void unlockSettings();
 		bool hasThisMachine(MachineBridge *_machine);
+		QString getMachineName() const { return vm->machine->getName(); };
+		QString getMachineUUID() const { return vm->machine->getUUID(); };
+		bool setMachineUUID(const char *uuid);
+		VirtualMachine *vm;
 		
 	private:
 		QString vm_name;
@@ -62,7 +68,6 @@ class VMTabSettings : public QWidget
 		QWidget *vm_tab;
 		QVBoxLayout *verticalLayout;
 		QDialogButtonBox *buttonBox;
-		VirtualMachine *vm;
 		Iface **ifaces;
 		VirtualBoxBridge *vboxbridge;
 		MachineBridge *machine;

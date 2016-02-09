@@ -22,31 +22,38 @@
 #ifndef VMSETTINGS_H
 #define VMSETTINGS_H
 
+#define PROGRAM_VERSION "0.1"
+#define SAVEFILE_MAGIC_BYTES PROGRAM_NAME PROGRAM_VERSION "\n"
+
 #include "VirtualMachine.h"
+#include "crc32.h"
 
 /**
  * Settings format for machine save file:
- * header [2055 B]:
+ * save file magic bytes:
+ * magic bytes:
+ * 	   'M'				[   1 B]
+ * 	   SAVEFILE_MAGIC_BYTES		[variable lenght]
+ * --- new line ---			[   1 B]
+ * header [2059 B]:
  * 	   machine name 		[1024 B]
  * 	   machine uuid 		[1024 B]
  * 	   ifaces checksum 		[  10 B]
  * 	   number of ifaces 		[   1 B]
- * ifaces #1 data (each iface) [3138 B or 5186 B]:
+ * ifaces #1 data (each iface) [5186 B]:
  * 	   last valid iface name 	[1024 B]
  * 	   current iface name 		[1024 B]
  * 	   iface mac 			[  60 B]
  * 	   iface attachmentData 	[1024 B]
- * 	#ifdef CONFIGURABLE_IP
  * 	   iface IP 			[1024 B]
  * 	   iface subnet mask 		[1024 B]
- * 	#endif
  * 	   iface attachment type 	[   4 B]
  * 	   iface enabled flag 		[   1 B]
  * 	   iface cable connected flag 	[   1 B]
- * ifaces #2 data (each iface) [3138 B or 5186 B]
- * ifaces #n data (each iface) [3138 B or 5186 B]
+ * ifaces #2 data (each iface) [5186 B]
+ * ifaces #n data (each iface) [5186 B]
  *
- * A machine with 8 iface has a 43543 B (or 27159 B without IP support) settings file
+ * A machine with 8 iface has a 43558 B settings file if SAVEFILE_MAGIC_BYTES is "vb-ant0.1"
  */
 
 typedef struct
@@ -67,8 +74,12 @@ typedef enum
         E_UNKNOWN
 } read_result_t;
 
+class MachinesDialog;
+
 class VMSettings
 {
+	friend class MachinesDialog;
+
 	public:
 		VMSettings(VirtualMachine *vm);
 		~VMSettings();
@@ -83,9 +94,24 @@ class VMSettings
 		bool operator==(VMSettings *s);
 		QString fileName;
 		settings_header_t settings_header;
+		static std::string get_ifaces_checksum(char **serialized_ifaces, int serialized_ifaces_size);
+		static std::string get_ifaces_checksum(settings_header_t settings_header, settings_iface_t *settings_ifaces);
+		bool set_machine(settings_header_t settings_header, settings_iface_t *settings_ifaces);
+
+		/**
+		 * Allocate SIZE * sizeof(settings_iface_t) bytes in DEST and copies
+		 * SIZE * sizeof(settings_iface_t) bytes memory of SRC to DEST
+		 */
+		static uint32_t serialize(char **dest, settings_iface_t *src, uint8_t size);
+
+		/**
+		 * Allocate SIZE * sizeof(settings_iface_t) bytes in DEST and copies
+		 * SIZE * sizeof(settings_iface_t) bytes memory of SRC to DEST
+		 */
+		static uint8_t deserialize(settings_iface_t **dest, char *src, uint8_t size);
+
 	private:
-		uint32_t serialize(char **dest);
-		uint8_t deserialize(char *src, uint8_t size);
+		uint32_t get_serializable_machine(settings_header_t *settings_header, char **settings_ifaces);
 
 		VirtualMachine *vm;
 		settings_iface_t *savedIfaces;

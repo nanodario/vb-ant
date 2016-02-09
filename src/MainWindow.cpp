@@ -41,6 +41,7 @@
 #include "CloneDialog.h"
 #include "ProgressDialog.h"
 #include "SummaryDialog.h"
+#include "MachinesDialog.h"
 
 static QPalette __palette;
 
@@ -138,6 +139,9 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionVMSave, SIGNAL(triggered(bool)), this, SLOT(slotVMSave()));
 	connect(ui->actionVMSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotVMSaveAs()));
 	
+	connect(ui->actionImportMachines, SIGNAL(triggered(bool)), this, SLOT(slotImportMachines()));
+	connect(ui->actionExportMachines, SIGNAL(triggered(bool)), this, SLOT(slotExportMachines()));
+
 	ui->retranslateUi(this);
 	setWindowTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
 	ui->menuFile->setTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
@@ -304,9 +308,9 @@ bool MainWindow::slotVMSaveAs()
 {
 	QString selectedFileName;
 	if (VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName.isEmpty())
-		selectedFileName = QFileDialog::getSaveFileName(this, "Salva documento", VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->machine->getName(), "Machine VB-Ant file (*.vm-ant)");
+		selectedFileName = QFileDialog::getSaveFileName(this, "Salva macchina", VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->machine->getName(), "Machine VB-Ant file (*.vam)");
 	else
-		selectedFileName = QFileDialog::getSaveFileName(this, "Salva documento", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vm-ant)");
+		selectedFileName = QFileDialog::getSaveFileName(this, "Salva macchina", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vam)");
 
 	if (selectedFileName.isEmpty())
 		return false;
@@ -317,7 +321,7 @@ bool MainWindow::slotVMSaveAs()
 
 void MainWindow::slotVMLoad()
 {
-	const QString selectedFileName = QFileDialog::getOpenFileName(this, "Apri documento", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vm-ant)");
+	const QString selectedFileName = QFileDialog::getOpenFileName(this, "Apri macchina", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vam)");
 
 	if (selectedFileName.isEmpty() || !queryClose())
 		return;
@@ -384,6 +388,22 @@ void MainWindow::slotVMLoad()
 void MainWindow::slotInfo()
 {
 	infoDialog.show();
+}
+
+void MainWindow::slotExportMachines()
+{
+	MachinesDialog machinesDialog(this, &VMTabSettings_vec);
+	machinesDialog.exec();
+}
+
+void MainWindow::slotImportMachines()
+{
+	const QString fileName = QFileDialog::getOpenFileName(this, "Importa macchine", "", "Machine set VB-Ant file (*.vas)");
+	if(fileName == "")
+		return;
+
+	MachinesDialog machinesDialog(this, &VMTabSettings_vec, fileName);
+	machinesDialog.exec();
 }
 
 void MainWindow::currentChangedSlot(int tab)
@@ -583,24 +603,31 @@ void MainWindow::slotClone()
 	emit machinesPoolChanged();
 }
 
-void MainWindow::launchCreateProcess(QString qName, bool reInitIfaces)
+int MainWindow::launchCreateProcess(QString qName, bool reInitIfaces, bool restoreFromFile)
 {
-	VMTabSettings *vmSettings = addMachine(vboxbridge->newVM(qName));
-	if(vmSettings == NULL)
-		return;
+	VMTabSettings *vmTabSettings = addMachine(vboxbridge->newVM(qName));
+	if(vmTabSettings == NULL)
+		return -1;
 
 	ProgressDialog p("");
 	p.ui->label->setText(QString::fromUtf8("Caricamento macchina \"").append(qName).append("\""));
 	p.ui->progressBar->setValue(0);
 	p.open();
 
-	vmSettings->vm->cleanIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
-	vmSettings->vm->saveSettings();
-	vmSettings->refreshTable();
+	if(!restoreFromFile)
+	{
+		vmTabSettings->vm->cleanIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
+		vmTabSettings->vm->saveSettings();
+		vmTabSettings->refreshTable();
+	}
 
-	ui->vm_tabs->addTab(vmSettings, qName);
-	VMTabSettings_vec.push_back(vmSettings);
+	int newTab = ui->vm_tabs->addTab(vmTabSettings, qName);
+	VMTabSettings_vec.push_back(vmTabSettings);
 	p.ui->progressBar->setValue(100);
+
+	ui->vm_tabs->setCurrentIndex(newTab);
+
+	return newTab;
 }
 
 void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
@@ -619,9 +646,11 @@ void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
 	vmSettings->vm->saveSettings();
 	vmSettings->refreshTable();
 
-	ui->vm_tabs->addTab(vmSettings, qName);
+	int newTab = ui->vm_tabs->addTab(vmSettings, qName);
 	VMTabSettings_vec.push_back(vmSettings);
 	p.ui->progressBar->setValue(100);
+
+	ui->vm_tabs->setCurrentIndex(newTab);
 }
 
 VMTabSettings *MainWindow::addMachine(IMachine *m)
@@ -684,13 +713,16 @@ void MainWindow::slotRemove()
 			std::vector<VMTabSettings*> VMTabSettings_vec_shadow;
 			std::vector<MachineBridge*> machines_vec_shadow;
 			for(int i = 0; i < VMTabSettings_vec.size(); i++)
+			{
 				if(i != tabIndex)
 				{
 					VMTabSettings_vec_shadow.push_back(VMTabSettings_vec.at(i));
 					machines_vec_shadow.push_back(machines_vec.at(i));
 				}
+			}
 
 			ui->vm_tabs->removeTab(tabIndex);
+
 			VMTabSettings *v = VMTabSettings_vec.at(tabIndex);
 			MachineBridge *mb = machines_vec.at(tabIndex);
 			VMTabSettings_vec = VMTabSettings_vec_shadow;
@@ -751,7 +783,7 @@ void MainWindow::slotNetworkAdapterChange(MachineBridge *machine, INetworkAdapte
 			break;
 		}
 
-	VMTabSettings_vec.at(tabIndex)->vm->refreshIface(nic);
+	VMTabSettings_vec.at(tabIndex)->vm->refreshIface(machine->getIfaceSlot(nic), nic);
 	VMTabSettings_vec.at(tabIndex)->refreshTableUI();
 
 	setSettingsPolicy(tabIndex, VMTabSettings_vec.at(tabIndex)->machine->getState());

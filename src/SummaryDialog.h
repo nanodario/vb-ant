@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -23,11 +23,17 @@
 #define SUMMARYDIALOG_H
 
 #include <QDialog>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QRadioButton>
+#include <QSpacerItem>
+#include <QComboBox>
+#include <QCheckBox>
 
-#include "ui_SummaryDialog.h"
+#include "ui_MachinesDialog.h"
 #include "VirtualMachine.h"
 
-class Ui_SummaryDialog;
+class Ui_MachinesDialog;
 class MainWindow;
 
 class SummaryDialog : public QDialog
@@ -45,7 +51,14 @@ class SummaryDialog : public QDialog
 		void populateComboBox();
 
 	private:
-		Ui_SummaryDialog *ui;
+		Ui_MachinesDialog *ui;
+		QHBoxLayout *radioButtonsLayout;
+		QLabel *label;
+		QRadioButton *lan_radioButton;
+		QSpacerItem *horizontalSpacer;
+		QRadioButton *machine_radioButton;
+		QComboBox *machine_comboBox;
+		QCheckBox *showEmptyNetworks;
 		MainWindow *mainWindow;
 };
 

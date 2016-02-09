@@ -47,6 +47,7 @@ class MainWindow;
 class VMTabSettings;
 class SummaryDialog;
 class VMSettings;
+class MachinesDialog;
 
 class VirtualMachine : QObject
 {
@@ -54,6 +55,7 @@ class VirtualMachine : QObject
 	friend class VMTabSettings;
 	friend class SummaryDialog;
 	friend class VMSettings;
+	friend class MachinesDialog;
 
 	Q_OBJECT;
 
@@ -86,13 +88,13 @@ class VirtualMachine : QObject
 		void cleanIfaces(Iface **ifaces_src, int ifaces_src_size);
 		void copyIfaces(Iface **ifaces_src, int ifaces_src_size);
 		bool setNetworkAdapterData(int iface, ifacekey_t key, void *value_ptr);
-		void restoreSerializableIface(int iface, settings_iface_t settings_iface);
+		void setSerializableIface(int iface, settings_iface_t settings_iface);
 
 		Iface *getIfaceByName(QString name);
 		Iface *getIfaceByMAC(QString mac);
 		Iface *getIfaceByNetworkAdapter(INetworkAdapter *iface);
 		Iface **getIfaces() const { return ifaces; };
-		void refreshIface(INetworkAdapter *iface);
+		void refreshIface(uint32_t iface, INetworkAdapter *nic);
 		QString getIfaceName(uint32_t iface);
 		QString getIp(uint32_t iface);
 		QString getSubnetMask(uint32_t iface);
@@ -110,6 +112,7 @@ class VirtualMachine : QObject
 		std::string partition_mountpoint_prefix;
 		std::vector<std::string> mounted_partitions_vec;
 		bool vhd_mounted;
+		VMSettings *vmSettings;
 
 	signals:
 		void settingsChanged(VirtualMachine *vm);

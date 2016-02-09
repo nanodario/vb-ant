@@ -39,6 +39,8 @@
 VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBridge *vboxbridge, MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix) : QWidget(parent)
 , vm_name(tabname), vboxbridge(vboxbridge), machine(machine), vm(new VirtualMachine(machine, vhd_mountpoint, partition_mountpoint_prefix)), vmSettings(new VMSettings(vm))
 {
+	vm->vmSettings = vmSettings;
+
 	setObjectName(tabname);
 
 	verticalLayout = new QVBoxLayout(this);
@@ -92,7 +94,7 @@ void VMTabSettings::refreshTable()
 	vm->mountVpartition(OS_PARTITION_NUMBER, true);
 	for(int row = 0; row < ifaces_table->rowCount(); row++)
 	{
-		vm->refreshIface(vm->machine->getIface(row));
+		vm->refreshIface(row, vm->machine->getIface(row));
 		
 		bool enabled = ifaces_table->operator[](row)->enabled;
 		QString mac = ifaces_table->operator[](row)->mac;
@@ -119,15 +121,15 @@ void VMTabSettings::refreshTableUI()
 	ifaces_table->blockSignals(true);
 	for(int row = 0; row < ifaces_table->rowCount(); row++)
 	{
-		ifaces_table->setIfaceEnabled(row, ifaces_table->operator[](row)->enabled);
-		ifaces_table->setMac(row, ifaces_table->operator[](row)->mac);
-		ifaces_table->setCableConnected(row, ifaces_table->operator[](row)->cableConnected);
-		ifaces_table->setAttachmentType(row, ifaces_table->operator[](row)->attachmentType);
-		ifaces_table->setAttachmentData(row, ifaces_table->operator[](row)->attachmentData);
-		ifaces_table->setName(row, ifaces_table->operator[](row)->name);
+		ifaces_table->setIfaceEnabled(row, ifaces[row]->enabled);
+		ifaces_table->setMac(row, ifaces[row]->mac);
+		ifaces_table->setCableConnected(row, ifaces[row]->cableConnected);
+		ifaces_table->setAttachmentType(row, ifaces[row]->attachmentType);
+		ifaces_table->setAttachmentData(row, ifaces[row]->attachmentData);
+		ifaces_table->setName(row, ifaces[row]->name);
 #ifdef CONFIGURABLE_IP
-		ifaces_table->setIp(row, ifaces_table->operator[](row)->ip);
-		ifaces_table->setSubnetMask(row, ifaces_table->operator[](row)->subnetMask);
+		ifaces_table->setIp(row, ifaces[row]->ip);
+		ifaces_table->setSubnetMask(row, ifaces[row]->subnetMask);
 #endif
 	}
 	ifaces_table->blockSignals(false);
@@ -162,8 +164,7 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 			break;
 		}
 		case QDialogButtonBox::Reset:
-			vm->populateIfaces();
-			refreshTableUI();
+			refreshTable();
 			break;
 	}
 }
@@ -193,4 +194,26 @@ void VMTabSettings::unlockSettings()
 bool VMTabSettings::hasThisMachine(MachineBridge *_machine)
 {
 	return machine == _machine;
+}
+
+bool VMTabSettings::setMachineUUID(const char *uuid)
+{
+	bool succeeded = true;
+
+	if(!machine->lockMachine())
+	{
+		std::cerr << "[" << machine->getName().toStdString() <<  "] Cannot lock machine" << std::endl;
+		return false;
+	}
+
+	if(!machine->setUUID(vmSettings->settings_header.machine_uuid))
+	{
+		std::cout << "setUUID(" << vmSettings->settings_header.machine_uuid << "): false" << std::endl;
+		succeeded = false;
+	}
+
+	if(!machine->unlockMachine())
+		return false;
+
+	return succeeded;
 }

@@ -36,13 +36,14 @@
 
 #include "VirtualBoxBridge.h"
 #include "OSBridge.h"
+#include "VMSettings.h"
 
 #define NET_HW_SETTINGS_FILE "etc/udev/rules.d/70-persistent-net.rules"
 #define NET_SW_SETTINGS_PREFIX "etc/sysconfig/network-scripts/ifcfg-"
 
 VirtualMachine::VirtualMachine(MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix)
 : machine(machine), ifaces_size(0), ifaces(NULL), vhd_mountpoint(vhd_mountpoint)
-, partition_mountpoint_prefix(partition_mountpoint_prefix), vhd_mounted(false)
+, partition_mountpoint_prefix(partition_mountpoint_prefix), vhd_mounted(false), vmSettings(NULL)
 {
 	populateIfaces();
 }
@@ -185,29 +186,20 @@ Iface *VirtualMachine::getIfaceByName(QString name)
 	return NULL;
 }
 
-void VirtualMachine::refreshIface(INetworkAdapter *iface)
+void VirtualMachine::refreshIface(uint32_t iface, INetworkAdapter *nic)
 {
-	Iface *i = getIfaceByNetworkAdapter(iface);
-	if(i == NULL)
+	if(iface >= ifaces_size)
 		return;
 
-	int iface_index;
-	for(iface_index = 0; iface_index < ifaces_size; iface_index++)
-		if(ifaces[iface_index] == i)
-			break;
-
-	if(iface_index >= ifaces_size)
-		return;
-
-	i->enabled = machine->getIfaceEnabled(iface);
-	i->setMac(machine->getIfaceMac(iface));
-	i->cableConnected = machine->getIfaceCableConnected(iface);
-	i->setAttachmentType(machine->getAttachmentType(iface));
-	i->setAttachmentData(machine->getAttachmentData(iface, machine->getAttachmentType(iface)));
-	i->name = getIfaceName(iface_index);
+	ifaces[iface]->enabled = machine->getIfaceEnabled(nic);
+	ifaces[iface]->setMac(machine->getIfaceMac(nic));
+	ifaces[iface]->cableConnected = machine->getIfaceCableConnected(nic);
+	ifaces[iface]->setAttachmentType(machine->getAttachmentType(nic));
+	ifaces[iface]->setAttachmentData(machine->getAttachmentData(nic, machine->getAttachmentType(nic)));
+	ifaces[iface]->name = getIfaceName(iface);
 #ifdef CONFIGURABLE_IP
-	i->setIp(getIp(iface_index));
-	i->setSubnetMask(getSubnetMask(iface_index));
+	ifaces[iface]->setIp(getIp(iface));
+	ifaces[iface]->setSubnetMask(getSubnetMask(iface));
 #endif
 }
 
@@ -416,6 +408,7 @@ bool VirtualMachine::saveSettings()
 		if(!machine->setIfaceEnabled(i, ifaces[i]->enabled))
 		{
 			std::cout << (ifaces[i]->enabled ? "enableIface" : "disableIface") << "(" << i << ")" << std::endl;
+			ifaces[i]->enabled = machine->getIfaceEnabled(machine->getIface(i));
 			succeeded = false;
 		}
 		
@@ -423,6 +416,7 @@ bool VirtualMachine::saveSettings()
 		if(!machine->setIfaceMac(i, ifaces[i]->mac))
 		{
 			std::cout << "setIfaceMac(" << i << "): false" << std::endl;
+			ifaces[i]->mac = machine->getIfaceMac(i);
 			succeeded = false;
 		}
 		
@@ -432,6 +426,7 @@ bool VirtualMachine::saveSettings()
 			if(!machine->setCableConnected(i, ifaces[i]->cableConnected))
 			{
 				std::cout << (ifaces[i]->cableConnected ? "connected" : "not connected") << "(" << i << ")" << std::endl;
+				ifaces[i]->cableConnected = machine->getIfaceCableConnected(machine->getIface(i));
 				succeeded = false;
 			}
 		
@@ -439,6 +434,7 @@ bool VirtualMachine::saveSettings()
 			if(!machine->setIfaceAttachmentType(i, ifaces[i]->attachmentType))
 			{
 				std::cout << "setIfaceAttachmentType(" << i << ", " << ifaces[i]->attachmentType << ")" << std::endl;
+				ifaces[i]->attachmentType = machine->getAttachmentType(machine->getIface(i));
 				succeeded = false;
 			}
 			
@@ -446,6 +442,7 @@ bool VirtualMachine::saveSettings()
 			if(!machine->setAttachmentData(i, ifaces[i]->attachmentType, ifaces[i]->attachmentData))
 			{
 				std::cout << "setAttachmentData(" << i << ", " << ifaces[i]->attachmentData.toStdString() << ")" << std::endl;
+				ifaces[i]->attachmentData = machine->getAttachmentData(i, ifaces[i]->attachmentType);
 				succeeded = false;
 			}
 		}
@@ -562,6 +559,7 @@ bool VirtualMachine::saveSettings()
 	}
 
 	emit settingsChanged(this);
+	vmSettings->backup();
 
 	if(!machine->unlockMachine())
 		return false;
@@ -735,9 +733,23 @@ bool VirtualMachine::setNetworkAdapterData(int iface, ifacekey_t key, void *valu
 	return false;
 }
 
-void VirtualMachine::restoreSerializableIface(int iface, settings_iface_t settings_iface)
+void VirtualMachine::setSerializableIface(int iface, settings_iface_t settings_iface)
 {
-	ifaces[iface]->applyFromSerializableIface(settings_iface);
+	if(iface < ifaces_size)
+		ifaces[iface]->applyFromSerializableIface(settings_iface);
+	else
+	{
+		int ifaces_shadow_size = ifaces_size;
+		Iface **ifaces_shadow = (Iface **)malloc(ifaces_shadow_size*sizeof(Iface*));
+		memcpy(ifaces_shadow, ifaces, ifaces_shadow_size*sizeof(Iface*));
+
+		ifaces_size = iface + 1;
+		ifaces = (Iface **)realloc(ifaces, ifaces_size*sizeof(Iface*));
+		memcpy(ifaces, ifaces_shadow, ifaces_size*sizeof(Iface*));
+
+		ifaces[iface] = new Iface(settings_iface);
+	}
+
 	emit ifaceChanged(iface);
 }
 

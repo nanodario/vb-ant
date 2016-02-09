@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2015  Dario Messina
+ * Copyright (C) 2015, 2016  Dario Messina
  *
  * This file is part of VB-ANT
  *
@@ -19,6 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDialog>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QRadioButton>
+#include <QSpacerItem>
+#include <QComboBox>
+#include <QCheckBox>
+
 #include "SummaryDialog.h"
 #include "MainWindow.h"
 
@@ -31,23 +39,71 @@
 #endif
 
 SummaryDialog::SummaryDialog(MainWindow *mainWindow)
-: ui(new Ui_SummaryDialog), mainWindow(mainWindow)
+: ui(new Ui_MachinesDialog), mainWindow(mainWindow)
 {
 	ui->setupUi(this);
 	ui->retranslateUi(this);
+	ui->verticalLayout->removeWidget(ui->treeWidget);
+
+	radioButtonsLayout = new QHBoxLayout();
+	radioButtonsLayout->setObjectName(QString::fromUtf8("radioButtonsLayout"));
+	label = new QLabel(this);
+	label->setObjectName(QString::fromUtf8("label"));
+
+	radioButtonsLayout->addWidget(label);
+
+	lan_radioButton = new QRadioButton(this);
+	lan_radioButton->setObjectName(QString::fromUtf8("lan_radioButton"));
+	lan_radioButton->setChecked(true);
+
+	radioButtonsLayout->addWidget(lan_radioButton);
+
+	horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+	radioButtonsLayout->addItem(horizontalSpacer);
+
+	machine_radioButton = new QRadioButton(this);
+	machine_radioButton->setObjectName(QString::fromUtf8("machine_radioButton"));
+
+	radioButtonsLayout->addWidget(machine_radioButton);
+
+	machine_comboBox = new QComboBox(this);
+	machine_comboBox->setObjectName(QString::fromUtf8("machine_comboBox"));
+	machine_comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+
+	radioButtonsLayout->addWidget(machine_comboBox);
+
+	ui->verticalLayout->addLayout(radioButtonsLayout);
+
+	showEmptyNetworks = new QCheckBox(this);
+	showEmptyNetworks->setObjectName(QString::fromUtf8("showEmptyNetworks"));
+
+	ui->verticalLayout->addWidget(showEmptyNetworks);
+
+	connect(lan_radioButton, SIGNAL(toggled(bool)), showEmptyNetworks, SLOT(setEnabled(bool)));
+	connect(machine_radioButton, SIGNAL(toggled(bool)), showEmptyNetworks, SLOT(setDisabled(bool)));
+	connect(lan_radioButton, SIGNAL(toggled(bool)), machine_comboBox, SLOT(setDisabled(bool)));
+	connect(machine_radioButton, SIGNAL(toggled(bool)), machine_comboBox, SLOT(setEnabled(bool)));
+
+	label->setText(QApplication::translate("SummaryDialog", "Visualizza per:", 0, QApplication::UnicodeUTF8));
+	lan_radioButton->setText(QApplication::translate("SummaryDialog", "Lan virtuali", 0, QApplication::UnicodeUTF8));
+	machine_radioButton->setText(QApplication::translate("SummaryDialog", "Macchina:", 0, QApplication::UnicodeUTF8));
+	showEmptyNetworks->setText(QApplication::translate("SummaryDialog", "Mostra reti vuote", 0, QApplication::UnicodeUTF8));
+
+	ui->verticalLayout->addWidget(ui->treeWidget);
 
 	setPalette(mainWindow->palette());
 
 	populateComboBox();
 
-	ui->lan_radioButton->setChecked(true);
-	ui->machine_radioButton->setChecked(false);
-	ui->machine_comboBox->setEnabled(false);
+	lan_radioButton->setChecked(true);
+	machine_radioButton->setChecked(false);
+	machine_comboBox->setEnabled(false);
 
-	connect(ui->lan_radioButton, SIGNAL(toggled(bool)), this, SLOT(showByVirtualLan()));
-	connect(ui->showEmptyNetworks, SIGNAL(toggled(bool)), this, SLOT(showByVirtualLan()));
-	connect(ui->machine_radioButton, SIGNAL(toggled(bool)), this, SLOT(showByMachine()));
-	connect(ui->machine_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(showByMachine(int)));
+	connect(lan_radioButton, SIGNAL(toggled(bool)), this, SLOT(showByVirtualLan()));
+	connect(showEmptyNetworks, SIGNAL(toggled(bool)), this, SLOT(showByVirtualLan()));
+	connect(machine_radioButton, SIGNAL(toggled(bool)), this, SLOT(showByMachine()));
+	connect(machine_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(showByMachine(int)));
 
 	showByVirtualLan();
 }
@@ -108,11 +164,11 @@ void SummaryDialog::showByVirtualLan()
 
 		if(item->childCount() > 0)
 			ui->treeWidget->addTopLevelItem(item);
-		else if(ui->showEmptyNetworks->isChecked())
+		else if(showEmptyNetworks->isChecked())
 			emptyNetworks.push_back(item);
 	}
 
-	if(ui->showEmptyNetworks->isChecked())
+	if(showEmptyNetworks->isChecked())
 		for(int i = 0; i < emptyNetworks.size(); i++)
 			ui->treeWidget->addTopLevelItem(emptyNetworks.at(i));
 
@@ -125,7 +181,7 @@ void SummaryDialog::showByVirtualLan()
 void SummaryDialog::showByMachine(int vm_index)
 {
 	if(vm_index < 0)
-		vm_index = ui->machine_comboBox->currentIndex();
+		vm_index = machine_comboBox->currentIndex();
 
 	ui->treeWidget->clear();
 
@@ -179,22 +235,22 @@ void SummaryDialog::showByMachine(int vm_index)
 
 void SummaryDialog::refresh()
 {
-	if(ui->lan_radioButton->isChecked())
+	if(lan_radioButton->isChecked())
 		showByVirtualLan();
-	else if(ui->machine_radioButton->isChecked())
+	else if(machine_radioButton->isChecked())
 		showByMachine();
 }
 
 void SummaryDialog::populateComboBox()
 {
-	ui->machine_comboBox->blockSignals(true);
-	ui->machine_comboBox->clear();
+	machine_comboBox->blockSignals(true);
+	machine_comboBox->clear();
 	for(int machine_index = 0; machine_index < mainWindow->VMTabSettings_vec.size(); machine_index++)
 	{
 		VirtualMachine *vm = mainWindow->VMTabSettings_vec.at(machine_index)->vm;
-		ui->machine_comboBox->addItem(vm->machine->getName());
+		machine_comboBox->addItem(vm->machine->getName());
 	}
-	ui->machine_comboBox->blockSignals(false);
+	machine_comboBox->blockSignals(false);
 
 	refresh();
 }

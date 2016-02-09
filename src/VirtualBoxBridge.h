@@ -166,6 +166,7 @@ class MachineBridge
 		
 		uint32_t getMaxNetworkAdapters();
 		QString getUUID();
+		bool setUUID(QString newUUID);
 		QString getHardDiskFilePath();
 		QString getName();
 		uint32_t getState();
@@ -175,6 +176,7 @@ class MachineBridge
 		//Getters
 		std::vector<nsCOMPtr<INetworkAdapter> > getNetworkInterfaces();
 		static bool getIfaceEnabled(INetworkAdapter *iface);
+		int getIfaceSlot(INetworkAdapter *iface);
 		QString getIfaceMac(INetworkAdapter *iface);
 		bool getIfaceCableConnected(INetworkAdapter *iface);
 		QString getIfaceMac(int iface);

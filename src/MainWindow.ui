@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
+ <author>Dario Messina</author>
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
@@ -1300,6 +1301,9 @@
     <addaction name="actionAvviaAll"/>
     <addaction name="actionInterrompiAll"/>
     <addaction name="separator"/>
+    <addaction name="actionImportMachines"/>
+    <addaction name="actionExportMachines"/>
+    <addaction name="separator"/>
     <addaction name="actionAbilitaAll"/>
     <addaction name="actionDisabilitaAll"/>
     <addaction name="separator"/>
@@ -2123,6 +2127,22 @@
   <action name="actionVMSaveAs">
    <property name="text">
     <string>Salva configurazione VM come...</string>
+   </property>
+  </action>
+  <action name="actionExportMachines">
+   <property name="text">
+    <string>Esporta macchine...</string>
+   </property>
+   <property name="toolTip">
+    <string>Esporta macchine</string>
+   </property>
+  </action>
+  <action name="actionImportMachines">
+   <property name="text">
+    <string>Importa macchine...</string>
+   </property>
+   <property name="toolTip">
+    <string>Esporta macchine</string>
    </property>
   </action>
  </widget>

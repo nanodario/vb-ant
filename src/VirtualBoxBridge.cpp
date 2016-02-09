@@ -850,9 +850,17 @@ uint32_t MachineBridge::getMaxNetworkAdapters()
 
 QString MachineBridge::getUUID()
 {
-	nsXPIDLString iid;
-	machine->GetId(getter_Copies(iid));
-	return returnQStringValue(iid);
+	nsXPIDLString hardwareUUID;
+	machine->GetHardwareUUID(getter_Copies(hardwareUUID));
+	return returnQStringValue(hardwareUUID);
+}
+
+bool MachineBridge::setUUID(QString newUUID)
+{
+	nsXPIDLString hardwareUUID; hardwareUUID.AssignWithConversion(newUUID.toStdString().c_str());
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(machine, SetHardwareUUID(hardwareUUID), rc);
+	return NS_SUCCEEDED(rc);
 }
 
 QString MachineBridge::getName()
@@ -1300,6 +1308,13 @@ bool MachineBridge::getIfaceEnabled(INetworkAdapter *iface)
 	PRBool enabled;
 	iface->GetEnabled(&enabled);
 	return enabled;
+}
+
+int MachineBridge::getIfaceSlot(INetworkAdapter *iface)
+{
+	uint32_t slot;
+	iface->GetSlot(&slot);
+	return slot;
 }
 
 bool MachineBridge::start()

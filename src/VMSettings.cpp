@@ -51,13 +51,7 @@ bool VMSettings::operator==(VMSettings *s)
 void VMSettings::restore()
 {
 	for(int i = 0; i < savedIfaces_size; i++)
-	{
-		if(vm->ifaces[i] != NULL)
-			vm->restoreSerializableIface(i, savedIfaces[i]);
-		else
-			vm->ifaces[i] = new Iface(savedIfaces[i]);
-	}
-	
+		vm->setSerializableIface(i, savedIfaces[i]);
 }
 
 void VMSettings::backup()
@@ -75,7 +69,7 @@ bool VMSettings::save(QString selected_filename)
 
 	CRC32 crc32;
 	char *serializedIfaces = NULL;
-	uint32_t size = serialize(&serializedIfaces);
+	uint32_t size = serialize(&serializedIfaces, savedIfaces, savedIfaces_size);
 
 	settings_header.settings_iface_size = savedIfaces_size;
 
@@ -84,18 +78,19 @@ bool VMSettings::save(QString selected_filename)
 
 	//Calculate CRC32 of ifaces settings
 		
-	std::string ifaces_checksum_str = crc32(serializedIfaces, savedIfaces_size * sizeof(settings_iface_t));
+	std::string ifaces_checksum_str = get_ifaces_checksum(&serializedIfaces, savedIfaces_size);
 	std::transform(ifaces_checksum_str.begin(), ifaces_checksum_str.end(), ifaces_checksum_str.begin(), toupper_wrapper);
 
 	strcpy(settings_header.ifaces_checksum, ifaces_checksum_str.c_str());
 	
 	if(file.open(QIODevice::WriteOnly))
 	{
-		uint32_t bytes_written = file.write((char *)&settings_header, sizeof(settings_header_t));
+		uint32_t bytes_written = file.write("M" SAVEFILE_MAGIC_BYTES);
+		bytes_written += file.write((char *)&settings_header, sizeof(settings_header_t));
 		bytes_written += file.write(serializedIfaces, size);
 		
 		file.close();
-		return bytes_written == size + sizeof(settings_header_t);
+		return bytes_written == size + sizeof(settings_header_t) + 1 + strlen(SAVEFILE_MAGIC_BYTES);
 	}
 	else
 		return false;
@@ -115,6 +110,12 @@ read_result_t VMSettings::read(settings_header_t *settings_header, char **serial
 	if(file.open(QIODevice::ReadOnly))
 	{
 		//read header
+		QByteArray qMagicbytes = file.readLine();
+		if(qMagicbytes.size() < 0 || qMagicbytes.data()[0] != 'M' || strncmp(qMagicbytes.data()+1, SAVEFILE_MAGIC_BYTES, strlen(PROGRAM_NAME)))
+			return E_INVALID_FILE;
+
+		std::cout << "Opening file created with " << PROGRAM_NAME << " v. " << qMagicbytes.constData()+1 + strlen(PROGRAM_NAME);
+		
 		bytes_read = file.read((char *)settings_header, sizeof(settings_header_t));
 		uint32_t settings_iface_size = settings_header->settings_iface_size * sizeof(settings_iface_t);
 		if(bytes_read != sizeof(settings_header_t))
@@ -128,9 +129,7 @@ read_result_t VMSettings::read(settings_header_t *settings_header, char **serial
 		file.close();
 		if(bytes_read == settings_iface_size)
 		{
-			CRC32 crc32;
-
-			std::string ifaces_checksum_str = crc32(*serialized_ifaces, settings_header->settings_iface_size * sizeof(settings_iface_t));
+			std::string ifaces_checksum_str = get_ifaces_checksum(serialized_ifaces, settings_header->settings_iface_size);
 			std::transform(ifaces_checksum_str.begin(), ifaces_checksum_str.end(), ifaces_checksum_str.begin(), toupper_wrapper);
 
 			if(strcmp(settings_header->ifaces_checksum, ifaces_checksum_str.c_str()))
@@ -147,23 +146,64 @@ read_result_t VMSettings::read(settings_header_t *settings_header, char **serial
 
 void VMSettings::load(settings_header_t settings_header, char *settings_ifaces)
 {
-	savedIfaces_size = deserialize(settings_ifaces, settings_header.settings_iface_size);
+	savedIfaces_size = deserialize(&savedIfaces, settings_ifaces, settings_header.settings_iface_size);
 }
 
-uint32_t VMSettings::serialize(char **dest)
+uint32_t VMSettings::get_serializable_machine(settings_header_t *settings_header, char **serialized_ifaces)
 {
-	*dest = (char *)realloc(*dest, savedIfaces_size * sizeof(settings_iface_t));
-	for(int i = 0; i < savedIfaces_size; i++)
-		memcpy((*dest)+(i * sizeof(settings_iface_t)), &savedIfaces[i], sizeof(settings_iface_t));	
+	memset(settings_header, 0, sizeof(settings_header_t));
+	strcpy(settings_header->machine_name, vm->machine->getName().toStdString().c_str());
+	strcpy(settings_header->machine_uuid, vm->machine->getUUID().toStdString().c_str());
+	settings_header->settings_iface_size = savedIfaces_size;
 
-	return savedIfaces_size * sizeof(settings_iface_t);
+	uint32_t serialized_ifaces_size = serialize(serialized_ifaces, savedIfaces, savedIfaces_size);
+	strcpy(settings_header->ifaces_checksum, get_ifaces_checksum(serialized_ifaces, savedIfaces_size).c_str());	
+
+	return serialized_ifaces_size;
 }
 
-uint8_t VMSettings::deserialize(char *src, uint8_t size)
+std::string VMSettings::get_ifaces_checksum(char **serialized_ifaces, int serialized_ifaces_size)
 {
-	savedIfaces = (settings_iface_t *)realloc(savedIfaces, size * sizeof(settings_iface_t));
+	CRC32 crc32;
+	return crc32(*serialized_ifaces, serialized_ifaces_size * sizeof(settings_iface_t));
+}
+
+std::string VMSettings::get_ifaces_checksum(settings_header_t settings_header, settings_iface_t *settings_ifaces)
+{
+	CRC32 crc32;
+	return crc32(settings_ifaces, settings_header.settings_iface_size * sizeof(settings_iface_t));
+}
+
+bool VMSettings::set_machine(settings_header_t _settings_header, settings_iface_t *_settings_ifaces)
+{
+	if(get_ifaces_checksum(_settings_header, _settings_ifaces) != _settings_header.ifaces_checksum)
+		return false;
+
+	settings_header = _settings_header;
+	savedIfaces_size = settings_header.settings_iface_size;
+	savedIfaces = (settings_iface_t *)realloc(savedIfaces, savedIfaces_size * sizeof(settings_iface_t));
+
+	memcpy(savedIfaces, _settings_ifaces, savedIfaces_size * sizeof(settings_iface_t));
+
+	return true;
+}
+
+uint32_t VMSettings::serialize(char **dest, settings_iface_t *src, uint8_t size)
+{
+	*dest = (char *)realloc(*dest, size * sizeof(settings_iface_t));
+	memset(*dest, 0, size * sizeof(settings_iface_t));
+	for(int i = 0; i < size; i++)
+		memcpy((*dest)+(i * sizeof(settings_iface_t)), &src[i], sizeof(settings_iface_t));
+
+	return size * sizeof(settings_iface_t);
+}
+
+uint8_t VMSettings::deserialize(settings_iface_t **dest, char *src, uint8_t size)
+{
+	*dest = (settings_iface_t *)realloc(*dest, size * sizeof(settings_iface_t));
+	memset(*dest, 0, size * sizeof(settings_iface_t));
 	for(int i = 0; i < (int) size; i++)
-		memcpy(&(savedIfaces[i]), src+(i * sizeof(settings_iface_t)), sizeof(settings_iface_t));
+		memcpy((*dest+i), src+(i * sizeof(settings_iface_t)), sizeof(settings_iface_t));
 
 	return size;
 }

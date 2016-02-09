@@ -34,6 +34,7 @@
 #include "VirtualBoxBridge.h"
 #include "SummaryDialog.h"
 #include "VMSettings.h"
+#include "MachinesDialog.h"
 
 class Ui_MainWindow;
 class Ui_Info_dialog;
@@ -47,7 +48,7 @@ class MainWindow : public QMainWindow
 	public:
 		explicit MainWindow(const QString &fileToOpen = QString(), QWidget *parent = 0);
 		~MainWindow();
-		void launchCreateProcess(QString qName, bool reInitIfaces);
+		int launchCreateProcess(QString qName, bool reInitIfaces, bool restoreFromFile = false);
 		void launchCloneProcess(QString qName, bool reInitIfaces);
 		VirtualBoxBridge *vboxbridge;
 		static QPalette getPalette();
@@ -56,12 +57,7 @@ class MainWindow : public QMainWindow
 		void closeEvent(QCloseEvent *event);
 	
 	private slots:
-	// 	void slotAddMachine();
 		void slotInfo();
-// 		void slotActionNew();
-// 		void slotActionOpen();
-// 		bool slotActionSave();
-// 		bool slotActionSaveAs();
 		void currentChangedSlot(int tab);
 		void slotNew();
 		void slotClone();
@@ -81,6 +77,8 @@ class MainWindow : public QMainWindow
 		void slotVMLoad();
 		bool slotVMSave();
 		bool slotVMSaveAs();
+		void slotImportMachines();
+		void slotExportMachines();
 		
 	private:
 		bool queryClose();
