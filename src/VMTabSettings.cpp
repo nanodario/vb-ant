@@ -164,6 +164,8 @@ void VMTabSettings::clickedSlot(QAbstractButton *button)
 			break;
 		}
 		case QDialogButtonBox::Reset:
+// 			vm->populateIfaces();
+// 			refreshTableUI();
 			refreshTable();
 			break;
 	}

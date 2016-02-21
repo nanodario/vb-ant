@@ -1301,6 +1301,7 @@
     <addaction name="actionAvviaAll"/>
     <addaction name="actionInterrompiAll"/>
     <addaction name="separator"/>
+    <addaction name="actionNuova"/>
     <addaction name="actionImportMachines"/>
     <addaction name="actionExportMachines"/>
     <addaction name="separator"/>
@@ -1730,7 +1731,6 @@
     <property name="title">
      <string>&amp;Macchina</string>
     </property>
-    <addaction name="actionNuova"/>
     <addaction name="actionRinomina"/>
     <addaction name="actionClona"/>
     <addaction name="actionElimina"/>

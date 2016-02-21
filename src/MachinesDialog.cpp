@@ -22,12 +22,14 @@
 #include "MachinesDialog.h"
 #include "MainWindow.h"
 #include "ZlibWrapper.h"
+#include "VMTabSettings.h"
 #include <stdlib.h>
 #include <vector>
 #include <sstream>
 #include <QString>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDialogButtonBox>
 #include <zlib.h>
 
 #include "ui_MachinesDialog.h"
