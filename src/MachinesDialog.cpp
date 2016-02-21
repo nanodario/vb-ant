@@ -213,6 +213,8 @@ void MachinesDialog::slotImportMachines()
 	std::vector<int> vm_selected;
 	std::vector<int> vm_update;
 	std::vector<int> vm_update_data;
+	std::vector<int> vm_executing;
+	std::vector<int> vm_executing_data;
 	std::vector<int> vm_create;
 
 	for(int i = 0; i < ui->treeWidget->topLevelItemCount(); i++)
@@ -226,8 +228,21 @@ void MachinesDialog::slotImportMachines()
 		{
 			if(vmTab_vec->at(j)->getMachineUUID() == settings_header[vm_selected.at(i)].machine_uuid)
 			{
-				vm_update.push_back(j);
-				vm_update_data.push_back(i);
+				uint32_t machineState = vmTab_vec->at(j)->machine->getState();
+
+				if(machineState == MachineState::Running ||
+					machineState == MachineState::Paused ||
+					machineState == MachineState::Starting)
+				{
+					vm_executing.push_back(j);
+					vm_executing_data.push_back(i);
+				}
+				else
+				{
+					vm_update.push_back(j);
+					vm_update_data.push_back(i);
+				}
+
 				existing_machine = true;
 				break;
 			}
@@ -236,25 +251,24 @@ void MachinesDialog::slotImportMachines()
 			vm_create.push_back(vm_selected.at(i));
 	}
 
-	bool create_machine = false;
 	if(vm_create.size() > 0)
 	{
 		QDialog dialog(this);
 		dialog.resize(500, 300);
-		QVBoxLayout *verticalLayout = new QVBoxLayout();
-		QLabel *label = new QLabel("Verranno create le seguenti macchine:", &dialog);
-		QTreeWidget *treeWidget = new QTreeWidget(&dialog);
-		QDialogButtonBox *buttonBox = new QDialogButtonBox(&dialog);
-		buttonBox->setStandardButtons(QDialogButtonBox::Ok|QDialogButtonBox::Cancel);
+		QVBoxLayout *verticalLayout = new QVBoxLayout(&dialog);
+		QLabel label("Alcune macchine selezionate non esistono. Creare le seguenti macchine?", &dialog);
+		QTreeWidget treeWidget(&dialog);
+		QDialogButtonBox buttonBox(&dialog);
+		buttonBox.setStandardButtons(QDialogButtonBox::Yes|QDialogButtonBox::No);
 
-		verticalLayout->addWidget(label);
-		verticalLayout->addWidget(treeWidget);
-		verticalLayout->addWidget(buttonBox);
+		verticalLayout->addWidget(&label);
+		verticalLayout->addWidget(&treeWidget);
+		verticalLayout->addWidget(&buttonBox);
 
 		QStringList horizontalHeaderLabels = QString(HORIZONTAL_HEADERS).split(";");
-		treeWidget->setColumnCount(horizontalHeaderLabels.count());
-		treeWidget->setHeaderLabels(horizontalHeaderLabels);
-		treeWidget->setSelectionMode(QAbstractItemView::NoSelection);
+		treeWidget.setColumnCount(horizontalHeaderLabels.count());
+		treeWidget.setHeaderLabels(horizontalHeaderLabels);
+		treeWidget.setSelectionMode(QAbstractItemView::NoSelection);
 
 		for(int i = 0; i < vm_create.size(); i++)
 		{
@@ -273,16 +287,99 @@ void MachinesDialog::slotImportMachines()
 #endif
 			}
 
-			treeWidget->addTopLevelItem(item);
-			treeWidget->header()->setResizeMode(QHeaderView::ResizeToContents);
+			treeWidget.addTopLevelItem(item);
+			treeWidget.header()->setResizeMode(QHeaderView::ResizeToContents);
 		}
 
-		connect(buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
-		connect(buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+		connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+		connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
 		dialog.setLayout(verticalLayout);
 
 		if(dialog.exec() == QDialog::Rejected)
 			vm_create.clear();
+	}
+
+	if(vm_executing.size() > 0)
+	{
+		QDialog dialog(this);
+		dialog.resize(500, 300);
+		QVBoxLayout *verticalLayout = new QVBoxLayout(&dialog);
+		QLabel label(QString::fromUtf8("Non è possibile importare le impostazioni per le macchine in esecuzione.\nArrestare le macchine selezionate?"), &dialog);
+		QTreeWidget treeWidget(&dialog);
+		QDialogButtonBox buttonBox(&dialog);
+		buttonBox.setStandardButtons(QDialogButtonBox::Yes|QDialogButtonBox::No);
+
+		verticalLayout->addWidget(&label);
+		verticalLayout->addWidget(&treeWidget);
+		verticalLayout->addWidget(&buttonBox);
+
+		QStringList horizontalHeaderLabels = QString(HORIZONTAL_HEADERS).split(";");
+		treeWidget.setColumnCount(horizontalHeaderLabels.count());
+		treeWidget.setHeaderLabels(horizontalHeaderLabels);
+		treeWidget.setSelectionMode(QAbstractItemView::NoSelection);
+
+		for(int i = 0; i < vm_executing.size(); i++)
+		{
+			uint32_t machineState = vmTab_vec->at(vm_executing.at(i))->machine->getState();
+
+			QTreeWidgetItem *item = new QTreeWidgetItem();
+			item->setCheckState(0, Qt::Checked);
+			item->setText(0, QString("Macchina: ").append(vmTab_vec->at(vm_executing.at(i))->getMachineName()));
+
+			for(int iface_index = 0; iface_index < settings_header[vm_executing_data.at(i)].settings_iface_size; iface_index++)
+			{
+				QTreeWidgetItem *childItem = new QTreeWidgetItem(item);
+				childItem->setText(0, settings_ifaces[vm_executing_data.at(i)][iface_index].name);
+				childItem->setText(1, settings_ifaces[vm_executing_data.at(i)][iface_index].mac);
+#ifdef CONFIGURABLE_IP
+				childItem->setText(2, settings_ifaces[vm_executing_data.at(i)][iface_index].ip);
+				childItem->setText(3, settings_ifaces[vm_executing_data.at(i)][iface_index].subnetMask);
+#endif
+			}
+
+			treeWidget.addTopLevelItem(item);
+			treeWidget.header()->setResizeMode(QHeaderView::ResizeToContents);
+		}
+
+		connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+		connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+		dialog.setLayout(verticalLayout);
+
+		if(dialog.exec() != QDialog::Accepted)
+			vm_executing.clear();
+		else
+		{
+			std::vector<int> vm_executing_temp;
+			std::vector<int> vm_executing_data_temp;
+			for(int i = 0; i < treeWidget.topLevelItemCount(); i++)
+				if(treeWidget.topLevelItem(i)->checkState(0) == Qt::Checked)
+				{
+					vm_executing_temp.push_back(vm_executing.at(i));
+					vm_executing_data_temp.push_back(vm_executing_data.at(i));
+				}
+
+			vm_executing = vm_executing_temp;
+			vm_executing_data = vm_executing_data_temp;
+		}
+	}
+
+	for(int i = 0; i < vm_executing.size(); i++)
+	{
+		uint32_t machineState = vmTab_vec->at(vm_executing.at(i))->machine->getState();
+
+		if(machineState == MachineState::Running ||
+		   machineState == MachineState::Paused ||
+		   machineState == MachineState::Starting)
+			vmTab_vec->at(vm_executing.at(i))->machine->stop(true);
+
+		if(!updateMachine(vmTab_vec->at(vm_executing.at(i)), settings_header[vm_executing_data.at(i)], settings_ifaces[vm_executing_data.at(i)]))
+		{
+			QMessageBox qm(QMessageBox::Critical, "Errore",
+				       QString("Errore durante l'aggiornamento della macchina ").append(settings_header[vm_executing_data.at(i)].machine_name),
+				       QMessageBox::StandardButton::Ok);
+			qm.setPalette(palette());
+			qm.exec();
+		}
 	}
 
 	for(int i = 0; i < vm_update.size(); i++)
@@ -489,6 +586,13 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 
 bool MachinesDialog::updateMachine(VMTabSettings *vmtab, settings_header_t settings_header, settings_iface_t *settings_ifaces)
 {
+	uint32_t machineState = vmtab->machine->getState();
+	
+	if(machineState == MachineState::Running ||
+		machineState == MachineState::Paused ||
+		machineState == MachineState::Starting)
+		return false;
+
 	if(!vmtab->vm->vmSettings->set_machine(settings_header, settings_ifaces))
 		return false;
 	vmtab->vm->vmSettings->restore();

@@ -325,7 +325,7 @@ void MainWindow::slotVMLoad()
 {
 	const QString selectedFileName = QFileDialog::getOpenFileName(this, "Apri macchina", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vam)");
 
-	if (selectedFileName.isEmpty() || !queryClose())
+	if (selectedFileName.isEmpty())
 		return;
 
 	settings_header_t settings_header;
@@ -856,6 +856,7 @@ void MainWindow::refreshUI(int tab, uint32_t state)
 			ui->actionPausa->setEnabled(true); ui->actionPausa->setChecked(false);
 			ui->actionReset->setEnabled(true);
 			ui->actionInterrompi->setEnabled(true);
+			ui->actionVMLoad->setEnabled(false);
 
 			ui->toolbarClona->setEnabled(false);
 			ui->toolbarElimina->setEnabled(false);
@@ -878,6 +879,7 @@ void MainWindow::refreshUI(int tab, uint32_t state)
 			ui->actionPausa->setEnabled(true); ui->actionPausa->setChecked(true);
 			ui->actionReset->setEnabled(false);
 			ui->actionInterrompi->setEnabled(true);
+			ui->actionVMLoad->setEnabled(false);
 			
 			ui->toolbarClona->setEnabled(false);
 			ui->toolbarElimina->setEnabled(false);
@@ -901,6 +903,7 @@ void MainWindow::refreshUI(int tab, uint32_t state)
 			ui->actionPausa->setEnabled(false); ui->actionPausa->setChecked(false);
 			ui->actionReset->setEnabled(false);
 			ui->actionInterrompi->setEnabled(false);
+			ui->actionVMLoad->setEnabled(true);
 			
 			ui->toolbarClona->setEnabled(true);
 			ui->toolbarElimina->setEnabled(true);
