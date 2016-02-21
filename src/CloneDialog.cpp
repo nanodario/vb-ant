@@ -22,7 +22,7 @@
 #include "CloneDialog.h"
 
 CloneDialog::CloneDialog(MainWindow *destination, bool newMachine)
-: ui(new Ui_clone_machine), destination(destination), newMachine(newMachine)
+: ui(new Ui_clone_machine), destination(destination), newMachine(newMachine), machineName(QString::fromUtf8(""))
 {
 	ui->setupUi(this);
 	connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(slotAccepted()));
@@ -43,6 +43,8 @@ CloneDialog::CloneDialog(MainWindow *destination, bool newMachine)
 		ui->checkBox->setChecked(true);
 		ui->checkBox->setEnabled(false);
 	}
+
+	connect(ui->lineEdit, SIGNAL(editingFinished()), this, SLOT(slotMachineNameChanged()));
 }
 
 CloneDialog::~CloneDialog()
@@ -52,11 +54,17 @@ CloneDialog::~CloneDialog()
 
 void CloneDialog::slotAccepted()
 {
-	if(ui->lineEdit->text().length() > 0)
+	if(machineName.length() > 0)
 	{
 		if(newMachine)
-			destination->launchCreateProcess(ui->lineEdit->text(), ui->checkBox->isChecked());
+			destination->launchCreateProcess(machineName, ui->checkBox->isChecked());
 		else
-			destination->launchCloneProcess(ui->lineEdit->text(), ui->checkBox->isChecked());
+			destination->launchCloneProcess(machineName, ui->checkBox->isChecked());
 	}
+}
+
+void CloneDialog::slotMachineNameChanged()
+{
+	machineName = destination->vboxbridge->validateMachineName(ui->lineEdit->text(), destination->machines_vec.size());
+	ui->lineEdit->setText(machineName);
 }

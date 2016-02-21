@@ -1731,6 +1731,7 @@
      <string>&amp;Macchina</string>
     </property>
     <addaction name="actionNuova"/>
+    <addaction name="actionRinomina"/>
     <addaction name="actionClona"/>
     <addaction name="actionElimina"/>
     <addaction name="separator"/>
@@ -2143,6 +2144,11 @@
    </property>
    <property name="toolTip">
     <string>Esporta macchine</string>
+   </property>
+  </action>
+  <action name="actionRinomina">
+   <property name="text">
+    <string>Rinomina VM...</string>
    </property>
   </action>
  </widget>

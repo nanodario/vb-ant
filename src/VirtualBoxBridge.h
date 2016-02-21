@@ -134,8 +134,10 @@ class VirtualBoxBridge
 		std::vector<QString> getInternalNetworkList();
 		bool isNewInternalNetwork(QString qInternalNetwork);
 		std::vector<nsCOMPtr<INATNetwork> > getNatNetworks();
+		IMachine *existVM(QString name);
 		IMachine *newVM(QString name);
 		IMachine *cloneVM(QString name, bool reInitIfaces, IMachine *m);
+		QString validateMachineName(QString qName, int machines_size);
 		bool deleteVM(IMachine *m);
 		
 	private:
@@ -169,6 +171,7 @@ class MachineBridge
 		bool setUUID(QString newUUID);
 		QString getHardDiskFilePath();
 		QString getName();
+		bool setName(QString qName);
 		uint32_t getState();
 		uint32_t getSessionState();
 		bool supportsACPI();

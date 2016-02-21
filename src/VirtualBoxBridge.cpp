@@ -30,6 +30,7 @@
 #include <string>
 #include <QPointer>
 #include <QStringList>
+#include <QRegExp>
 
 /*
  * Include the XPCOM headers
@@ -423,22 +424,26 @@ std::vector<nsCOMPtr<INATNetwork> > VirtualBoxBridge::getNatNetworks()
 	return natNetworks_vec;
 }
 
+IMachine *VirtualBoxBridge::existVM(QString qName)
+{
+	nsXPIDLString name; name.AssignWithConversion(qName.toStdString().c_str());
+	IMachine *machine = nsnull;
+	virtualBox->FindMachine(name, &machine);
+
+	return machine;
+}
+
 IMachine *VirtualBoxBridge::newVM(QString qName)
 {
 	nsresult rc = NS_OK;
 
-	bool fExecute = true;
 	bool import_done = false;
 	nsXPIDLString pszAbsFilePath; pszAbsFilePath.AssignWithConversion(GOLDEN_COPY_OVA_PATH);
 	nsXPIDLString name; name.AssignWithConversion(qName.toStdString().c_str());
 	IMachine *new_machine = nsnull;
 
-	NS_CHECK_AND_DEBUG_ERROR(virtualBox, FindMachine(name, &new_machine), rc);
-	if(rc != VBOX_E_OBJECT_NOT_FOUND)
-	{
-		std::cout << "machine: " << &new_machine << std::endl;
+	if(existVM(qName))
 		return nsnull;
-	}
 
 	nsXPIDLString settingsFile;
 	virtualBox->ComposeMachineFilename(name, NULL, NULL, NULL, getter_Copies(settingsFile));
@@ -723,6 +728,26 @@ IMachine *VirtualBoxBridge::cloneVM(QString qName, bool reInitIfaces, IMachine *
 	return new_machine;
 }
 
+QString VirtualBoxBridge::validateMachineName(QString qName_proposed, int machines_size)
+{
+	QString qName = qName_proposed.trimmed();
+	for(int retries = 0; retries < machines_size && existVM(qName); retries++)
+	{
+		QRegExp rx("(\\(\\d+\\))");
+		int pos = rx.lastIndexIn(qName);
+		if(pos < 0)
+			qName = qName.trimmed().append(QString(" (1)"));
+		else if(pos + rx.cap(1).length() == qName.length())
+		{
+			QString machineIndex = rx.cap(1);
+			int m_index = machineIndex.mid(1, machineIndex.length() - 2).toInt();
+			qName = qName.trimmed().mid(0, pos).append(QString("(%1)").arg(m_index+1));
+		}
+	}
+
+	return qName;
+}
+
 bool VirtualBoxBridge::deleteVM(IMachine *m)
 {
 	uint32_t medias_size;
@@ -868,6 +893,14 @@ QString MachineBridge::getName()
 	nsXPIDLString name;
 	machine->GetName(getter_Copies(name));
 	return returnQStringValue(name);
+}
+
+bool MachineBridge::setName(QString qName)
+{
+	nsXPIDLString name; name.AssignWithConversion(qName.toStdString().c_str());
+	nsresult rc;
+	NS_CHECK_AND_DEBUG_ERROR(machine, SetName(name), rc);
+	return NS_SUCCEEDED(rc);
 }
 
 uint32_t MachineBridge::getState()

@@ -37,11 +37,13 @@ class CloneDialog : public QDialog
 		
 	public slots:
 		void slotAccepted();
+		void slotMachineNameChanged();
 
 	private:
 		Ui_clone_machine *ui;
 		MainWindow *destination;
 		bool newMachine;
+		QString machineName;
 };
 
 #endif //INFODIALOG_H

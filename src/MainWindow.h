@@ -42,6 +42,7 @@ class QFile;
 
 class MainWindow : public QMainWindow
 {
+	friend class CloneDialog;
 	friend class SummaryDialog;
 	Q_OBJECT
 	
@@ -62,6 +63,7 @@ class MainWindow : public QMainWindow
 		void slotNew();
 		void slotClone();
 		void slotRemove();
+		void slotRename();
 		void slotStartAll();
 		void slotInterrompiAll();
 		void slotEnableAll();

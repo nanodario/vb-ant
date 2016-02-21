@@ -24,6 +24,7 @@
 #include <QCloseEvent>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDialogButtonBox>
 #include <QTextStream>
 #include <sstream>
 #include <iostream>
@@ -115,6 +116,7 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionNuova, SIGNAL(triggered(bool)), this, SLOT(slotNew()));
 	connect(ui->actionClona, SIGNAL(triggered(bool)), this, SLOT(slotClone()));
 	connect(ui->actionElimina, SIGNAL(triggered(bool)), this, SLOT(slotRemove()));
+	connect(ui->actionRinomina, SIGNAL(triggered(bool)), this, SLOT(slotRename()));
 	connect(ui->actionAvviaAll, SIGNAL(triggered(bool)), this, SLOT(slotStartAll()));
 	connect(ui->actionInterrompiAll, SIGNAL(triggered(bool)), this, SLOT(slotInterrompiAll()));
 	connect(ui->actionAbilitaAll, SIGNAL(triggered(bool)), this, SLOT(slotEnableAll()));
@@ -735,6 +737,50 @@ void MainWindow::slotRemove()
 	}
 }
 
+void MainWindow::slotRename()
+{
+	VMTabSettings *vmtab = VMTabSettings_vec.at(ui->vm_tabs->currentIndex());
+
+	QDialog d(this);
+	QVBoxLayout verticalLayout(&d);
+	QLabel label(QString("Rinomina macchina \"").append(vmtab->getMachineName()).append("\""), &d);
+	QLineEdit lineEdit(vmtab->getMachineName(), &d);
+	QDialogButtonBox buttonBox(&d);
+	buttonBox.setStandardButtons(QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::Cancel);
+	d.connect(&buttonBox, SIGNAL(accepted()), &d, SLOT(accept()));
+	d.connect(&buttonBox, SIGNAL(rejected()), &d, SLOT(reject()));
+
+	verticalLayout.addWidget(&label);
+	verticalLayout.addWidget(&lineEdit);
+	verticalLayout.addWidget(&buttonBox);
+
+	d.setLayout(&verticalLayout);
+	d.setPalette(palette());
+
+	for(;;)
+	{
+		if(d.exec() != QDialog::Accepted)
+			break;
+
+		if(lineEdit.text().length() > 0 && lineEdit.text() == vboxbridge->validateMachineName(lineEdit.text(), VMTabSettings_vec.size()))
+		{
+			if(vmtab->setMachineName(lineEdit.text()))
+			{
+				std::cout << "new_name: " << lineEdit.text().toStdString() << std::endl;
+				ui->vm_tabs->setTabText(ui->vm_tabs->currentIndex(), lineEdit.text());
+			}
+			emit machinesPoolChanged();
+			break;
+		}
+		else
+		{
+			QMessageBox qm(QMessageBox::Warning, "Errore", "Il nome specificato non è valido", QMessageBox::Close, this);
+			qm.setPalette(palette());
+			qm.exec();
+		}
+	}
+}
+
 void MainWindow::slotStateChange(MachineBridge *machine, uint32_t state)
 {
 	int tabIndex;
@@ -801,6 +847,7 @@ void MainWindow::refreshUI(int tab, uint32_t state)
 		case MachineState::Stopping:
 		case MachineState::Running:
 		{
+			ui->actionRinomina->setEnabled(false);
 			ui->actionClona->setEnabled(false);
 			ui->actionElimina->setEnabled(false);
 			ui->actionAvviaAll->setEnabled(true);
@@ -822,6 +869,7 @@ void MainWindow::refreshUI(int tab, uint32_t state)
 		}
 		case MachineState::Paused:
 		{
+			ui->actionRinomina->setEnabled(false);
 			ui->actionClona->setEnabled(false);
 			ui->actionElimina->setEnabled(false);
 			ui->actionAvviaAll->setEnabled(true);
@@ -844,6 +892,7 @@ void MainWindow::refreshUI(int tab, uint32_t state)
 		case MachineState::PoweredOff:
 		case MachineState::Null:
 		{
+			ui->actionRinomina->setEnabled(true);
 			ui->actionClona->setEnabled(true);
 			ui->actionElimina->setEnabled(true);
 			ui->actionAvviaAll->setEnabled(true);

@@ -37,7 +37,7 @@
 #include <iostream>
 
 VMTabSettings::VMTabSettings(QTabWidget *parent, QString tabname, VirtualBoxBridge *vboxbridge, MachineBridge *machine, std::string vhd_mountpoint, std::string partition_mountpoint_prefix) : QWidget(parent)
-, vm_name(tabname), vboxbridge(vboxbridge), machine(machine), vm(new VirtualMachine(machine, vhd_mountpoint, partition_mountpoint_prefix)), vmSettings(new VMSettings(vm))
+, vboxbridge(vboxbridge), machine(machine), vm(new VirtualMachine(machine, vhd_mountpoint, partition_mountpoint_prefix)), vmSettings(new VMSettings(vm))
 {
 	vm->vmSettings = vmSettings;
 
@@ -196,6 +196,30 @@ bool VMTabSettings::hasThisMachine(MachineBridge *_machine)
 	return machine == _machine;
 }
 
+bool VMTabSettings::setMachineName(const QString &qName)
+{
+	bool succeeded = true;
+
+	if(!machine->lockMachine())
+	{
+		std::cerr << "[" << machine->getName().toStdString() <<  "] Cannot lock machine" << std::endl;
+		return false;
+	}
+
+	if(!machine->setName(qName))
+	{
+		std::cout << "setName(" << qName.toStdString() << "): false" << std::endl;
+		succeeded = false;
+	}
+
+	machine->saveSettings();
+
+	if(!machine->unlockMachine())
+		return false;
+
+	return succeeded;
+}
+
 bool VMTabSettings::setMachineUUID(const char *uuid)
 {
 	bool succeeded = true;
@@ -206,11 +230,13 @@ bool VMTabSettings::setMachineUUID(const char *uuid)
 		return false;
 	}
 
-	if(!machine->setUUID(vmSettings->settings_header.machine_uuid))
+	if(!machine->setUUID(uuid))
 	{
-		std::cout << "setUUID(" << vmSettings->settings_header.machine_uuid << "): false" << std::endl;
+		std::cout << "setUUID(" << uuid << "): false" << std::endl;
 		succeeded = false;
 	}
+
+	machine->saveSettings();
 
 	if(!machine->unlockMachine())
 		return false;

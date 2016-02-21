@@ -58,12 +58,12 @@ class VMTabSettings : public QWidget
 		void unlockSettings();
 		bool hasThisMachine(MachineBridge *_machine);
 		QString getMachineName() const { return vm->machine->getName(); };
+		bool setMachineName(const QString &qName);
 		QString getMachineUUID() const { return vm->machine->getUUID(); };
 		bool setMachineUUID(const char *uuid);
 		VirtualMachine *vm;
 		
 	private:
-		QString vm_name;
 		QCheckBox *vm_enabled;
 		QWidget *vm_tab;
 		QVBoxLayout *verticalLayout;
