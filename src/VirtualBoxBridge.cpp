@@ -78,7 +78,7 @@ static void *knockAPI(void *_tparam)
 	tparam_t *tparam = (tparam_t *)_tparam;
 	nsXPIDLString vboxVersion;
 	nsCOMPtr<IVirtualBox> vbox = tparam->virtualBox;
-	
+
 	while(1)
 	{
 		if(vbox != nsnull)
@@ -89,8 +89,8 @@ static void *knockAPI(void *_tparam)
 // 		std::cout << "Knock knock API, are you still here?" << std::endl;
 		usleep(500000);
 	}
-	
-	std::cout << "IVirtualBox object destructed, stopping knocking ;)" << std::endl;
+
+	std::cout << "IVirtualBox object destroyed, stopping knocking ;)" << std::endl;
 	pthread_exit(0);
 }
 
@@ -513,7 +513,9 @@ IMachine *VirtualBoxBridge::newVM(QString qName)
 
 		if (NS_FAILED(rc))     // during interpret, after printing warnings
 		{
-			std::cerr << "Fail during interpret" << std::endl;
+			std::cerr << "Fail during interpret:" << std::endl;
+			for(int i; i < aWarnings_size; i++)
+				std::cerr << "Warning: " << aWarnings[i] << std::endl;
 			break;
 		}
 
@@ -576,53 +578,47 @@ IMachine *VirtualBoxBridge::newVM(QString qName)
 					}
 				}
 
-				if (fExecute)
-				{
-					NS_CHECK_AND_DEBUG_ERROR(aVirtualSystemDescriptions[i],
-								 SetFinalValues(retTypes_size, aEnabled,
-										aVBoxValues_size, const_cast<const PRUnichar**>(aVBoxValues),
-										aExtraConfigValues_size, const_cast<const PRUnichar**>(aExtraConfigValues)),
-								 rc);
-				}
+				NS_CHECK_AND_DEBUG_ERROR(aVirtualSystemDescriptions[i],
+							 SetFinalValues(retTypes_size, aEnabled,
+									aVBoxValues_size, const_cast<const PRUnichar**>(aVBoxValues),
+									aExtraConfigValues_size, const_cast<const PRUnichar**>(aExtraConfigValues)),
+							 rc);
 			}
 
-			if (fExecute)
+			// go!
+			ComPtr<IProgress> progress;
+			NS_CHECK_AND_DEBUG_ERROR(pAppliance, ImportMachines(0, NULL, progress.asOutParam()), rc);
+			std::cout << "Wait for importing appliance" << std::endl;
+
+			QString label = QString::fromUtf8("Creazione macchina \"").append(qName).append("\"...");
+			p.ui->progressBar->setValue(0);
+			p.ui->label->setText(label);
+			p.open();
+
+			int32_t resultCode;
+			PRBool progress_completed;
+			do
 			{
-				// go!
-				ComPtr<IProgress> progress;
-				NS_CHECK_AND_DEBUG_ERROR(pAppliance, ImportMachines(0, NULL, progress.asOutParam()), rc);
-				std::cout << "Wait for importing appliance" << std::endl;
+				uint32_t percent;
+				progress->GetCompleted(&progress_completed);
+				progress->GetPercent(&percent);
+				p.ui->progressBar->setValue(percent);
+				p.refresh();
+				usleep(750000);
+			} while(!progress_completed);
 
-				QString label = QString::fromUtf8("Creazione macchina \"").append(qName).append("\"...");
-				p.ui->progressBar->setValue(0);
-				p.ui->label->setText(label);
-				p.open();
+			progress->GetResultCode(&resultCode);
 
-				int32_t resultCode;
-				PRBool progress_completed;
-				do
-				{
-					uint32_t percent;
-					progress->GetCompleted(&progress_completed);
-					progress->GetPercent(&percent);
-					p.ui->progressBar->setValue(percent);
-					p.refresh();
-					usleep(750000);
-				} while(!progress_completed);
+			if(resultCode != 0)
+			{
+				std::cout << "Appliance import failed -> resultCode: " << resultCode << std::endl;
+				break;
+			}
 
-				progress->GetResultCode(&resultCode);
-
-				if(resultCode != 0)
-				{
-					std::cout << "Appliance import failed -> resultCode: " << resultCode << std::endl;
-					break;
-				}
-
-				if (NS_SUCCEEDED(rc))
-				{
-					import_done = true;
-					std::cout << "Successfully imported the appliance." << std::endl;
-				}
+			if (NS_SUCCEEDED(rc))
+			{
+				import_done = true;
+				std::cout << "Successfully imported the appliance." << std::endl;
 			}
 		} // end if (aVirtualSystemDescriptions.size() > 0)
 	} while (0);
