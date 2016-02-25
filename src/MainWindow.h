@@ -96,7 +96,6 @@ class MainWindow : public QMainWindow
 		SummaryDialog *summaryDialog;
 		QString fileName;
 		bool requestedACPIstop;
-		std::vector<VMSettings*> VMSettings_vec;
 
 	signals:
 		void machinesPoolChanged();

@@ -92,7 +92,6 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 
 		ui->vm_tabs->addTab(vmTabSettings, tabname);
 		VMTabSettings_vec.push_back(vmTabSettings);
-		VMSettings_vec.push_back(vmTabSettings->vmSettings);
 		p.ui->progressBar->setValue(((i+1)*100)/machines_vec.size());
 		p.refresh();
 	}
@@ -292,14 +291,15 @@ bool MainWindow::slotActionSaveAs()
 
 bool MainWindow::slotVMSave()
 {
-	if (VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName.isEmpty())
+	VMSettings *vmSettings = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vmSettings;
+	if (vmSettings->fileName.isEmpty())
 		return slotVMSaveAs();
 	
-	bool write_done = VMSettings_vec.at(ui->vm_tabs->currentIndex())->save();
+	bool write_done = vmSettings->save();
 	if (!write_done)
 	{
 		QMessageBox::critical(this, "Errore di salvataggio",
-				      "Impossibile scrivere sul file " + VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName);
+				      "Impossibile scrivere sul file " + vmSettings->fileName);
 		return false;
 	}
 
@@ -308,22 +308,24 @@ bool MainWindow::slotVMSave()
 
 bool MainWindow::slotVMSaveAs()
 {
+	VMSettings *vmSettings = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vmSettings;
 	QString selectedFileName;
-	if (VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName.isEmpty())
+	if (vmSettings->fileName.isEmpty())
 		selectedFileName = QFileDialog::getSaveFileName(this, "Salva macchina", VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->machine->getName(), "Machine VB-Ant file (*.vam)");
 	else
-		selectedFileName = QFileDialog::getSaveFileName(this, "Salva macchina", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vam)");
+		selectedFileName = QFileDialog::getSaveFileName(this, "Salva macchina", vmSettings->fileName, "Machine VB-Ant file (*.vam)");
 
 	if (selectedFileName.isEmpty())
 		return false;
 
-	VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName = selectedFileName;
+	vmSettings->fileName = selectedFileName;
 	return slotVMSave();
 }
 
 void MainWindow::slotVMLoad()
 {
-	const QString selectedFileName = QFileDialog::getOpenFileName(this, "Apri macchina", VMSettings_vec.at(ui->vm_tabs->currentIndex())->fileName, "Machine VB-Ant file (*.vam)");
+	VMSettings *vmSettings = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vmSettings;
+	const QString selectedFileName = QFileDialog::getOpenFileName(this, "Apri macchina", vmSettings->fileName, "Machine VB-Ant file (*.vam)");
 
 	if (selectedFileName.isEmpty())
 		return;
@@ -331,7 +333,7 @@ void MainWindow::slotVMLoad()
 	settings_header_t settings_header;
 	char *settings_ifaces;
 	
-	read_result_t read_result = VMSettings_vec.at(ui->vm_tabs->currentIndex())->read(&settings_header, &settings_ifaces, selectedFileName);
+	read_result_t read_result = vmSettings->read(&settings_header, &settings_ifaces, selectedFileName);
 
 	switch(read_result)
 	{
@@ -383,8 +385,8 @@ void MainWindow::slotVMLoad()
 			return;
 	}
 
-	VMSettings_vec.at(ui->vm_tabs->currentIndex())->load(settings_header, settings_ifaces);
-	VMSettings_vec.at(ui->vm_tabs->currentIndex())->restore();
+	vmSettings->load(settings_header, settings_ifaces);
+	vmSettings->restore();
 }
 
 void MainWindow::slotInfo()
