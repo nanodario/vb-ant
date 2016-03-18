@@ -24,7 +24,13 @@
 #include <QtGui/QApplication>
 #include "MainWindow.h"
 #include "OSBridge.h"
-#include "ZlibWrapper.h"
+#ifdef EXAM_MODE
+	#include "ExamDialog.h"
+#endif
+
+#ifdef USE_ZLIB
+	#include "ZlibWrapper.h"
+#endif
 
 int main(int argc, char** argv)
 {
@@ -35,15 +41,31 @@ int main(int argc, char** argv)
 		std::cout << "Module nbd loaded" << std::endl;
 	else
 		std::cout << "Module nbd not loaded" << std::endl;
-	
+
+#ifdef USE_ZLIB
 	std::cout << "This program uses zlib version: " << ZlibWrapper::getZlibVersion().toStdString() << std::endl;
-	
+#endif
+	int retval;
 	MainWindow mw((args.count() < 2) ? QString() : args[1]);
+
+#ifdef EXAM_MODE
+	ExamDialog *ed = new ExamDialog();
+	if(ed->exec() == QDialog::Rejected)
+	{
+		delete ed;
+		retval = 0;
+	}
+	else
+	{
+		mw.setExamParams(ed->ui->lineEditNome->text(), ed->ui->lineEditCognome->text(), ed->ui->lineEditMatricola->text());
+		mw.show();
+		retval = app.exec();
+	}
+#else
 	mw.show();
-
-	int retval = app.exec();
-
+	retval = app.exec();
+#endif
+	
 	std::cout << "All done." << std::endl;
-
 	return retval;
 }

@@ -30,7 +30,15 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDialogButtonBox>
-#include <zlib.h>
+#include <QCloseEvent>
+
+#ifdef USE_ZLIB
+	#include "ZlibWrapper.h"
+#endif
+
+#ifdef EXAM_MODE
+	#include "GPGMEWrapper.h"
+#endif
 
 #include "ui_MachinesDialog.h"
 
@@ -80,7 +88,11 @@ MachinesDialog::~MachinesDialog()
 	delete ui;
 }
 
-void MachinesDialog::buildDialog()
+#ifndef EXAM_MODE
+bool MachinesDialog::buildDialog()
+#else
+bool MachinesDialog::buildDialog(bool examMode)
+#endif
 {
 	ui->setupUi(this);
 	ui->retranslateUi(this);
@@ -133,7 +145,18 @@ void MachinesDialog::buildDialog()
 		}
 
 		buttonBox->setStandardButtons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
-		connect(buttonBox, SIGNAL(accepted()), this, SLOT(slotExportMachines()));
+#ifndef USE_ZLIB
+		checkBox->setChecked(false);
+		checkBox->setEnabled(false);
+#endif		
+#ifdef EXAM_MODE
+		if(examMode)
+			connect(buttonBox, SIGNAL(accepted()), this, SLOT(slotExamExportMachines()));
+		else
+#endif
+		{
+			connect(buttonBox, SIGNAL(accepted()), this, SLOT(slotExportMachines()));
+		}
 	}
 	else
 	{
@@ -153,7 +176,7 @@ void MachinesDialog::buildDialog()
 				QMessageBox qm(QMessageBox::Critical, "Ripristino impostazioni", QString::fromUtf8("Il file selezionato non è valido."), QMessageBox::Ok, this);
 				qm.setPalette(palette());
 				qm.exec();
-				return;
+				return false;
 			}
 		}
 
@@ -180,9 +203,8 @@ void MachinesDialog::buildDialog()
 
 		buttonBox->setStandardButtons(QDialogButtonBox::Cancel|QDialogButtonBox::Open);
 		connect(buttonBox, SIGNAL(accepted()), this, SLOT(slotImportMachines()));
-
-		return;
 	}
+	return true;
 }
 
 void MachinesDialog::slotExportMachines()
@@ -191,8 +213,9 @@ void MachinesDialog::slotExportMachines()
 	{
 		if(ui->treeWidget->topLevelItem(i)->checkState(0) == Qt::Checked)
 		{
-			((QDialogButtonBox *)sender())->setDisabled(true);
 			fileName = QFileDialog::getSaveFileName(this, "Salva macchine", "", "Machine set VB-Ant file (*.vas)");
+			if(fileName == "")
+				return;
 			std::vector<VirtualMachine*> vm_vec;
 
 			for(int i = 0; i < ui->treeWidget->topLevelItemCount(); i++)
@@ -209,6 +232,34 @@ void MachinesDialog::slotExportMachines()
 	qm.setPalette(palette());
 	qm.exec();
 }
+
+#ifdef EXAM_MODE
+void MachinesDialog::slotExamExportMachines()
+{
+	for(int i = 0; i < ui->treeWidget->topLevelItemCount(); i++)
+	{
+		if(ui->treeWidget->topLevelItem(i)->checkState(0) == Qt::Checked)
+		{
+			fileName = QFileDialog::getSaveFileName(this, "Salva macchine (esame)", "", "Exam machine set VB-Ant file (*.vax)");
+			if(fileName == "")
+				return;
+			std::vector<VirtualMachine*> vm_vec;
+			
+			for(int i = 0; i < ui->treeWidget->topLevelItemCount(); i++)
+				if(ui->treeWidget->topLevelItem(i)->checkState(0) == Qt::Checked)
+					vm_vec.push_back(vmTab_vec->at(i)->vm);
+				
+				saveMachines(vm_vec, checkBox->isChecked(), true);
+			close();
+			return;
+		}
+	}
+	
+	QMessageBox qm(QMessageBox::Information, "Esportazione macchine", "Selezionare almeno una macchina da esportare", QMessageBox::Ok, this);
+	qm.setPalette(palette());
+	qm.exec();
+}
+#endif
 
 void MachinesDialog::slotImportMachines()
 {
@@ -407,7 +458,11 @@ void MachinesDialog::slotImportMachines()
 	close();
 }
 
+#ifndef EXAM_MODE
 bool MachinesDialog::saveMachines(std::vector<VirtualMachine*> vm_vec, bool deflate)
+#else
+bool MachinesDialog::saveMachines(std::vector<VirtualMachine*> vm_vec, bool deflate, bool examMode)
+#endif
 {
 	uint32_t total_size = 0;
 	char **serialized_machines = (char **)malloc(vm_vec.size() * sizeof(char*));
@@ -457,6 +512,7 @@ bool MachinesDialog::saveMachines(std::vector<VirtualMachine*> vm_vec, bool defl
 		uint32_t bytes_written = 0;
 		uint32_t expected_size = 0;
 
+#ifdef USE_ZLIB
 		if(deflate)
 		{
 			char *z_serialized_data;
@@ -474,6 +530,20 @@ bool MachinesDialog::saveMachines(std::vector<VirtualMachine*> vm_vec, bool defl
 			free(z_serialized_data);
 		}
 		else
+#endif
+#ifdef EXAM_MODE
+		if(examMode)
+		{
+			magicBytes[1] = 'X';
+			memcpy(magicBytes + 2 + sizeof(uint8_t), &total_size, sizeof(uint32_t));
+			bytes_written = file.write(magicBytes, magicBytes_size);
+			bytes_written += file.write(serialized_data, total_size);
+
+			file.flush();
+			expected_size = total_size;
+			free(magicBytes);
+		}
+#endif
 		{
 			magicBytes[1] = 'P';
 			memcpy(magicBytes + 2 + sizeof(uint8_t), &total_size, sizeof(uint32_t));
@@ -504,8 +574,11 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 	if(!file.open(QIODevice::ReadOnly))
 		return E_UNKNOWN;
 
+#ifdef USE_ZLIB
+	bool use_zlib = false;
+#endif
+
 	//read header
-	bool use_zlib;
 	char *magicbytes = (char *)malloc(3*sizeof(char)+sizeof(uint32_t));
 	int magicbytes_read = file.read(magicbytes, 3*sizeof(char)+sizeof(uint32_t));
 	QByteArray qMagicbytes = file.readLine();
@@ -517,11 +590,12 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 		switch(magicbytes[1])
 		{
 			case 'P':
-				use_zlib = false;
 				break;
+#ifdef USE_ZLIB
 			case 'Z':
 				use_zlib = true;
 				break;
+#endif
 			default:
 				return E_INVALID_HEADER;
 		}
@@ -541,6 +615,7 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 
 	char *serialized_data;
 	int serialized_data_size;
+#ifdef USE_ZLIB
 	if(use_zlib)
 	{
 		char *z_serialized_data = (char *)malloc(expected_size * sizeof(char));
@@ -556,6 +631,7 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 		free(z_serialized_data);
 	}
 	else
+#endif
 	{
 		serialized_data = (char *)malloc(expected_size * sizeof(char));
 		serialized_data_size = file.read(serialized_data, expected_size);

@@ -25,6 +25,7 @@
 #include <QObject>
 #include <QMainWindow>
 #include <QFile>
+#include <QDateTime>
 #include <vector>
 
 #include "ui_MainWindow.h"
@@ -53,6 +54,9 @@ class MainWindow : public QMainWindow
 		void launchCloneProcess(QString qName, bool reInitIfaces);
 		VirtualBoxBridge *vboxbridge;
 		static QPalette getPalette();
+#ifdef EXAM_MODE
+		void setExamParams(QString nome, QString cognome, QString matricola);
+#endif
 		
 	protected:
 		void closeEvent(QCloseEvent *event);
@@ -76,11 +80,15 @@ class MainWindow : public QMainWindow
 // 		void slotSettings();
 		void slotStateChange(MachineBridge *machine, uint32_t state);
 		void slotNetworkAdapterChange(MachineBridge *machine, INetworkAdapter *nic);
+#ifdef EXAM_MODE
+		void slotExamExport();
+#else
 		void slotVMLoad();
 		bool slotVMSave();
 		bool slotVMSaveAs();
 		void slotImportMachines();
 		void slotExportMachines();
+#endif
 		
 	private:
 		bool queryClose();
@@ -96,6 +104,11 @@ class MainWindow : public QMainWindow
 		SummaryDialog *summaryDialog;
 		QString fileName;
 		bool requestedACPIstop;
+
+#ifdef EXAM_MODE
+		QString nome, cognome, matricola;
+		QDateTime *launch_timestamp;
+#endif
 
 	signals:
 		void machinesPoolChanged();

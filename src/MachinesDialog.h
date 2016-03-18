@@ -73,15 +73,26 @@ class MachinesDialog : public QDialog
 	public:
 		explicit MachinesDialog(MainWindow *mainwindow, std::vector<VMTabSettings*> *vmTab_vec, QString fileName = "");
 		explicit MachinesDialog(MainWindow *mainwindow, std::vector<VMTabSettings*> *vmTab_vec, QPalette palette, QString fileName = "");
-		void buildDialog();
+#ifndef EXAM_MODE
+		bool buildDialog();
+#else
+		bool buildDialog(bool examMode = false);
+#endif
 		virtual ~MachinesDialog();
 
 	private slots:
 		void slotExportMachines();
 		void slotImportMachines();
+#ifdef EXAM_MODE
+		void slotExamExportMachines();
+#endif
 
 	private:
+#ifndef EXAM_MODE
 		bool saveMachines(std::vector<VirtualMachine*> vm_vec, bool deflate);
+#else
+		bool saveMachines(std::vector<VirtualMachine*> vm_vec, bool deflate, bool examMode = false);
+#endif
 		read_result_t loadMachines(settings_header_t **settings_header, settings_iface_t ***settings_ifaces, uint32_t *machines_number);
 		bool updateMachine(VMTabSettings *vmtab, settings_header_t settings_header, settings_iface_t *settings_ifaces);
 		bool createMachine(settings_header_t settings_header, settings_iface_t *settings_ifaces);

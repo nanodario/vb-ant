@@ -136,13 +136,27 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->toolbarReset, SIGNAL(triggered(bool)), ui->actionReset, SIGNAL(triggered(bool)));
 	connect(ui->toolbarInterrompi, SIGNAL(triggered(bool)), ui->actionInterrompi, SIGNAL(triggered(bool)));
 
+#ifdef EXAM_MODE
+	ui->actionVMLoad->setDisabled(true);
+	ui->actionVMSave->setDisabled(true);
+	ui->actionVMSaveAs->setDisabled(true);
+	ui->actionImportMachines->setDisabled(true);
+	ui->actionExportMachines->setDisabled(true);
+
+	QAction *examExport = new QAction(QString("Genera salvataggio"), this);
+	connect(examExport, SIGNAL(triggered(bool)), this, SLOT(slotExamExport()));
+	
+	QMenu *examMenu = new QMenu(QString("Esame"));
+	examMenu->addAction(examExport);
+	ui->menubar->addMenu(examMenu);
+#else
 	connect(ui->actionVMLoad, SIGNAL(triggered(bool)), this, SLOT(slotVMLoad()));
 	connect(ui->actionVMSave, SIGNAL(triggered(bool)), this, SLOT(slotVMSave()));
 	connect(ui->actionVMSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotVMSaveAs()));
-	
 	connect(ui->actionImportMachines, SIGNAL(triggered(bool)), this, SLOT(slotImportMachines()));
 	connect(ui->actionExportMachines, SIGNAL(triggered(bool)), this, SLOT(slotExportMachines()));
-
+#endif
+	
 	ui->retranslateUi(this);
 	setWindowTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
 	ui->menuFile->setTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
@@ -221,74 +235,30 @@ bool MainWindow::queryClose()
 	return true;
 }
 
-#if 0
-void MainWindow::slotActionNew()
+#ifdef EXAM_MODE
+void MainWindow::setExamParams(QString _nome, QString _cognome, QString _matricola)
 {
-	std::cout << "[" << __func__ << "]" << std::endl;
+	launch_timestamp = new QDateTime();
+	launch_timestamp->setTime(QTime::currentTime());
+	launch_timestamp->setDate(QDate::currentDate());
+	nome = _nome;
+	cognome = _cognome;
+	matricola = _matricola;
+	std::cout << "launch_timestamp: " << launch_timestamp->toTime_t() << std::endl;
+	std::cout << "Candidato: " << nome.toStdString() << " " << cognome.toStdString() << " (" << matricola.toStdString() << ")" << std::endl;
 	
-	/*
-	const QString selectedFileName = QFileDialog::getOpenFileName(this,
-		"Apri documento", fileName, "Grafo (*.graph)");
- 
-	if (selectedFileName.isEmpty() || !queryClose())
-		return;
- 
-	loadFile(selectedFileName);
-	*/
+	QString newTitle = "";
+	newTitle.append(windowTitle()).append(" - [").append(nome).append(" ").append(cognome).append(" (").append(matricola).append(")]");
+	setWindowTitle(newTitle);
 }
 
-void MainWindow::slotActionOpen()
+void MainWindow::slotExamExport()
 {
-	std::cout << "[" << __func__ << "]" << std::endl;
-		
-	/*
-	const QString selectedFileName = QFileDialog::getOpenFileName(this,
-		"Apri documento", fileName, "Grafo (*.graph)");
-
-	if (selectedFileName.isEmpty() || !queryClose())
-		return;
-
-	loadFile(selectedFileName);
-	*/
+	MachinesDialog machinesDialog(this, &VMTabSettings_vec);
+	if(machinesDialog.buildDialog(true))
+		machinesDialog.exec();
 }
-
-bool MainWindow::slotActionSave()
-{
-	std::cout << "[" << __func__ << "]" << std::endl;
-	
-	if (fileName.isEmpty())
-		return slotActionSaveAs();
-
-	QFile file(fileName);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		QMessageBox::critical(this, "Errore di salvataggio",
-			"Impossibile scrivere sul file " + fileName);
-		return false;
-	}
-
-	QTextStream(&file) << "test";
-// 	ui->campo->setCleanUndoHistory();
-	file.close();
-
-	return true;
-}
-
-bool MainWindow::slotActionSaveAs()
-{
-	std::cout << "[" << __func__ << "]" << std::endl;
-
-	const QString selectedFileName = QFileDialog::getSaveFileName(this, "Salva documento", fileName, "Grafo (*.graph)");
-
-	if (selectedFileName.isEmpty())
-		return false;
-
-	fileName = selectedFileName;
-	return slotActionSave();
-// 	return true;
-}
-#endif
-
+#else
 bool MainWindow::slotVMSave()
 {
 	VMSettings *vmSettings = VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vmSettings;
@@ -389,15 +359,11 @@ void MainWindow::slotVMLoad()
 	vmSettings->restore();
 }
 
-void MainWindow::slotInfo()
-{
-	infoDialog.show();
-}
-
 void MainWindow::slotExportMachines()
 {
 	MachinesDialog machinesDialog(this, &VMTabSettings_vec);
-	machinesDialog.exec();
+	if(machinesDialog.buildDialog())
+		machinesDialog.exec();
 }
 
 void MainWindow::slotImportMachines()
@@ -905,8 +871,10 @@ void MainWindow::refreshUI(int tab, uint32_t state)
 			ui->actionPausa->setEnabled(false); ui->actionPausa->setChecked(false);
 			ui->actionReset->setEnabled(false);
 			ui->actionInterrompi->setEnabled(false);
+#ifndef EXAM_MODE
 			ui->actionVMLoad->setEnabled(true);
-			
+#endif
+
 			ui->toolbarClona->setEnabled(true);
 			ui->toolbarElimina->setEnabled(true);
 			ui->toolbarAvviaAll->setEnabled(true);
