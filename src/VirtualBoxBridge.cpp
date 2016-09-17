@@ -66,7 +66,7 @@
 #include <QVector>
 #include <QFile>
 
-#define GOLDEN_COPY_OVA_PATH "/media/dario/UBDeposito2/Golden Copy.ova"
+#define GOLDEN_COPY_OVA_PATH "../src/resources/Golden Copy.ova"
 
 /*
  * HACK This code interacts with VirtualBox API every 500 ms. This is needed
