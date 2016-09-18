@@ -476,7 +476,7 @@ bool VirtualMachine::saveSettings()
 				line.append(ifaces[i]->name.toStdString());
 				line.append("\n");
 				line.append("SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"?*\", ATTR{address}==\"");
-				line.append(ifaces[i]->mac.toStdString());
+				line.append(ifaces[i]->mac.toLower().toStdString());
 				line.append("\", ATTR{type}==\"1\", KERNEL==\"eth*\", NAME=\"");
 				line.append(ifaces[i]->name.toStdString());
 				line.append("\"\n\n");
