@@ -131,11 +131,19 @@ int OSBridge::execute_cmd(int argc, char **argv, bool from_path)
 bool OSBridge::checkNbdModule()
 {
 	char *argv[3];
-	argv[0] = (char *)malloc(sizeof(char) * (strlen(NBDTOOL_CMD_NAME) + 3)); strcpy(argv[0], "./" NBDTOOL_CMD_NAME);
+	argv[0] = (char *)malloc(sizeof(char) * (strlen(NBDTOOL_CMD_NAME) + 3)); strcpy(argv[0], NBDTOOL_CMD_NAME);
 	argv[1] = (char *)malloc(sizeof(char) * (strlen("check") + 1)); strcpy(argv[1], "check");
 	argv[2] = NULL;
 	
-	return execute_cmd(3, argv, true) == 0;
+	int retval = execute_cmd(3, argv, true);
+#ifdef TRY_FROM_LOCAL_WD
+	if(retval != 0)
+	{
+		argv[0] = (char *)realloc(argv[0], sizeof(char) * (strlen(NBDTOOL_CMD_NAME) + 3)); strcpy(argv[0], "./" NBDTOOL_CMD_NAME);
+		retval = execute_cmd(5, argv);
+	}
+#endif
+	return retval == 0;
 }
 
 bool OSBridge::loadNbdModule(int devices, int partitions)
