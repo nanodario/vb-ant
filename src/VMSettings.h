@@ -71,6 +71,7 @@ typedef enum
         E_INVALID_FILE,
         E_MACHINE_MISMATCH,
         E_INVALID_CHECKSUM,
+	E_UNINMPLEMENTED,
         E_UNKNOWN
 } read_result_t;
 

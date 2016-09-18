@@ -86,9 +86,9 @@ class MainWindow : public QMainWindow
 		void slotVMLoad();
 		bool slotVMSave();
 		bool slotVMSaveAs();
+#endif
 		void slotImportMachines();
 		void slotExportMachines();
-#endif
 		
 	private:
 		bool queryClose();

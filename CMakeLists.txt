@@ -112,6 +112,7 @@ if(EXAM_MODE)
 		"src/ExamDialog.ui")
 
 	set(Reti_SRCS "${Reti_SRCS}"
+		"src/ExamSession.cpp"
 		"src/ExamDialog.cpp"
 		"src/GPGMEWrapper.cpp")
 

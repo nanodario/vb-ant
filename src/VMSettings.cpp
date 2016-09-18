@@ -96,7 +96,6 @@ bool VMSettings::save(QString selected_filename)
 		return false;
 }
 
-//TEST
 read_result_t VMSettings::read(settings_header_t *settings_header, char **serialized_ifaces, QString selected_filename)
 {
 	if(selected_filename.isEmpty())

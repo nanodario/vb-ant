@@ -759,8 +759,10 @@ void IfacesTable::slotRefreshIface(int iface)
 	((MacWidgetField *)cellWidget(iface, COLUMN_MAC))->setText(ifaces[iface]->mac);
 	((CustomCheckBox *)cellWidget(iface, COLUMN_IFACE_CONNECTED))->checkbox->setCheckState(ifaces[iface]->cableConnected ? Qt::Checked : Qt::Unchecked);
 	item(iface, COLUMN_IFACE_NAME)->setText(ifaces[iface]->name);
+#ifdef CONFIGURABLE_IP
 	item(iface, COLUMN_IP)->setText(ifaces[iface]->ip);
 	item(iface, COLUMN_SUBNETMASK)->setText(ifaces[iface]->subnetMask);
+#endif
 	setAttachmentType(iface, ifaces[iface]->attachmentType);
 	setAttachmentData(iface, ifaces[iface]->attachmentData);
 

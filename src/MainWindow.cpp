@@ -140,8 +140,8 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	ui->actionVMLoad->setDisabled(true);
 	ui->actionVMSave->setDisabled(true);
 	ui->actionVMSaveAs->setDisabled(true);
-	ui->actionImportMachines->setDisabled(true);
-	ui->actionExportMachines->setDisabled(true);
+// 	ui->actionImportMachines->setDisabled(true);
+// 	ui->actionExportMachines->setDisabled(true);
 
 	QAction *examExport = new QAction(QString("Genera salvataggio"), this);
 	connect(examExport, SIGNAL(triggered(bool)), this, SLOT(slotExamExport()));
@@ -153,9 +153,9 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	connect(ui->actionVMLoad, SIGNAL(triggered(bool)), this, SLOT(slotVMLoad()));
 	connect(ui->actionVMSave, SIGNAL(triggered(bool)), this, SLOT(slotVMSave()));
 	connect(ui->actionVMSaveAs, SIGNAL(triggered(bool)), this, SLOT(slotVMSaveAs()));
+#endif
 	connect(ui->actionImportMachines, SIGNAL(triggered(bool)), this, SLOT(slotImportMachines()));
 	connect(ui->actionExportMachines, SIGNAL(triggered(bool)), this, SLOT(slotExportMachines()));
-#endif
 	
 	ui->retranslateUi(this);
 	setWindowTitle(QString::fromUtf8(PROGRAM_NAME).toUpper());
@@ -188,8 +188,6 @@ MainWindow::~MainWindow()
 	if(stat(tmpdir_prefix.str().c_str(), &s) >= 0 && ((s.st_mode & S_IFMT) == S_IFDIR))
 		rmdir(tmpdir_prefix.str().c_str());
 
-	summaryDialog->hide(); //FIXME
-
 	delete summaryDialog;
 	delete vboxbridge;
 	delete ui;
@@ -199,6 +197,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
 	if (!queryClose())
 		event->ignore();
+	else
+		summaryDialog->close();
 }
 
 bool MainWindow::queryClose()
@@ -359,6 +359,7 @@ void MainWindow::slotVMLoad()
 	vmSettings->restore();
 }
 
+#endif
 void MainWindow::slotExportMachines()
 {
 	MachinesDialog machinesDialog(this, &VMTabSettings_vec);
@@ -373,7 +374,13 @@ void MainWindow::slotImportMachines()
 		return;
 
 	MachinesDialog machinesDialog(this, &VMTabSettings_vec, fileName);
-	machinesDialog.exec();
+	if(machinesDialog.buildDialog())
+		machinesDialog.exec();
+}
+
+void MainWindow::slotInfo()
+{
+	infoDialog.show();
 }
 
 void MainWindow::currentChangedSlot(int tab)
@@ -575,14 +582,14 @@ void MainWindow::slotClone()
 
 int MainWindow::launchCreateProcess(QString qName, bool reInitIfaces, bool restoreFromFile)
 {
-	VMTabSettings *vmTabSettings = addMachine(vboxbridge->newVM(qName));
-	if(vmTabSettings == NULL)
-		return -1;
-
 	ProgressDialog p("");
 	p.ui->label->setText(QString::fromUtf8("Caricamento macchina \"").append(qName).append("\""));
 	p.ui->progressBar->setValue(0);
 	p.open();
+
+	VMTabSettings *vmTabSettings = addMachine(vboxbridge->newVM(qName));
+	if(vmTabSettings == NULL)
+		return -1;
 
 	if(!restoreFromFile)
 	{
@@ -602,22 +609,22 @@ int MainWindow::launchCreateProcess(QString qName, bool reInitIfaces, bool resto
 
 void MainWindow::launchCloneProcess(QString qName, bool reInitIfaces)
 {
-	VMTabSettings *vmSettings = addMachine(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->clone(qName, reInitIfaces));
-	if(vmSettings == NULL)
-		return;
-
 	ProgressDialog p("");
 	p.ui->label->setText(QString::fromUtf8("Caricamento macchina \"").append(qName).append("\""));
 	p.ui->progressBar->setValue(0);
 	p.open();
 
-	vmSettings->vm->cleanIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
-	vmSettings->vm->copyIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
-	vmSettings->vm->saveSettings();
-	vmSettings->refreshTable();
+	VMTabSettings *vmTabSettings = addMachine(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->clone(qName, reInitIfaces));
+	if(vmTabSettings == NULL)
+		return;
 
-	int newTab = ui->vm_tabs->addTab(vmSettings, qName);
-	VMTabSettings_vec.push_back(vmSettings);
+	vmTabSettings->vm->cleanIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
+	vmTabSettings->vm->copyIfaces(VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces, VMTabSettings_vec.at(ui->vm_tabs->currentIndex())->vm->ifaces_size);
+	vmTabSettings->vm->saveSettings();
+	vmTabSettings->refreshTable();
+
+	int newTab = ui->vm_tabs->addTab(vmTabSettings, qName);
+	VMTabSettings_vec.push_back(vmTabSettings);
 	p.ui->progressBar->setValue(100);
 
 	ui->vm_tabs->setCurrentIndex(newTab);

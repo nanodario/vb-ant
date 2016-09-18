@@ -21,7 +21,6 @@
 
 #include "MachinesDialog.h"
 #include "MainWindow.h"
-#include "ZlibWrapper.h"
 #include "VMTabSettings.h"
 #include <stdlib.h>
 #include <vector>
@@ -51,13 +50,13 @@
 MachinesDialog::MachinesDialog(MainWindow *mainwindow, std::vector<VMTabSettings*> *vmTab_vec, QString fileName): QDialog()
 , mainwindow(mainwindow), ui(new Ui_MachinesDialog), vmTab_vec(vmTab_vec), fileName(fileName), settings_header(NULL), settings_ifaces(NULL), machines_number(0)
 {
-	buildDialog();
+// 	buildDialog();
 }
 
 MachinesDialog::MachinesDialog(MainWindow *mainwindow, std::vector<VMTabSettings*> *vmTab_vec, QPalette palette, QString fileName): QDialog()
 , mainwindow(mainwindow), ui(new Ui_MachinesDialog), vmTab_vec(vmTab_vec), fileName(fileName), settings_header(NULL), settings_ifaces(NULL), machines_number(0)
 {
-	buildDialog();
+// 	buildDialog();
 	setPalette(palette);
 }
 
@@ -169,6 +168,13 @@ bool MachinesDialog::buildDialog(bool examMode)
 		{
 			case NO_ERROR:
 				break;
+			case E_UNINMPLEMENTED:
+			{
+				QMessageBox qm(QMessageBox::Critical, "Ripristino impostazioni", QString::fromUtf8("Funzione non implementata."), QMessageBox::Ok, this);
+				qm.setPalette(palette());
+				qm.exec();
+				return false;
+			}				
 			case E_INVALID_FILE:
 			case E_INVALID_HEADER:
 			default:
@@ -512,9 +518,23 @@ bool MachinesDialog::saveMachines(std::vector<VirtualMachine*> vm_vec, bool defl
 		uint32_t bytes_written = 0;
 		uint32_t expected_size = 0;
 
+		if(0);
+#ifdef EXAM_MODE
+		else if(examMode)
+		{ //Exam mode format
+			magicBytes[1] = 'X';
+			memcpy(magicBytes + 2 + sizeof(uint8_t), &total_size, sizeof(uint32_t));
+			bytes_written = file.write(magicBytes, magicBytes_size);
+// 			bytes_written += file.write(DATA, SIZE); //TODO
+
+			file.flush();
+			expected_size = total_size;
+			free(magicBytes);
+		}
+#endif
 #ifdef USE_ZLIB
-		if(deflate)
-		{
+		else if(deflate)
+		{ // Zlib format
 			char *z_serialized_data;
 			int z_serialized_data_size = ZlibWrapper::def(&z_serialized_data, serialized_data, total_size, -1);
 
@@ -529,22 +549,9 @@ bool MachinesDialog::saveMachines(std::vector<VirtualMachine*> vm_vec, bool defl
 			free(magicBytes);
 			free(z_serialized_data);
 		}
+#endif
 		else
-#endif
-#ifdef EXAM_MODE
-		if(examMode)
-		{
-			magicBytes[1] = 'X';
-			memcpy(magicBytes + 2 + sizeof(uint8_t), &total_size, sizeof(uint32_t));
-			bytes_written = file.write(magicBytes, magicBytes_size);
-			bytes_written += file.write(serialized_data, total_size);
-
-			file.flush();
-			expected_size = total_size;
-			free(magicBytes);
-		}
-#endif
-		{
+		{ // Plain text format
 			magicBytes[1] = 'P';
 			memcpy(magicBytes + 2 + sizeof(uint8_t), &total_size, sizeof(uint32_t));
 			bytes_written = file.write(magicBytes, magicBytes_size);
@@ -577,7 +584,10 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 #ifdef USE_ZLIB
 	bool use_zlib = false;
 #endif
-
+#ifdef EXAM_MODE
+	bool exam_mode = false;
+#endif
+	
 	//read header
 	char *magicbytes = (char *)malloc(3*sizeof(char)+sizeof(uint32_t));
 	int magicbytes_read = file.read(magicbytes, 3*sizeof(char)+sizeof(uint32_t));
@@ -587,6 +597,7 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 		return E_INVALID_FILE;
 	else
 	{
+		std::cout << "magicbytes[1]: " << magicbytes[1] << std::endl;
 		switch(magicbytes[1])
 		{
 			case 'P':
@@ -594,6 +605,11 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 #ifdef USE_ZLIB
 			case 'Z':
 				use_zlib = true;
+				break;
+#endif
+#ifdef EXAM_MODE
+			case 'X':
+				exam_mode = true;
 				break;
 #endif
 			default:
@@ -615,8 +631,10 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 
 	char *serialized_data;
 	int serialized_data_size;
+
+	if(0);
 #ifdef USE_ZLIB
-	if(use_zlib)
+	else if(use_zlib)
 	{
 		char *z_serialized_data = (char *)malloc(expected_size * sizeof(char));
 		uint32_t bytes_read = file.read(z_serialized_data, expected_size);
@@ -630,8 +648,14 @@ read_result_t MachinesDialog::loadMachines(settings_header_t **settings_header, 
 		serialized_data_size = ZlibWrapper::inf(&serialized_data, z_serialized_data, bytes_read);
 		free(z_serialized_data);
 	}
-	else
 #endif
+#ifdef EXAM_MODE
+	else if(exam_mode) //TODO
+	{
+		return E_UNINMPLEMENTED;
+	}
+#endif
+	else
 	{
 		serialized_data = (char *)malloc(expected_size * sizeof(char));
 		serialized_data_size = file.read(serialized_data, expected_size);
