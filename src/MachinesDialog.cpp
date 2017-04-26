@@ -35,10 +35,6 @@
 	#include "ZlibWrapper.h"
 #endif
 
-#ifdef EXAM_MODE
-	#include "GPGMEWrapper.h"
-#endif
-
 #include "ui_MachinesDialog.h"
 
 #ifdef CONFIGURABLE_IP

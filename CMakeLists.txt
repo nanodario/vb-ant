@@ -100,13 +100,13 @@ if(EXAM_MODE)
 	message("-- Exam mode: enabled")
 	add_definitions(-DEXAM_MODE)
 
-	find_library(GPGME gpgme)
-	if(GPGME STREQUAL "GPGME-NOTFOUND")
-		message(FATAL_ERROR "-- libgpgme not found")
-	endif()
-
-	message("-- Found libgpgme at '${GPGME}'")
-	set(GPGME_LIB ${GPGME})
+# 	find_library(GPGME gpgme)
+# 	if(GPGME STREQUAL "GPGME-NOTFOUND")
+# 		message(FATAL_ERROR "-- libgpgme not found")
+# 	endif()
+#
+# 	message("-- Found libgpgme at '${GPGME}'")
+# 	set(GPGME_LIB ${GPGME})
 
 	qt4_wrap_ui(ui_src
 		"src/ExamDialog.ui")
@@ -114,7 +114,8 @@ if(EXAM_MODE)
 	set(Reti_SRCS "${Reti_SRCS}"
 		"src/ExamSession.cpp"
 		"src/ExamDialog.cpp"
-		"src/GPGMEWrapper.cpp")
+# 		"src/GPGMEWrapper.cpp"
+	)
 
 	set(PROGRAM_NAME "vb-ant")
 	message("-- Program name: vb-ant")
@@ -244,7 +245,7 @@ target_link_libraries(${PROGRAM_NAME}
 			${QT_QTGUI_LIBRARY}
 			${VBOX_LIB}
 			${Z_LIB}
-			${GPGME_LIB}
+# 			${GPGME_LIB}
 )
 
 if(NOT KMOD STREQUAL "KMOD-NOTFOUND")
