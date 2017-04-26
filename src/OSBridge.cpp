@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <dirent.h>
 #include <asm-generic/errno-base.h>
 #include <errno.h>
 #include <libkmod.h>
@@ -144,6 +145,40 @@ bool OSBridge::checkNbdModule()
 	}
 #endif
 	return retval == 0;
+}
+
+bool OSBridge::cleanEnvironment(std::string tmp_dir)
+{
+	std::vector<std::string> tmp_content;
+
+	DIR *dir;
+	struct dirent *ent;
+	if ((dir = opendir(tmp_dir.c_str())) != NULL)
+	{
+		while ((ent = readdir(dir)) != NULL)
+			if(ent->d_type == DT_DIR && strstr(ent->d_name, ".") == NULL)
+				tmp_content.push_back(std::string(tmp_dir).append("/").append(ent->d_name));
+		closedir(dir);
+
+		for(int i = 0; i < tmp_content.size(); i++)
+			if(tmp_content.at(i).find("-u"))
+				umountVpartition(tmp_content.at(i));
+
+		for(int i = 0; i < tmp_content.size(); i++)
+			if(!tmp_content.at(i).find("-u"))
+				umountVpartition(tmp_content.at(i));
+	}
+	
+	if ((dir = opendir("/dev/")) != NULL)
+	{
+		while ((ent = readdir(dir)) != NULL)
+		{
+			if(strstr(ent->d_name, "nbd") != NULL && strstr(ent->d_name, "p") == NULL)
+				umountVHD(std::string("/dev/").append(ent->d_name));
+		}
+		closedir(dir);
+	}
+	return true;
 }
 
 bool OSBridge::loadNbdModule(int devices, int partitions)

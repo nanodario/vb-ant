@@ -74,6 +74,8 @@ MainWindow::MainWindow(const QString &fileToOpen, QWidget *parent)
 	struct stat s;
 	if(stat(tmpdir_prefix.str().c_str(), &s) < 0 && errno == ENOENT)
 		mkdir(tmpdir_prefix.str().c_str(), 0777);
+	
+	OSBridge::cleanEnvironment(tmpdir_prefix.str());
 
 	ProgressDialog p("");
 	p.ui->label->setText("Caricamento impostazioni...");

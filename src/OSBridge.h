@@ -29,6 +29,7 @@
 class OSBridge
 {
 	public:
+		static bool cleanEnvironment(std::string tmp_dir);
 		static bool loadNbdModule(int devices = 16, int partitions = 0);
 		static bool unloadNbdModule();
 		static bool checkNbdModule();
