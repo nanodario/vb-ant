@@ -9,6 +9,7 @@
     <file>resources/SVG PINO/tastoapplica.svg</file>
   </qresource>
   <qresource prefix="exit">
+    <file>resources/SVG PINO/chiudi_black.svg</file>
     <file>resources/SVG PINO/chiudi.svg</file>
   </qresource>
   <qresource prefix="logo">
@@ -17,6 +18,7 @@
     <file>resources/ant-vb_wmargins.png</file>
   </qresource>
   <qresource prefix="delete">
+    <file>resources/SVG PINO/elimina_black.svg</file>
     <file>resources/SVG PINO/elimina.svg</file>
     <file>resources/vm_delete_16px.png</file>
     <file>resources/vm_delete_32px.png</file>
@@ -24,12 +26,14 @@
     <file>resources/vm_delete_disabled_32px.png</file>
   </qresource>
   <qresource prefix="new">
+    <file>resources/SVG PINO/nuovo_black.svg</file>
     <file>resources/SVG PINO/nuovo.svg</file>
     <file>resources/vm_new_16px.png</file>
     <file>resources/vm_new_32px.png</file>
     <file>resources/vm_new_disabled_32px.png</file>
   </qresource>
   <qresource prefix="clone">
+    <file>resources/SVG PINO/clona_black.svg</file>
     <file>resources/SVG PINO/clona.svg</file>
   </qresource>
   <qresource prefix="settings">
@@ -39,12 +43,15 @@
     <file>resources/vm_settings_disabled_32px.png</file>
   </qresource>
   <qresource prefix="reset">
+    <file>resources/SVG PINO/reset_black.svg</file>
     <file>resources/SVG PINO/reset.svg</file>
     <file>resources/vm_reset_16px.png</file>
     <file>resources/vm_reset_disabled_16px.png</file>
   </qresource>
   <qresource prefix="poweroff">
+    <file>resources/SVG PINO/interrompi_black.svg</file>
     <file>resources/SVG PINO/interrompi.svg</file>
+    <file>resources/SVG PINO/interrompitutte_black.svg</file>
     <file>resources/SVG PINO/interrompitutte.svg</file>
     <file>resources/vm_poweroff_16px.png</file>
     <file>resources/vm_poweroff_disabled_16px.png</file>
@@ -64,6 +71,7 @@
     <file>resources/refresh_disabled_32px.png</file>
   </qresource>
   <qresource prefix="pause">
+    <file>resources/SVG PINO/pausa_black.svg</file>
     <file>resources/SVG PINO/pausa.svg</file>
     <file>resources/vm_pause_16px.png</file>
     <file>resources/vm_pause_32px.png</file>
@@ -73,7 +81,9 @@
     <file>resources/vm_pause_disabled_32px.png</file>
   </qresource>
   <qresource prefix="start">
+    <file>resources/SVG PINO/avvia_black.svg</file>
     <file>resources/SVG PINO/avvia.svg</file>
+    <file>resources/SVG PINO/avviatutte_black.svg</file>
     <file>resources/SVG PINO/avviatutte.svg</file>
     <file>resources/vm_start_16px.png</file>
     <file>resources/vm_start_32px.png</file>
