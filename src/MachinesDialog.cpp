@@ -1,6 +1,6 @@
 /*
  * VB-ANT - VirtualBox - Advanced Network Tool
- * Copyright (C) 2016  Dario Messina
+ * Copyright (C) 2016, 2017  Dario Messina
  *
  * This file is part of VB-ANT
  *
